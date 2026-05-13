@@ -19,7 +19,7 @@ import (
 func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, verifier *auth.SigV4Verifier) *chi.Mux {
 	r := chi.NewRouter()
 
-	s3Handler := handler.NewS3Handler(backend, metaStore)
+	s3Handler := handler.NewS3Handler(backend, metaStore, verifier)
 	adminHandler := handler.NewAdminHandler(metaStore)
 
 	r.Use(middleware.RealIP)
@@ -101,7 +101,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 			if r.URL.Query().Has("delete") {
 				s3Handler.DeleteObjects(w, r)
 			} else {
-				stubHandler("PostObject")(w, r)
+				s3Handler.PostObject(w, r)
 			}
 		})
 
@@ -142,7 +142,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 				} else if r.URL.Query().Has("uploadId") {
 					s3Handler.CompleteMultipartUpload(w, r)
 				} else {
-					stubHandler("PostObject")(w, r)
+					stubHandler("PostObject")(w, r) // Should not happen for S3
 				}
 			})
 		})

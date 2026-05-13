@@ -9,12 +9,14 @@ import (
 type S3Handler struct {
 	Backend     storage.Backend
 	PolicyStore auth.PolicyStore
+	Verifier    *auth.SigV4Verifier
 }
 
 // NewS3Handler creates a new S3Handler.
-func NewS3Handler(backend storage.Backend, policyStore auth.PolicyStore) *S3Handler {
+func NewS3Handler(backend storage.Backend, policyStore auth.PolicyStore, verifier *auth.SigV4Verifier) *S3Handler {
 	return &S3Handler{
 		Backend:     backend,
 		PolicyStore: policyStore,
+		Verifier:    verifier,
 	}
 }

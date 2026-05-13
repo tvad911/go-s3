@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -247,6 +248,44 @@ func hashSHA256(data []byte) string {
 	h := sha256.New()
 	h.Write(data)
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+// VerifyPostPolicy verifies an HTML form upload policy signature.
+// policyB64 is the exact string from the 'policy' form field.
+func (v *SigV4Verifier) VerifyPostPolicy(ctx context.Context, credential, date, policyB64, signature string) (*User, error) {
+	if credential == "" || date == "" || policyB64 == "" || signature == "" {
+		return nil, ErrAuthHeaderMalformed
+	}
+
+	credFields := strings.Split(credential, "/")
+	if len(credFields) != 5 {
+		return nil, ErrAuthHeaderMalformed
+	}
+	accessKey := credFields[0]
+	dateStamp := credFields[1]
+	region := credFields[2]
+	service := credFields[3]
+
+	// Must match the date provided in X-Amz-Date form field (YYYYMMDDTHHMMSSZ)
+	if !strings.HasPrefix(date, dateStamp) {
+		return nil, ErrAuthHeaderMalformed
+	}
+
+	user, err := v.UserStore.GetUserByAccessKey(ctx, accessKey)
+	if err != nil {
+		return nil, err
+	}
+
+	signingKey := getSignatureKey(user.SecretKey, dateStamp, region, service)
+	
+	// For POST uploads, the string to sign is literally the base64-encoded policy
+	expectedSig := hex.EncodeToString(hmacSHA256(signingKey, policyB64))
+
+	if subtle.ConstantTimeCompare([]byte(expectedSig), []byte(signature)) != 1 {
+		return nil, ErrSignatureDoesNotMatch
+	}
+
+	return user, nil
 }
 
 func hmacSHA256(key []byte, data string) []byte {

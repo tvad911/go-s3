@@ -618,11 +618,11 @@ type Backend interface {
 
 > **Note:** Chunked/Streaming Upload đã được di chuyển vào Phase 2.2 vì AWS SDK dùng chunked mặc định.
 
-- [ ] `POST /{bucket}` — upload qua HTML form (multipart/form-data)
-- [ ] Parse form fields: `key`, `policy`, `x-amz-credential`, `x-amz-signature`, `x-amz-date`
-- [ ] Validate policy document (Base64-encoded JSON)
-- [ ] Hỗ trợ `success_action_redirect` và `success_action_status`
-- [ ] Trả 201/204 tùy `success_action_status`
+- [x] `POST /{bucket}` — upload qua HTML form (multipart/form-data)
+- [x] Parse form fields: `key`, `policy`, `x-amz-credential`, `x-amz-signature`, `x-amz-date`
+- [x] Validate policy document (Base64-encoded JSON)
+- [x] Hỗ trợ `success_action_redirect` và `success_action_status`
+- [x] Trả 201/204 tùy `success_action_status`
 
 ### 4.2 — Object Versioning (Basic)
 
