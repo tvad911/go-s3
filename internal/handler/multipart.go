@@ -44,6 +44,10 @@ func (h *S3Handler) CreateMultipartUpload(w http.ResponseWriter, r *http.Request
 	if meta.StorageClass == "" {
 		meta.StorageClass = "STANDARD"
 	}
+	if !s3.IsValidStorageClass(meta.StorageClass) {
+		WriteError(w, r, s3.ErrInvalidStorageClass)
+		return
+	}
 
 	for k, v := range r.Header {
 		if len(k) > 10 && k[:10] == "x-amz-meta" {

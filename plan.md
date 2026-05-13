@@ -658,10 +658,10 @@ type Backend interface {
 
 ### 4.6 — Storage Class
 
-- [ ] Parse và lưu `x-amz-storage-class` header
-- [ ] Các classes được accept: `STANDARD`, `REDUCED_REDUNDANCY`, `STANDARD_IA`, `ONEZONE_IA`, `INTELLIGENT_TIERING`, `GLACIER`, `DEEP_ARCHIVE`
-- [ ] Không phân biệt ở storage layer (chỉ lưu metadata)
-- [ ] Trả lại đúng class khi list/head
+- [x] Parse và lưu `x-amz-storage-class` header
+- [x] Các classes được accept: `STANDARD`, `REDUCED_REDUNDANCY`, `STANDARD_IA`, `ONEZONE_IA`, `INTELLIGENT_TIERING`, `GLACIER`, `DEEP_ARCHIVE`
+- [x] Không phân biệt ở storage layer (chỉ lưu metadata)
+- [x] Trả lại đúng class khi list/head
 
 ### 4.7 — Website Hosting (Static)
 

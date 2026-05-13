@@ -62,6 +62,11 @@ var (
 		Message:    "The specified bucket is not valid.",
 		HTTPStatus: http.StatusBadRequest,
 	}
+	ErrInvalidStorageClass = Error{
+		Code:       "InvalidStorageClass",
+		Message:    "The storage class you specified is not valid",
+		HTTPStatus: http.StatusBadRequest,
+	}
 	ErrInvalidPart = Error{
 		Code:       "InvalidPart",
 		Message:    "One or more of the specified parts could not be found. The part may not have been uploaded, or the specified entity tag may not match the part's entity tag.",

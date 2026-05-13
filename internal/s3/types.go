@@ -19,6 +19,14 @@ type Owner struct {
 	DisplayName string `xml:"DisplayName"`
 }
 
+func IsValidStorageClass(sc string) bool {
+	switch sc {
+	case "STANDARD", "REDUCED_REDUNDANCY", "STANDARD_IA", "ONEZONE_IA", "INTELLIGENT_TIERING", "GLACIER", "DEEP_ARCHIVE":
+		return true
+	}
+	return false
+}
+
 type Bucket struct {
 	Name         string    `xml:"Name"`
 	CreationDate time.Time `xml:"CreationDate"`

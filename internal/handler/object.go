@@ -47,6 +47,10 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 	if meta.StorageClass == "" {
 		meta.StorageClass = "STANDARD"
 	}
+	if !s3.IsValidStorageClass(meta.StorageClass) {
+		WriteError(w, r, s3.ErrInvalidStorageClass)
+		return
+	}
 
 	for k, v := range r.Header {
 		if len(k) > 10 && strings.ToLower(k[:10]) == "x-amz-meta-" {
@@ -397,6 +401,13 @@ func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 			ObjectLockMode:       r.Header.Get("x-amz-object-lock-mode"),
 			ObjectLockLegalHoldStatus: r.Header.Get("x-amz-object-lock-legal-hold"),
 			UserMeta:           make(map[string]string),
+		}
+		if m.StorageClass == "" {
+			m.StorageClass = "STANDARD"
+		}
+		if !s3.IsValidStorageClass(m.StorageClass) {
+			WriteError(w, r, s3.ErrInvalidStorageClass)
+			return
 		}
 		if retainDate := r.Header.Get("x-amz-object-lock-retain-until-date"); retainDate != "" {
 			if t, err := time.Parse(time.RFC3339, retainDate); err == nil {
