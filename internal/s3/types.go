@@ -1,6 +1,9 @@
 package s3
 
-import "time"
+import (
+	"encoding/xml"
+	"time"
+)
 
 // ListAllMyBucketsResult is the response for ListBuckets.
 type ListAllMyBucketsResult struct {
@@ -89,13 +92,17 @@ type DeleteResult struct {
 }
 
 type DeletedItem struct {
-	Key string `xml:"Key"`
+	Key                   string `xml:"Key"`
+	VersionId             string `xml:"VersionId,omitempty"`
+	DeleteMarker          bool   `xml:"DeleteMarker,omitempty"`
+	DeleteMarkerVersionId string `xml:"DeleteMarkerVersionId,omitempty"`
 }
 
 type DeleteError struct {
-	Key     string `xml:"Key"`
-	Code    string `xml:"Code"`
-	Message string `xml:"Message"`
+	Key       string `xml:"Key"`
+	VersionId string `xml:"VersionId,omitempty"`
+	Code      string `xml:"Code"`
+	Message   string `xml:"Message"`
 }
 
 // CopyObjectResult is the response for CopyObject.
@@ -212,4 +219,38 @@ type CORSRule struct {
 	AllowedHeader []string `xml:"AllowedHeader,omitempty"`
 	ExposeHeader  []string `xml:"ExposeHeader,omitempty"`
 	MaxAgeSeconds int      `xml:"MaxAgeSeconds,omitempty"`
+}
+
+// VersioningConfiguration represents S3 Bucket Versioning Configuration
+type VersioningConfiguration struct {
+	XMLName xml.Name `xml:"VersioningConfiguration"`
+	Status  string   `xml:"Status"` // "Enabled" or "Suspended"
+}
+
+// ListVersionsResult XML response
+type ListVersionsResult struct {
+	XMLName             xml.Name       `xml:"ListVersionsResult"`
+	Name                string         `xml:"Name"`
+	Prefix              string         `xml:"Prefix"`
+	KeyMarker           string         `xml:"KeyMarker"`
+	VersionIdMarker     string         `xml:"VersionIdMarker"`
+	MaxKeys             int            `xml:"MaxKeys"`
+	Delimiter           string         `xml:"Delimiter,omitempty"`
+	IsTruncated         bool           `xml:"IsTruncated"`
+	NextKeyMarker       string         `xml:"NextKeyMarker,omitempty"`
+	NextVersionIdMarker string         `xml:"NextVersionIdMarker,omitempty"`
+	Version             []ObjectVersion `xml:"Version"`
+	DeleteMarker        []ObjectVersion `xml:"DeleteMarker"`
+	CommonPrefixes      []CommonPrefix `xml:"CommonPrefixes,omitempty"`
+}
+
+type ObjectVersion struct {
+	Key          string    `xml:"Key"`
+	VersionId    string    `xml:"VersionId"`
+	IsLatest     bool      `xml:"IsLatest"`
+	LastModified time.Time `xml:"LastModified"`
+	ETag         string `xml:"ETag,omitempty"` // DeleteMarker does not have ETag/Size/StorageClass
+	Size         int64  `xml:"Size,omitempty"`
+	StorageClass string `xml:"StorageClass,omitempty"`
+	Owner        *Owner `xml:"Owner,omitempty"`
 }

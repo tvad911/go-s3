@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
 	"gos3/internal/auth"
 	"gos3/internal/s3"
@@ -52,6 +53,16 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	bInfo, err := h.MetaStore.GetBucket(bucket)
+	if err == nil {
+		if bInfo.Versioning == "Enabled" {
+			meta.VersionID = uuid.New().String()
+		} else if bInfo.Versioning == "Suspended" {
+			meta.VersionID = "null"
+		}
+	}
+	meta.IsLatest = true
+
 	var body io.Reader = r.Body
 	if local.IsAWSChunked(r.Header.Get("x-amz-content-sha256")) {
 		body = local.NewAWSChunkedReader(body)
@@ -64,6 +75,9 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("ETag", `"`+res.ETag+`"`)
+	if res.VersionID != "" && res.VersionID != "null" {
+		w.Header().Set("x-amz-version-id", res.VersionID)
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -72,7 +86,9 @@ func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 	key := chi.URLParam(r, "key")
 
-	opts := storage.GetOptions{}
+	opts := storage.GetOptions{
+		VersionID: r.URL.Query().Get("versionId"),
+	}
 	if rng := r.Header.Get("Range"); rng != "" {
 		// Basic range parsing (bytes=start-end)
 		if strings.HasPrefix(rng, "bytes=") {
@@ -114,6 +130,16 @@ func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer obj.Content.Close()
+
+	if obj.VersionID != "" && obj.VersionID != "null" {
+		w.Header().Set("x-amz-version-id", obj.VersionID)
+	}
+
+	if obj.IsDeleteMarker {
+		w.Header().Set("x-amz-delete-marker", "true")
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	if opts.IfMatch != "" && `"`+obj.ETag+`"` != opts.IfMatch {
 		w.WriteHeader(http.StatusPreconditionFailed)
@@ -177,9 +203,22 @@ func (h *S3Handler) HeadObject(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 	key := chi.URLParam(r, "key")
 
-	meta, err := h.Backend.HeadObject(ctx, bucket, key)
+	opts := storage.GetOptions{
+		VersionID: r.URL.Query().Get("versionId"),
+	}
+	meta, err := h.Backend.HeadObject(ctx, bucket, key, opts)
 	if err != nil {
 		WriteError(w, r, err)
+		return
+	}
+
+	if meta.VersionID != "" && meta.VersionID != "null" {
+		w.Header().Set("x-amz-version-id", meta.VersionID)
+	}
+
+	if meta.IsDeleteMarker {
+		w.Header().Set("x-amz-delete-marker", "true")
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -220,9 +259,17 @@ func (h *S3Handler) DeleteObject(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 	key := chi.URLParam(r, "key")
 
-	if err := h.Backend.DeleteObject(ctx, bucket, key); err != nil {
+	versionId := r.URL.Query().Get("versionId")
+
+	if err := h.Backend.DeleteObject(ctx, bucket, key, versionId); err != nil {
 		WriteError(w, r, err)
 		return
+	}
+
+	// For accurate delete marker response, we could return x-amz-delete-marker: true,
+	// but to keep it simple, we just return the version id deleted.
+	if versionId != "" {
+		w.Header().Set("x-amz-version-id", versionId)
 	}
 
 	w.WriteHeader(http.StatusNoContent)
@@ -238,9 +285,12 @@ func (h *S3Handler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var keys []string
+	var keys []storage.ObjectIdentifier
 	for _, obj := range req.Objects {
-		keys = append(keys, obj.Key)
+		keys = append(keys, storage.ObjectIdentifier{
+			Key:       obj.Key,
+			VersionID: obj.VersionId,
+		})
 	}
 
 	result, err := h.Backend.DeleteObjects(ctx, bucket, keys)
@@ -252,14 +302,21 @@ func (h *S3Handler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
 	res := s3.DeleteResult{}
 	for _, k := range result.Deleted {
 		if !req.Quiet {
-			res.Deleted = append(res.Deleted, s3.DeletedItem{Key: k})
+			res.Deleted = append(res.Deleted, s3.DeletedItem{
+				Key:       k.Key,
+				VersionId: k.VersionID,
+				// For a full implementation, we'd check if a DeleteMarker was created 
+				// and set DeleteMarker/DeleteMarkerVersionId accordingly.
+				// Since we just return k.VersionID, we use it directly.
+			})
 		}
 	}
 	for _, e := range result.Errors {
 		res.Error = append(res.Error, s3.DeleteError{
-			Key:     e.Key,
-			Code:    e.Code,
-			Message: e.Message,
+			Key:       e.Key,
+			VersionId: e.VersionID,
+			Code:      e.Code,
+			Message:   e.Message,
 		})
 	}
 
@@ -332,7 +389,10 @@ func (h *S3Handler) GetObjectAcl(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 	key := chi.URLParam(r, "key")
 
-	_, err := h.Backend.HeadObject(ctx, bucket, key)
+	opts := storage.GetOptions{
+		VersionID: r.URL.Query().Get("versionId"),
+	}
+	_, err := h.Backend.HeadObject(ctx, bucket, key, opts)
 	if err != nil {
 		WriteError(w, r, err)
 		return
@@ -365,4 +425,83 @@ func (h *S3Handler) GetObjectAcl(w http.ResponseWriter, r *http.Request) {
 // PutObjectAcl handles PUT /bucket/key?acl
 func (h *S3Handler) PutObjectAcl(w http.ResponseWriter, r *http.Request) {
 	WriteError(w, r, s3.ErrNotImplemented)
+}
+
+// ListObjectVersions handles GET /bucket?versions
+func (h *S3Handler) ListObjectVersions(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	q := r.URL.Query()
+
+	maxKeys := 1000
+	if mk := q.Get("max-keys"); mk != "" {
+		if v, err := strconv.Atoi(mk); err == nil && v > 0 {
+			maxKeys = v
+		}
+	}
+
+	opts := storage.ListVersionsOptions{
+		Prefix:          q.Get("prefix"),
+		Delimiter:       q.Get("delimiter"),
+		KeyMarker:       q.Get("key-marker"),
+		VersionIdMarker: q.Get("version-id-marker"),
+		MaxKeys:         maxKeys,
+	}
+
+	result, err := h.Backend.ListObjectVersions(ctx, bucket, opts)
+	if err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	res := s3.ListVersionsResult{
+		Name:                bucket,
+		Prefix:              opts.Prefix,
+		KeyMarker:           opts.KeyMarker,
+		VersionIdMarker:     opts.VersionIdMarker,
+		MaxKeys:             opts.MaxKeys,
+		Delimiter:           opts.Delimiter,
+		IsTruncated:         result.IsTruncated,
+		NextKeyMarker:       result.NextKeyMarker,
+		NextVersionIdMarker: result.NextVersionIdMarker,
+	}
+
+	for _, obj := range result.Objects {
+		res.Version = append(res.Version, s3.ObjectVersion{
+			Key:          obj.Key,
+			VersionId:    obj.VersionID,
+			IsLatest:     obj.IsLatest,
+			LastModified: obj.LastModified,
+			ETag:         `"` + obj.ETag + `"`,
+			Size:         obj.Size,
+			StorageClass: obj.StorageClass,
+			Owner: &s3.Owner{
+				ID:          "admin",
+				DisplayName: "admin",
+			},
+		})
+	}
+
+	for _, dm := range result.DeleteMarkers {
+		res.DeleteMarker = append(res.DeleteMarker, s3.ObjectVersion{
+			Key:          dm.Key,
+			VersionId:    dm.VersionID,
+			IsLatest:     dm.IsLatest,
+			LastModified: dm.LastModified,
+			Owner: &s3.Owner{
+				ID:          "admin",
+				DisplayName: "admin",
+			},
+		})
+	}
+
+	for _, p := range result.CommonPrefixes {
+		res.CommonPrefixes = append(res.CommonPrefixes, s3.CommonPrefix{Prefix: p})
+	}
+
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(xml.Header))
+	xml.NewEncoder(w).Encode(res)
 }

@@ -15,6 +15,7 @@ type BucketInfo struct {
 	Region       string
 	Owner        string
 	ACL          string
+	Versioning   string // "" (Disabled), "Enabled", "Suspended"
 }
 
 // ObjectMeta contains metadata for an object.
@@ -32,12 +33,16 @@ type ObjectMeta struct {
 	Tags               map[string]string
 	StorageClass       string
 	ACL                string
+	VersionID          string
+	IsDeleteMarker     bool
+	IsLatest           bool
 }
 
 // PutResult represents the result of a PutObject operation.
 type PutResult struct {
-	ETag string
-	Size int64
+	ETag      string
+	Size      int64
+	VersionID string
 }
 
 // GetOptions holds options for GetObject.
@@ -48,6 +53,7 @@ type GetOptions struct {
 	IfNoneMatch       string
 	IfModifiedSince   time.Time
 	IfUnmodifiedSince time.Time
+	VersionID         string
 }
 
 // Object represents a retrieved object with its metadata and content stream.
@@ -58,16 +64,23 @@ type Object struct {
 	RangeEnd   int64
 }
 
-// DeleteResult represents the result of a multi-object deletion.
+// DeleteResult holds the result of DeleteObjects.
 type DeleteResult struct {
-	Deleted []string
+	Deleted []ObjectIdentifier
 	Errors  []DeleteError
 }
 
+// ObjectIdentifier identifies an object to delete
+type ObjectIdentifier struct {
+	Key       string
+	VersionID string
+}
+
 type DeleteError struct {
-	Key     string
-	Code    string
-	Message string
+	Key       string
+	Code      string
+	Message   string
+	VersionID string
 }
 
 // ListOptions holds options for ListObjects V1.
@@ -76,6 +89,25 @@ type ListOptions struct {
 	Delimiter string
 	Marker    string
 	MaxKeys   int
+}
+
+// ListVersionsOptions holds options for ListObjectVersions
+type ListVersionsOptions struct {
+	Prefix          string
+	Delimiter       string
+	KeyMarker       string
+	VersionIdMarker string
+	MaxKeys         int
+}
+
+// ListVersionsResult holds the result of ListObjectVersions
+type ListVersionsResult struct {
+	Objects             []ObjectInfo
+	DeleteMarkers       []ObjectInfo // To represent delete markers in the response
+	CommonPrefixes      []string
+	IsTruncated         bool
+	NextKeyMarker       string
+	NextVersionIdMarker string
 }
 
 // ListResult holds the result of ListObjects V1.
@@ -108,12 +140,15 @@ type ListResultV2 struct {
 
 // ObjectInfo holds basic information about a listed object.
 type ObjectInfo struct {
-	Key          string
-	LastModified time.Time
-	ETag         string
-	Size         int64
-	StorageClass string
-	Owner        string
+	Key            string
+	VersionID      string
+	IsLatest       bool
+	IsDeleteMarker bool
+	LastModified   time.Time
+	ETag           string
+	Size           int64
+	StorageClass   string
+	Owner          string
 }
 
 // CopyResult holds the result of a CopyObject operation.
@@ -201,15 +236,16 @@ type Backend interface {
 	// Object operations
 	PutObject(ctx context.Context, bucket, key string, r io.Reader, size int64, meta ObjectMeta) (*PutResult, error)
 	GetObject(ctx context.Context, bucket, key string, opts GetOptions) (*Object, error)
-	HeadObject(ctx context.Context, bucket, key string) (*ObjectMeta, error)
-	DeleteObject(ctx context.Context, bucket, key string) error
-	DeleteObjects(ctx context.Context, bucket string, keys []string) (*DeleteResult, error)
+	HeadObject(ctx context.Context, bucket, key string, opts GetOptions) (*ObjectMeta, error)
+	DeleteObject(ctx context.Context, bucket, key string, versionId string) error
+	DeleteObjects(ctx context.Context, bucket string, keys []ObjectIdentifier) (*DeleteResult, error)
 	ListObjects(ctx context.Context, bucket string, opts ListOptions) (*ListResult, error)
+	ListObjectVersions(ctx context.Context, bucket string, opts ListVersionsOptions) (*ListVersionsResult, error)
 	ListObjectsV2(ctx context.Context, bucket string, opts ListOptionsV2) (*ListResultV2, error)
 	CopyObject(ctx context.Context, srcBucket, srcKey, dstBucket, dstKey string, meta *ObjectMeta) (*CopyResult, error)
 
 	// Multipart operations
-	CreateMultipartUpload(ctx context.Context, bucket, key string, meta ObjectMeta) (uploadID string, err error)
+	CreateMultipartUpload(ctx context.Context, bucket, key string, meta ObjectMeta) (string, error)
 	UploadPart(ctx context.Context, bucket, key, uploadID string, partNum int, r io.Reader, size int64) (*PartInfo, error)
 	CompleteMultipartUpload(ctx context.Context, bucket, key, uploadID string, parts []CompletePart) (*CompleteResult, error)
 	AbortMultipartUpload(ctx context.Context, bucket, key, uploadID string) error

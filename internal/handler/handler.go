@@ -3,20 +3,21 @@ package handler
 import (
 	"gos3/internal/auth"
 	"gos3/internal/storage"
+	"gos3/internal/storage/metadata"
 )
 
 // S3Handler handles S3 HTTP requests.
 type S3Handler struct {
-	Backend     storage.Backend
-	PolicyStore auth.PolicyStore
-	Verifier    *auth.SigV4Verifier
+	Backend  storage.Backend
+	MetaStore metadata.Store
+	Verifier *auth.SigV4Verifier
 }
 
 // NewS3Handler creates a new S3Handler.
-func NewS3Handler(backend storage.Backend, policyStore auth.PolicyStore, verifier *auth.SigV4Verifier) *S3Handler {
+func NewS3Handler(backend storage.Backend, metaStore metadata.Store, verifier *auth.SigV4Verifier) *S3Handler {
 	return &S3Handler{
-		Backend:     backend,
-		PolicyStore: policyStore,
-		Verifier:    verifier,
+		Backend:  backend,
+		MetaStore: metaStore,
+		Verifier: verifier,
 	}
 }

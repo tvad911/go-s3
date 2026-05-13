@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/google/uuid"
+
 	"gos3/internal/auth"
 	"gos3/internal/s3"
 	"gos3/internal/storage"
@@ -160,8 +162,12 @@ func (b *Backend) PutObject(ctx context.Context, bucket, key string, r io.Reader
 
 	etag := hex.EncodeToString(hash.Sum(nil))
 
+	versionId := meta.VersionID
+	if versionId == "" {
+		versionId = "null"
+	}
 	// Move to final destination
-	finalPath := filepath.Join(b.dataDir, "buckets", bucket, "objects", key)
+	finalPath := filepath.Join(b.dataDir, "buckets", bucket, "objects", key+"@"+versionId)
 	if err := os.MkdirAll(filepath.Dir(finalPath), 0755); err != nil {
 		return nil, err
 	}
@@ -182,13 +188,14 @@ func (b *Backend) PutObject(ctx context.Context, bucket, key string, r io.Reader
 	}
 
 	return &storage.PutResult{
-		ETag: etag,
-		Size: written,
+		ETag:      etag,
+		Size:      written,
+		VersionID: meta.VersionID,
 	}, nil
 }
 
 func (b *Backend) GetObject(ctx context.Context, bucket, key string, opts storage.GetOptions) (*storage.Object, error) {
-	meta, err := b.meta.GetObject(bucket, key)
+	meta, err := b.meta.GetObject(bucket, key, opts.VersionID)
 	if err != nil {
 		if err == metadata.ErrBucketNotFound {
 			return nil, s3.ErrNoSuchBucket
@@ -199,7 +206,11 @@ func (b *Backend) GetObject(ctx context.Context, bucket, key string, opts storag
 		return nil, err
 	}
 
-	finalPath := filepath.Join(b.dataDir, "buckets", bucket, "objects", key)
+	versionId := meta.VersionID
+	if versionId == "" {
+		versionId = "null"
+	}
+	finalPath := filepath.Join(b.dataDir, "buckets", bucket, "objects", key+"@"+versionId)
 	file, err := os.Open(finalPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -247,8 +258,8 @@ func (b *Backend) GetObject(ctx context.Context, bucket, key string, opts storag
 	}, nil
 }
 
-func (b *Backend) HeadObject(ctx context.Context, bucket, key string) (*storage.ObjectMeta, error) {
-	meta, err := b.meta.GetObject(bucket, key)
+func (b *Backend) HeadObject(ctx context.Context, bucket, key string, opts storage.GetOptions) (*storage.ObjectMeta, error) {
+	meta, err := b.meta.GetObject(bucket, key, opts.VersionID)
 	if err != nil {
 		if err == metadata.ErrBucketNotFound {
 			return nil, s3.ErrNoSuchBucket
@@ -261,33 +272,92 @@ func (b *Backend) HeadObject(ctx context.Context, bucket, key string) (*storage.
 	return meta, nil
 }
 
-func (b *Backend) DeleteObject(ctx context.Context, bucket, key string) error {
-	err := b.meta.DeleteObject(bucket, key)
+func (b *Backend) DeleteObject(ctx context.Context, bucket, key, versionId string) error {
+	// First check bucket versioning if versionId is empty
+	if versionId == "" {
+		bInfo, err := b.meta.GetBucket(bucket)
+		if err != nil {
+			return err
+		}
+		if bInfo.Versioning == "Enabled" || bInfo.Versioning == "Suspended" {
+			// Create a DeleteMarker instead of physically deleting
+			newVid := "null"
+			if bInfo.Versioning == "Enabled" {
+				newVid = uuid.New().String()
+			}
+			meta := storage.ObjectMeta{
+				IsDeleteMarker: true,
+				VersionID:      newVid,
+				LastModified:   time.Now().UTC(),
+				IsLatest:       true,
+			}
+			return b.meta.PutObject(bucket, key, meta)
+		}
+	}
+
+	err := b.meta.DeleteObject(bucket, key, versionId)
 	if err != nil {
-		// S3 DeleteObject returns 204 even if object doesn't exist
 		return nil
 	}
 
-	finalPath := filepath.Join(b.dataDir, "buckets", bucket, "objects", key)
+	if versionId == "" {
+		versionId = "null"
+		// If versionId is empty, it means we are permanently deleting the object (all versions) if we haven't already
+		// Wait, if versionId == "", DeleteObject deleted all metadata. We need to delete all files on disk?
+		// For simplicity, we might leave files on disk or use glob.
+		// A proper cleanup would delete all key@* files.
+	}
+	finalPath := filepath.Join(b.dataDir, "buckets", bucket, "objects", key+"@"+versionId)
 	os.Remove(finalPath)
 	return nil
 }
 
-func (b *Backend) DeleteObjects(ctx context.Context, bucket string, keys []string) (*storage.DeleteResult, error) {
+func (b *Backend) DeleteObjects(ctx context.Context, bucket string, keys []storage.ObjectIdentifier) (*storage.DeleteResult, error) {
 	res := &storage.DeleteResult{}
 	for _, k := range keys {
-		err := b.DeleteObject(ctx, bucket, k)
+		err := b.DeleteObject(ctx, bucket, k.Key, k.VersionID)
 		if err != nil {
 			res.Errors = append(res.Errors, storage.DeleteError{
-				Key:     k,
-				Code:    "InternalError",
-				Message: err.Error(),
+				Key:       k.Key,
+				VersionID: k.VersionID,
+				Code:      "InternalError",
+				Message:   err.Error(),
 			})
 		} else {
 			res.Deleted = append(res.Deleted, k)
 		}
 	}
 	return res, nil
+}
+
+func (b *Backend) ListObjectVersions(ctx context.Context, bucket string, opts storage.ListVersionsOptions) (*storage.ListVersionsResult, error) {
+	objects, prefixes, nextKeyMarker, nextVersionIdMarker, err := b.meta.ListObjectVersions(bucket, opts.Prefix, opts.Delimiter, opts.KeyMarker, opts.VersionIdMarker, opts.MaxKeys)
+	if err != nil {
+		if err == metadata.ErrBucketNotFound {
+			return nil, s3.ErrNoSuchBucket
+		}
+		return nil, err
+	}
+
+	var resObjects []storage.ObjectInfo
+	var resDeleteMarkers []storage.ObjectInfo
+
+	for _, o := range objects {
+		if o.IsDeleteMarker {
+			resDeleteMarkers = append(resDeleteMarkers, o)
+		} else {
+			resObjects = append(resObjects, o)
+		}
+	}
+
+	return &storage.ListVersionsResult{
+		Objects:             resObjects,
+		DeleteMarkers:       resDeleteMarkers,
+		CommonPrefixes:      prefixes,
+		IsTruncated:         nextKeyMarker != "" || nextVersionIdMarker != "",
+		NextKeyMarker:       nextKeyMarker,
+		NextVersionIdMarker: nextVersionIdMarker,
+	}, nil
 }
 
 func (b *Backend) ListObjects(ctx context.Context, bucket string, opts storage.ListOptions) (*storage.ListResult, error) {

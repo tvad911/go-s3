@@ -27,15 +27,17 @@ type Store interface {
 
 	// Bucket operations
 	CreateBucket(name, region, owner, acl string) error
+	UpdateBucket(bucket *storage.BucketInfo) error
 	DeleteBucket(name string) error
 	GetBucket(name string) (*storage.BucketInfo, error)
 	ListBuckets() ([]storage.BucketInfo, error)
 
 	// Object operations
 	PutObject(bucket, key string, meta storage.ObjectMeta) error
-	GetObject(bucket, key string) (*storage.ObjectMeta, error)
-	DeleteObject(bucket, key string) error
+	GetObject(bucket, key, versionId string) (*storage.ObjectMeta, error)
+	DeleteObject(bucket, key, versionId string) error
 	ListObjects(bucket, prefix, delimiter, marker string, maxKeys int) ([]storage.ObjectInfo, []string, string, error)
+	ListObjectVersions(bucket, prefix, delimiter, keyMarker, versionIdMarker string, maxKeys int) ([]storage.ObjectInfo, []string, string, string, error)
 
 	// Multipart operations
 	CreateMultipartUpload(bucket, key string, meta storage.ObjectMeta) (string, error)

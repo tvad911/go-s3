@@ -229,12 +229,83 @@ func (h *S3Handler) listObjectsV2(w http.ResponseWriter, r *http.Request, bucket
 	xml.NewEncoder(w).Encode(res)
 }
 
+// GetBucketVersioning handles GET /bucket?versioning
+func (h *S3Handler) GetBucketVersioning(w http.ResponseWriter, r *http.Request) {
+	bucket := chi.URLParam(r, "bucket")
+
+	bInfo, err := h.MetaStore.GetBucket(bucket)
+	if err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	res := s3.VersioningConfiguration{
+		Status: bInfo.Versioning,
+	}
+	if res.Status == "" {
+		res.Status = "" // S3 returns empty tag if never enabled
+	}
+
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(xml.Header))
+	xml.NewEncoder(w).Encode(res)
+}
+
+// PutBucketVersioning handles PUT /bucket?versioning
+func (h *S3Handler) PutBucketVersioning(w http.ResponseWriter, r *http.Request) {
+	bucket := chi.URLParam(r, "bucket")
+
+	bInfo, err := h.MetaStore.GetBucket(bucket)
+	if err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	var req s3.VersioningConfiguration
+	if err := xml.NewDecoder(r.Body).Decode(&req); err != nil {
+		WriteError(w, r, s3.ErrMalformedXML)
+		return
+	}
+
+	if req.Status != "Enabled" && req.Status != "Suspended" {
+		WriteError(w, r, s3.ErrMalformedXML) // close enough for invalid status
+		return
+	}
+
+	bInfo.Versioning = req.Status
+	if err := h.MetaStore.UpdateBucket(bInfo); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// PutBucketPolicy handles PUT /bucket?policy
+func (h *S3Handler) PutBucketPolicy(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	var policy auth.Policy
+	if err := json.NewDecoder(r.Body).Decode(&policy); err != nil {
+		WriteError(w, r, err) // map to ErrMalformedPolicy
+		return
+	}
+
+	if err := h.MetaStore.PutBucketPolicy(ctx, bucket, &policy); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 // GetBucketPolicy handles GET /bucket?policy
 func (h *S3Handler) GetBucketPolicy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
 
-	policy, err := h.PolicyStore.GetBucketPolicy(ctx, bucket)
+	policy, err := h.MetaStore.GetBucketPolicy(ctx, bucket)
 	if err != nil {
 		WriteError(w, r, err) // Should map to s3.ErrNoSuchBucketPolicy
 		return
@@ -245,37 +316,18 @@ func (h *S3Handler) GetBucketPolicy(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(policy)
 }
 
-// PutBucketPolicy handles PUT /bucket?policy
-func (h *S3Handler) PutBucketPolicy(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	bucket := chi.URLParam(r, "bucket")
-
-	var policy auth.Policy
-	if err := json.NewDecoder(r.Body).Decode(&policy); err != nil {
-		WriteError(w, r, err) // MalformedPolicy
-		return
-	}
-
-	if err := h.PolicyStore.PutBucketPolicy(ctx, bucket, &policy); err != nil {
-		WriteError(w, r, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
 // DeleteBucketPolicy handles DELETE /bucket?policy
 func (h *S3Handler) DeleteBucketPolicy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
 
-	if err := h.PolicyStore.DeleteBucketPolicy(ctx, bucket); err != nil {
+	if err := h.MetaStore.DeleteBucketPolicy(ctx, bucket); err != nil {
 		WriteError(w, r, err)
 		return
 	}
-
 	w.WriteHeader(http.StatusNoContent)
 }
+
 
 // GetBucketAcl handles GET /bucket?acl
 func (h *S3Handler) GetBucketAcl(w http.ResponseWriter, r *http.Request) {

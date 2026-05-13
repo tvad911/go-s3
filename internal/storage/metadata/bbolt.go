@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -118,6 +119,20 @@ func (s *bboltStore) DeleteBucket(name string) error {
 	})
 }
 
+func (s *bboltStore) UpdateBucket(bucket *storage.BucketInfo) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketBuckets)
+		if b.Get([]byte(bucket.Name)) == nil {
+			return ErrBucketNotFound
+		}
+		data, err := json.Marshal(bucket)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(bucket.Name), data)
+	})
+}
+
 func (s *bboltStore) GetBucket(name string) (*storage.BucketInfo, error) {
 	var info storage.BucketInfo
 	err := s.db.View(func(tx *bbolt.Tx) error {
@@ -160,22 +175,46 @@ func (s *bboltStore) PutObject(bucket, key string, meta storage.ObjectMeta) erro
 		if err != nil {
 			return err
 		}
-		return b.Put([]byte(key), data)
+		if meta.IsLatest || meta.VersionID == "" {
+			if err := b.Put([]byte(key), data); err != nil {
+				return err
+			}
+		}
+
+		vb, err := tx.CreateBucketIfNotExists([]byte("versions:" + bucket))
+		if err != nil {
+			return err
+		}
+		versionKey := fmt.Sprintf("%s\x00%s", key, meta.VersionID)
+		return vb.Put([]byte(versionKey), data)
 	})
 }
 
-func (s *bboltStore) GetObject(bucket, key string) (*storage.ObjectMeta, error) {
+func (s *bboltStore) GetObject(bucket, key, versionId string) (*storage.ObjectMeta, error) {
 	var meta storage.ObjectMeta
 	err := s.db.View(func(tx *bbolt.Tx) error {
-		b := tx.Bucket([]byte("objects:" + bucket))
-		if b == nil {
-			return ErrBucketNotFound
+		if versionId == "" {
+			b := tx.Bucket([]byte("objects:" + bucket))
+			if b == nil {
+				return ErrBucketNotFound
+			}
+			data := b.Get([]byte(key))
+			if data == nil {
+				return ErrObjectNotFound
+			}
+			return json.Unmarshal(data, &meta)
+		} else {
+			vb := tx.Bucket([]byte("versions:" + bucket))
+			if vb == nil {
+				return ErrObjectNotFound
+			}
+			versionKey := fmt.Sprintf("%s\x00%s", key, versionId)
+			data := vb.Get([]byte(versionKey))
+			if data == nil {
+				return ErrObjectNotFound
+			}
+			return json.Unmarshal(data, &meta)
 		}
-		data := b.Get([]byte(key))
-		if data == nil {
-			return ErrObjectNotFound
-		}
-		return json.Unmarshal(data, &meta)
 	})
 	if err != nil {
 		return nil, err
@@ -183,13 +222,55 @@ func (s *bboltStore) GetObject(bucket, key string) (*storage.ObjectMeta, error) 
 	return &meta, nil
 }
 
-func (s *bboltStore) DeleteObject(bucket, key string) error {
+func (s *bboltStore) DeleteObject(bucket, key, versionId string) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte("objects:" + bucket))
 		if b == nil {
 			return ErrBucketNotFound
 		}
-		return b.Delete([]byte(key))
+		
+		if versionId == "" {
+			b.Delete([]byte(key))
+			vb := tx.Bucket([]byte("versions:" + bucket))
+			if vb != nil {
+				c := vb.Cursor()
+				prefix := []byte(key + "\x00")
+				for k, _ := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, _ = c.Next() {
+					vb.Delete(k)
+				}
+			}
+			return nil
+		}
+
+		vb := tx.Bucket([]byte("versions:" + bucket))
+		if vb != nil {
+			versionKey := fmt.Sprintf("%s\x00%s", key, versionId)
+			vb.Delete([]byte(versionKey))
+			
+			c := vb.Cursor()
+			prefix := []byte(key + "\x00")
+			var latestMeta *storage.ObjectMeta
+			var latestData []byte
+			for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
+				var m storage.ObjectMeta
+				if err := json.Unmarshal(v, &m); err == nil {
+					if latestMeta == nil || m.LastModified.After(latestMeta.LastModified) {
+						latestMeta = &m
+						latestData = v
+					}
+				}
+			}
+			
+			if latestMeta != nil {
+				latestMeta.IsLatest = true
+				latestData, _ = json.Marshal(latestMeta)
+				b.Put([]byte(key), latestData)
+				vb.Put([]byte(fmt.Sprintf("%s\x00%s", key, latestMeta.VersionID)), latestData)
+			} else {
+				b.Delete([]byte(key))
+			}
+		}
+		return nil
 	})
 }
 
@@ -254,11 +335,14 @@ func (s *bboltStore) ListObjects(bucket, prefix, delimiter, marker string, maxKe
 			}
 
 			objects = append(objects, storage.ObjectInfo{
-				Key:          keyStr,
-				LastModified: meta.LastModified,
-				ETag:         meta.ETag,
-				Size:         meta.Size,
-				StorageClass: meta.StorageClass,
+				Key:            keyStr,
+				VersionID:      meta.VersionID,
+				IsLatest:       meta.IsLatest,
+				IsDeleteMarker: meta.IsDeleteMarker,
+				LastModified:   meta.LastModified,
+				ETag:           meta.ETag,
+				Size:           meta.Size,
+				StorageClass:   meta.StorageClass,
 			})
 
 			if len(objects)+len(commonPrefixes) >= maxKeys {
@@ -271,6 +355,108 @@ func (s *bboltStore) ListObjects(bucket, prefix, delimiter, marker string, maxKe
 	})
 
 	return objects, commonPrefixes, nextMarker, err
+}
+
+func (s *bboltStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, versionIdMarker string, maxKeys int) ([]storage.ObjectInfo, []string, string, string, error) {
+	var objects []storage.ObjectInfo
+	var commonPrefixes []string
+	var nextKeyMarker string
+	var nextVersionIdMarker string
+
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		vb := tx.Bucket([]byte("versions:" + bucket))
+		if vb == nil {
+			return ErrBucketNotFound
+		}
+
+		c := vb.Cursor()
+		var k, v []byte
+		
+		if keyMarker != "" {
+			k, v = c.Seek([]byte(keyMarker))
+		} else if prefix != "" {
+			k, v = c.Seek([]byte(prefix))
+		} else {
+			k, v = c.First()
+		}
+
+		prefixes := make(map[string]bool)
+
+		for k != nil {
+			keyParts := strings.SplitN(string(k), "\x00", 2)
+			if len(keyParts) != 2 {
+				k, v = c.Next()
+				continue
+			}
+			keyStr := keyParts[0]
+
+			if prefix != "" && !strings.HasPrefix(keyStr, prefix) {
+				break
+			}
+
+			if delimiter != "" {
+				rem := keyStr[len(prefix):]
+				if idx := strings.Index(rem, delimiter); idx >= 0 {
+					pfx := prefix + rem[:idx+len(delimiter)]
+					if !prefixes[pfx] {
+						prefixes[pfx] = true
+						commonPrefixes = append(commonPrefixes, pfx)
+						
+						if len(objects)+len(commonPrefixes) >= maxKeys {
+							nextKeyMarker = pfx
+							return nil
+						}
+					}
+					prefixEnd := []byte(pfx)
+					prefixEnd[len(prefixEnd)-1]++
+					k, v = c.Seek(prefixEnd)
+					continue
+				}
+			}
+
+			var keyVersions []storage.ObjectMeta
+			for k != nil && strings.HasPrefix(string(k), keyStr+"\x00") {
+				var meta storage.ObjectMeta
+				if err := json.Unmarshal(v, &meta); err == nil {
+					keyVersions = append(keyVersions, meta)
+				}
+				k, v = c.Next()
+			}
+
+			sort.Slice(keyVersions, func(i, j int) bool {
+				return keyVersions[i].LastModified.After(keyVersions[j].LastModified)
+			})
+
+			for _, meta := range keyVersions {
+				if keyMarker == keyStr && versionIdMarker != "" {
+					if meta.VersionID == versionIdMarker {
+						versionIdMarker = ""
+					}
+					continue
+				}
+				
+				objects = append(objects, storage.ObjectInfo{
+					Key:            keyStr,
+					VersionID:      meta.VersionID,
+					IsLatest:       meta.IsLatest,
+					IsDeleteMarker: meta.IsDeleteMarker,
+					LastModified:   meta.LastModified,
+					ETag:           meta.ETag,
+					Size:           meta.Size,
+					StorageClass:   meta.StorageClass,
+				})
+
+				if len(objects)+len(commonPrefixes) >= maxKeys {
+					nextKeyMarker = keyStr
+					nextVersionIdMarker = meta.VersionID
+					return nil
+				}
+			}
+		}
+		return nil
+	})
+
+	return objects, commonPrefixes, nextKeyMarker, nextVersionIdMarker, err
 }
 
 func (s *bboltStore) CreateMultipartUpload(bucket, key string, meta storage.ObjectMeta) (string, error) {
