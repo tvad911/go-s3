@@ -90,6 +90,8 @@ type MetricsConfig struct {
 type AdminConfig struct {
 	APIEnabled bool   `mapstructure:"api_enabled"`
 	PathPrefix string `mapstructure:"path_prefix"`
+	UIEnabled  bool   `mapstructure:"ui_enabled"`
+	UIPort     int    `mapstructure:"ui_port"`
 }
 
 // Load loads the configuration from file and environment variables.

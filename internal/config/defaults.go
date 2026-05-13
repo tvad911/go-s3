@@ -56,4 +56,6 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("admin.api_enabled", true)
 	v.SetDefault("admin.path_prefix", "/_admin")
+	v.SetDefault("admin.ui_enabled", true)
+	v.SetDefault("admin.ui_port", 9001)
 }

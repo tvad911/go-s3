@@ -22,6 +22,7 @@ import (
 type Server struct {
 	httpServer  *http.Server
 	redirectSrv *http.Server
+	uiServer    *http.Server
 	config      *config.Config
 	backend     storage.Backend
 	verifier    *auth.SigV4Verifier
@@ -39,12 +40,22 @@ func New(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, 
 		MaxHeaderBytes:    cfg.Server.MaxHeaderBytes,    // 1MB default
 	}
 
-	return &Server{
+	s := &Server{
 		httpServer: srv,
 		config:     cfg,
 		backend:    backend,
 		verifier:   verifier,
 	}
+
+	if cfg.Admin.UIEnabled {
+		uiSrv := &http.Server{
+			Addr:    fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Admin.UIPort),
+			Handler: SetupUIRouter(),
+		}
+		s.uiServer = uiSrv
+	}
+
+	return s
 }
 
 // Start runs the server and blocks until graceful shutdown is complete or an error occurs.
@@ -88,6 +99,15 @@ func (s *Server) Start() error {
 		}
 	}()
 
+	if s.config.Admin.UIEnabled && s.uiServer != nil {
+		go func() {
+			slog.Info("starting Web UI server", "addr", s.uiServer.Addr)
+			if err := s.uiServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				serverErrCh <- fmt.Errorf("web ui listen and serve error: %w", err)
+			}
+		}()
+	}
+
 	workerCtx, workerCancel := context.WithCancel(context.Background())
 	defer workerCancel()
 	go s.startLifecycleWorker(workerCtx)
@@ -114,6 +134,12 @@ func (s *Server) Start() error {
 	if s.redirectSrv != nil {
 		if err := s.redirectSrv.Shutdown(ctx); err != nil {
 			slog.Error("redirect server forced to shutdown", "error", err)
+		}
+	}
+
+	if s.uiServer != nil {
+		if err := s.uiServer.Shutdown(ctx); err != nil {
+			slog.Error("ui server forced to shutdown", "error", err)
 		}
 	}
 
