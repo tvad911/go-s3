@@ -31,8 +31,9 @@ func (h *S3Handler) CreateBucket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	acl := auth.ParseACL(r)
+	objectLockEnabled := r.Header.Get("x-amz-bucket-object-lock-enabled") == "true"
 
-	if err := h.Backend.CreateBucket(ctx, bucket, region, acl); err != nil {
+	if err := h.Backend.CreateBucket(ctx, bucket, region, acl, objectLockEnabled); err != nil {
 		WriteError(w, r, err)
 		return
 	}

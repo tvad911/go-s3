@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -28,8 +29,16 @@ func (h *S3Handler) CreateMultipartUpload(w http.ResponseWriter, r *http.Request
 		Expires:            r.Header.Get("Expires"),
 		StorageClass:       r.Header.Get("x-amz-storage-class"),
 		ServerSideEncryption: r.Header.Get("x-amz-server-side-encryption"),
+		ObjectLockMode:       r.Header.Get("x-amz-object-lock-mode"),
+		ObjectLockLegalHoldStatus: r.Header.Get("x-amz-object-lock-legal-hold"),
 		ACL:                auth.ParseACL(r),
 		UserMeta:           make(map[string]string),
+	}
+
+	if retainDate := r.Header.Get("x-amz-object-lock-retain-until-date"); retainDate != "" {
+		if t, err := time.Parse(time.RFC3339, retainDate); err == nil {
+			meta.ObjectLockRetainUntilDate = &t
+		}
 	}
 
 	if meta.StorageClass == "" {

@@ -651,10 +651,10 @@ type Backend interface {
 
 ### 4.5 — Object Lock (WORM) — Basic
 
-- [ ] Enable Object Lock khi tạo bucket (`x-amz-bucket-object-lock-enabled`)
-- [ ] `Retention` mode: GOVERNANCE hoặc COMPLIANCE
-- [ ] `x-amz-object-lock-retain-until-date`
-- [ ] Từ chối DELETE nếu còn trong retention period
+- [x] Enable Object Lock khi tạo bucket (`x-amz-bucket-object-lock-enabled`)
+- [x] `Retention` mode: GOVERNANCE hoặc COMPLIANCE
+- [x] `x-amz-object-lock-retain-until-date`
+- [x] Từ chối DELETE nếu còn trong retention period
 
 ### 4.6 — Storage Class
 

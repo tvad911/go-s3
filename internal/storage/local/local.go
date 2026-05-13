@@ -60,9 +60,9 @@ func (b *Backend) cleanupTemp() error {
 	return nil
 }
 
-func (b *Backend) CreateBucket(ctx context.Context, bucket, region, acl string) error {
+func (b *Backend) CreateBucket(ctx context.Context, bucket, region, acl string, objectLockEnabled bool) error {
 	user := auth.GetUser(ctx)
-	if err := b.meta.CreateBucket(bucket, region, user.Username, acl); err != nil {
+	if err := b.meta.CreateBucket(bucket, region, user.Username, acl, objectLockEnabled); err != nil {
 		if err == metadata.ErrBucketExists {
 			return s3.ErrBucketAlreadyExists
 		}
@@ -307,7 +307,18 @@ func (b *Backend) DeleteObject(ctx context.Context, bucket, key, versionId strin
 		}
 	}
 
-	err := b.meta.DeleteObject(bucket, key, versionId)
+	// Fetch metadata to check Object Lock before deleting
+	meta, err := b.meta.GetObject(bucket, key, versionId)
+	if err == nil {
+		if meta.ObjectLockRetainUntilDate != nil && meta.ObjectLockRetainUntilDate.After(time.Now().UTC()) {
+			return s3.ErrAccessDenied
+		}
+		if meta.ObjectLockLegalHoldStatus == "ON" {
+			return s3.ErrAccessDenied
+		}
+	}
+
+	err = b.meta.DeleteObject(bucket, key, versionId)
 	if err != nil {
 		return nil
 	}

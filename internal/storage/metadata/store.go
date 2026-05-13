@@ -31,7 +31,7 @@ type Store interface {
 	Close() error
 
 	// Bucket operations
-	CreateBucket(name, region, owner, acl string) error
+	CreateBucket(name, region, owner, acl string, objectLockEnabled bool) error
 	UpdateBucket(bucket *storage.BucketInfo) error
 	DeleteBucket(name string) error
 	GetBucket(name string) (*storage.BucketInfo, error)

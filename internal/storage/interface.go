@@ -16,6 +16,7 @@ type BucketInfo struct {
 	Owner        string
 	ACL          string
 	Versioning   string // "" (Disabled), "Enabled", "Suspended"
+	ObjectLockEnabled bool
 }
 
 // ObjectMeta contains metadata for an object.
@@ -37,6 +38,9 @@ type ObjectMeta struct {
 	IsDeleteMarker       bool
 	IsLatest             bool
 	ServerSideEncryption string
+	ObjectLockMode            string
+	ObjectLockRetainUntilDate *time.Time
+	ObjectLockLegalHoldStatus string
 }
 
 // PutResult represents the result of a PutObject operation.
@@ -226,7 +230,7 @@ type ListUploadsResult struct {
 // Backend is the main interface for the storage layer.
 type Backend interface {
 	// Bucket operations
-	CreateBucket(ctx context.Context, bucket, region, acl string) error
+	CreateBucket(ctx context.Context, bucket, region, acl string, objectLockEnabled bool) error
 	DeleteBucket(ctx context.Context, bucket string) error
 	BucketExists(ctx context.Context, bucket string) (bool, error)
 	ListBuckets(ctx context.Context) ([]BucketInfo, error)

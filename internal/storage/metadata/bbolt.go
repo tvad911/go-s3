@@ -71,7 +71,7 @@ func (s *bboltStore) Close() error {
 	return s.db.Close()
 }
 
-func (s *bboltStore) CreateBucket(name, region, owner, acl string) error {
+func (s *bboltStore) CreateBucket(name, region, owner, acl string, objectLockEnabled bool) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(bucketBuckets)
 		if b.Get([]byte(name)) != nil {
@@ -84,6 +84,10 @@ func (s *bboltStore) CreateBucket(name, region, owner, acl string) error {
 			Region:       region,
 			Owner:        owner,
 			ACL:          acl,
+			ObjectLockEnabled: objectLockEnabled,
+		}
+		if objectLockEnabled {
+			info.Versioning = "Enabled"
 		}
 		data, err := json.Marshal(info)
 		if err != nil {

@@ -32,8 +32,16 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 		Expires:            r.Header.Get("Expires"),
 		StorageClass:       r.Header.Get("x-amz-storage-class"),
 		ServerSideEncryption: r.Header.Get("x-amz-server-side-encryption"),
+		ObjectLockMode:       r.Header.Get("x-amz-object-lock-mode"),
+		ObjectLockLegalHoldStatus: r.Header.Get("x-amz-object-lock-legal-hold"),
 		ACL:                auth.ParseACL(r),
 		UserMeta:           make(map[string]string),
+	}
+
+	if retainDate := r.Header.Get("x-amz-object-lock-retain-until-date"); retainDate != "" {
+		if t, err := time.Parse(time.RFC3339, retainDate); err == nil {
+			meta.ObjectLockRetainUntilDate = &t
+		}
 	}
 
 	if meta.StorageClass == "" {
@@ -189,6 +197,15 @@ func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 	if obj.ServerSideEncryption != "" {
 		w.Header().Set("x-amz-server-side-encryption", obj.ServerSideEncryption)
 	}
+	if obj.ObjectLockMode != "" {
+		w.Header().Set("x-amz-object-lock-mode", obj.ObjectLockMode)
+	}
+	if obj.ObjectLockRetainUntilDate != nil {
+		w.Header().Set("x-amz-object-lock-retain-until-date", obj.ObjectLockRetainUntilDate.Format(time.RFC3339))
+	}
+	if obj.ObjectLockLegalHoldStatus != "" {
+		w.Header().Set("x-amz-object-lock-legal-hold", obj.ObjectLockLegalHoldStatus)
+	}
 
 	for k, v := range obj.UserMeta {
 		w.Header().Set(k, v)
@@ -256,6 +273,15 @@ func (h *S3Handler) HeadObject(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("x-amz-storage-class", meta.StorageClass)
 	if meta.ServerSideEncryption != "" {
 		w.Header().Set("x-amz-server-side-encryption", meta.ServerSideEncryption)
+	}
+	if meta.ObjectLockMode != "" {
+		w.Header().Set("x-amz-object-lock-mode", meta.ObjectLockMode)
+	}
+	if meta.ObjectLockRetainUntilDate != nil {
+		w.Header().Set("x-amz-object-lock-retain-until-date", meta.ObjectLockRetainUntilDate.Format(time.RFC3339))
+	}
+	if meta.ObjectLockLegalHoldStatus != "" {
+		w.Header().Set("x-amz-object-lock-legal-hold", meta.ObjectLockLegalHoldStatus)
 	}
 
 	for k, v := range meta.UserMeta {
@@ -368,7 +394,14 @@ func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 			Expires:            r.Header.Get("Expires"),
 			StorageClass:       r.Header.Get("x-amz-storage-class"),
 			ServerSideEncryption: r.Header.Get("x-amz-server-side-encryption"),
+			ObjectLockMode:       r.Header.Get("x-amz-object-lock-mode"),
+			ObjectLockLegalHoldStatus: r.Header.Get("x-amz-object-lock-legal-hold"),
 			UserMeta:           make(map[string]string),
+		}
+		if retainDate := r.Header.Get("x-amz-object-lock-retain-until-date"); retainDate != "" {
+			if t, err := time.Parse(time.RFC3339, retainDate); err == nil {
+				m.ObjectLockRetainUntilDate = &t
+			}
 		}
 		for k, v := range r.Header {
 			if len(k) > 10 && strings.ToLower(k[:10]) == "x-amz-meta-" {
