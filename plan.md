@@ -665,12 +665,12 @@ type Backend interface {
 
 ### 4.7 — Website Hosting (Static)
 
-- [ ] `PUT /{bucket}?website` — PutBucketWebsite
-- [ ] `GET /{bucket}?website` — GetBucketWebsite
-- [ ] `DELETE /{bucket}?website` — DeleteBucketWebsite
-- [ ] Serve static website: `GET /{bucket}/` → `index.html`
-- [ ] Custom error page: 404 → ErrorDocument
-- [ ] Redirect rules
+- [x] `PUT /{bucket}?website` — PutBucketWebsite
+- [x] `GET /{bucket}?website` — GetBucketWebsite
+- [x] `DELETE /{bucket}?website` — DeleteBucketWebsite
+- [x] Serve static website: `GET /{bucket}/` → `index.html`
+- [x] Custom error page: 404 → ErrorDocument
+- [x] Redirect rules
 
 ### 4.8 — Metrics & Health
 

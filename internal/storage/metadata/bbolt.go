@@ -25,6 +25,7 @@ var (
 	bucketPolicies = []byte("policies")
 	bucketCORS      = []byte("cors")
 	bucketLifecycle = []byte("lifecycle")
+	bucketWebsite   = []byte("website")
 )
 
 type bboltStore struct {
@@ -56,6 +57,9 @@ func NewBboltStore(path string) (Store, error) {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(bucketLifecycle); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketWebsite); err != nil {
 			return err
 		}
 		return nil
@@ -870,5 +874,40 @@ func (s *bboltStore) PutBucketLifecycle(ctx context.Context, bucket string, life
 func (s *bboltStore) DeleteBucketLifecycle(ctx context.Context, bucket string) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		return tx.Bucket(bucketLifecycle).Delete([]byte(bucket))
+	})
+}
+
+// Website operations
+
+func (s *bboltStore) GetBucketWebsite(ctx context.Context, bucket string) (*s3.WebsiteConfiguration, error) {
+	var website s3.WebsiteConfiguration
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketWebsite)
+		data := b.Get([]byte(bucket))
+		if data == nil {
+			return s3.ErrNoSuchWebsiteConfiguration
+		}
+		return json.Unmarshal(data, &website)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &website, nil
+}
+
+func (s *bboltStore) PutBucketWebsite(ctx context.Context, bucket string, website *s3.WebsiteConfiguration) error {
+	data, err := json.Marshal(website)
+	if err != nil {
+		return err
+	}
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketWebsite)
+		return b.Put([]byte(bucket), data)
+	})
+}
+
+func (s *bboltStore) DeleteBucketWebsite(ctx context.Context, bucket string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		return tx.Bucket(bucketWebsite).Delete([]byte(bucket))
 	})
 }

@@ -288,3 +288,18 @@ type ObjectVersion struct {
 	StorageClass string `xml:"StorageClass,omitempty"`
 	Owner        *Owner `xml:"Owner,omitempty"`
 }
+
+// WebsiteConfiguration represents the configuration for website hosting.
+type WebsiteConfiguration struct {
+	XMLName       xml.Name      `xml:"WebsiteConfiguration"`
+	IndexDocument IndexDocument `xml:"IndexDocument"`
+	ErrorDocument ErrorDocument `xml:"ErrorDocument,omitempty"`
+}
+
+type IndexDocument struct {
+	Suffix string `xml:"Suffix"`
+}
+
+type ErrorDocument struct {
+	Key string `xml:"Key"`
+}

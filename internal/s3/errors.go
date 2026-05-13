@@ -127,6 +127,11 @@ var (
 		Message:    "The lifecycle configuration does not exist",
 		HTTPStatus: http.StatusNotFound,
 	}
+	ErrNoSuchWebsiteConfiguration = Error{
+		Code:       "NoSuchWebsiteConfiguration",
+		Message:    "The specified bucket does not have a website configuration",
+		HTTPStatus: http.StatusNotFound,
+	}
 	ErrNotImplemented = Error{
 		Code:       "NotImplemented",
 		Message:    "A header you provided implies functionality that is not implemented",

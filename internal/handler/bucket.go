@@ -5,6 +5,7 @@ import (
 	"encoding/xml"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -105,6 +106,16 @@ func (h *S3Handler) ListObjects(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 
 	q := r.URL.Query()
+
+	if strings.Contains(r.Header.Get("Accept"), "text/html") {
+		website, err := h.MetaStore.GetBucketWebsite(ctx, bucket)
+		if err == nil && website != nil && website.IndexDocument.Suffix != "" {
+			rctx := chi.RouteContext(ctx)
+			rctx.URLParams.Add("key", website.IndexDocument.Suffix)
+			h.GetObject(w, r)
+			return
+		}
+	}
 
 	// Check if V2
 	if q.Get("list-type") == "2" {
@@ -465,6 +476,55 @@ func (h *S3Handler) DeleteBucketLifecycle(w http.ResponseWriter, r *http.Request
 	bucket := chi.URLParam(r, "bucket")
 
 	if err := h.Backend.DeleteBucketLifecycle(ctx, bucket); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetBucketWebsite handles GET /bucket?website
+func (h *S3Handler) GetBucketWebsite(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	website, err := h.MetaStore.GetBucketWebsite(ctx, bucket)
+	if err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(xml.Header))
+	xml.NewEncoder(w).Encode(website)
+}
+
+// PutBucketWebsite handles PUT /bucket?website
+func (h *S3Handler) PutBucketWebsite(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	var website s3.WebsiteConfiguration
+	if err := xml.NewDecoder(r.Body).Decode(&website); err != nil {
+		WriteError(w, r, s3.ErrMalformedXML)
+		return
+	}
+
+	if err := h.MetaStore.PutBucketWebsite(ctx, bucket, &website); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// DeleteBucketWebsite handles DELETE /bucket?website
+func (h *S3Handler) DeleteBucketWebsite(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	if err := h.MetaStore.DeleteBucketWebsite(ctx, bucket); err != nil {
 		WriteError(w, r, err)
 		return
 	}

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -143,8 +144,31 @@ func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 
 	obj, err := h.Backend.GetObject(ctx, bucket, key, opts)
 	if err != nil {
-		WriteError(w, r, err)
-		return
+		if errors.Is(err, s3.ErrNoSuchKey) && strings.Contains(r.Header.Get("Accept"), "text/html") {
+			website, wErr := h.MetaStore.GetBucketWebsite(ctx, bucket)
+			if wErr == nil && website != nil {
+				if strings.HasSuffix(key, "/") && website.IndexDocument.Suffix != "" {
+					idxKey := key + website.IndexDocument.Suffix
+					if idxObj, idxErr := h.Backend.GetObject(ctx, bucket, idxKey, opts); idxErr == nil {
+						obj = idxObj
+						err = nil
+					}
+				}
+				if err != nil && website.ErrorDocument.Key != "" {
+					if errObj, errErr := h.Backend.GetObject(ctx, bucket, website.ErrorDocument.Key, opts); errErr == nil {
+						w.Header().Set("Content-Type", errObj.ContentType)
+						w.WriteHeader(http.StatusNotFound)
+						io.Copy(w, errObj.Content)
+						errObj.Content.Close()
+						return
+					}
+				}
+			}
+		}
+		if err != nil {
+			WriteError(w, r, err)
+			return
+		}
 	}
 	defer obj.Content.Close()
 

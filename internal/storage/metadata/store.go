@@ -27,6 +27,10 @@ type Store interface {
 	PutBucketLifecycle(ctx context.Context, bucket string, lifecycle *s3.LifecycleConfiguration) error
 	DeleteBucketLifecycle(ctx context.Context, bucket string) error
 
+	GetBucketWebsite(ctx context.Context, bucket string) (*s3.WebsiteConfiguration, error)
+	PutBucketWebsite(ctx context.Context, bucket string, website *s3.WebsiteConfiguration) error
+	DeleteBucketWebsite(ctx context.Context, bucket string) error
+
 	// General
 	Close() error
 
