@@ -592,10 +592,10 @@ type Backend interface {
 
 ### 3.7 — TLS / HTTPS
 
-- [ ] Load cert + key từ file (config)
-- [ ] Auto-redirect HTTP → HTTPS (optional config)
-- [ ] Hỗ trợ self-signed cert cho development
-- [ ] Makefile target: `make gen-cert` (dùng `crypto/x509`)
+- [x] Load cert + key từ file (config)
+- [x] Auto-redirect HTTP → HTTPS (optional config)
+- [x] Hỗ trợ self-signed cert cho development
+- [x] Makefile target: `make gen-cert` (dùng `crypto/x509` hoặc `openssl`)
 
 ### 3.8 — Compatibility Smoke Test (Bắt buộc)
 

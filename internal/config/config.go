@@ -32,9 +32,11 @@ type ServerConfig struct {
 }
 
 type TLSConfig struct {
-	Enabled bool   `mapstructure:"enabled"`
-	Cert    string `mapstructure:"cert"`
-	Key     string `mapstructure:"key"`
+	Enabled      bool   `mapstructure:"enabled"`
+	Cert         string `mapstructure:"cert"`
+	Key          string `mapstructure:"key"`
+	AutoRedirect bool   `mapstructure:"auto_redirect"`
+	HTTPPort     int    `mapstructure:"http_port"` // Port to listen on for HTTP -> HTTPS redirect
 }
 
 type StorageConfig struct {

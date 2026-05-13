@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -18,10 +19,11 @@ import (
 
 // Server represents the GoS3 HTTP server.
 type Server struct {
-	httpServer *http.Server
-	config     *config.Config
-	backend    storage.Backend
-	verifier   *auth.SigV4Verifier
+	httpServer  *http.Server
+	redirectSrv *http.Server
+	config      *config.Config
+	backend     storage.Backend
+	verifier    *auth.SigV4Verifier
 }
 
 // New creates a new GoS3 Server instance.
@@ -51,6 +53,29 @@ func (s *Server) Start() error {
 	go func() {
 		if s.config.Server.TLS.Enabled {
 			slog.Info("starting HTTPS server", "addr", s.httpServer.Addr)
+			
+			if s.config.Server.TLS.AutoRedirect {
+				httpAddr := fmt.Sprintf("%s:%d", s.config.Server.Host, s.config.Server.TLS.HTTPPort)
+				slog.Info("starting HTTP redirect server", "addr", httpAddr)
+				
+				redirectMux := http.NewServeMux()
+				redirectMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+					host := r.Host
+					if strings.Contains(host, ":") {
+						host = strings.Split(host, ":")[0]
+					}
+					target := fmt.Sprintf("https://%s:%d%s", host, s.config.Server.Port, r.URL.RequestURI())
+					http.Redirect(w, r, target, http.StatusMovedPermanently)
+				})
+				
+				s.redirectSrv = &http.Server{Addr: httpAddr, Handler: redirectMux}
+				go func() {
+					if err := s.redirectSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+						serverErrCh <- fmt.Errorf("redirect server error: %w", err)
+					}
+				}()
+			}
+
 			if err := s.httpServer.ListenAndServeTLS(s.config.Server.TLS.Cert, s.config.Server.TLS.Key); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				serverErrCh <- fmt.Errorf("listen and serve tls error: %w", err)
 			}
@@ -79,6 +104,12 @@ func (s *Server) Start() error {
 
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		return fmt.Errorf("server forced to shutdown: %w", err)
+	}
+
+	if s.redirectSrv != nil {
+		if err := s.redirectSrv.Shutdown(ctx); err != nil {
+			slog.Error("redirect server forced to shutdown", "error", err)
+		}
 	}
 
 	slog.Info("server exited properly")

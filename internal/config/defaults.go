@@ -17,6 +17,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("server.max_header_bytes", 1<<20) // 1MB
 
 	v.SetDefault("server.tls.enabled", false)
+	v.SetDefault("server.tls.auto_redirect", false)
+	v.SetDefault("server.tls.http_port", 8080)
 
 	v.SetDefault("storage.data_dir", "./data/objects")
 	v.SetDefault("storage.temp_dir", "./data/tmp")
