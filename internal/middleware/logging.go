@@ -4,9 +4,13 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
+
+	"gos3/internal/metrics"
 )
 
 type ctxKey string
@@ -90,5 +94,30 @@ func Logger(next http.Handler) http.Handler {
 			"duration_ms", duration.Milliseconds(),
 			"remote_addr", r.RemoteAddr,
 		)
+
+		// Record metrics
+		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+		bucket := ""
+		if len(pathParts) > 0 && pathParts[0] != "" {
+			bucket = pathParts[0]
+		}
+		
+		if bucket != "" && !strings.HasPrefix(bucket, "_") {
+			statusStr := strconv.Itoa(rw.status)
+			metrics.IncRequest(r.Method, bucket, statusStr)
+			metrics.AddDuration(r.Method, bucket, duration.Milliseconds())
+			
+			// If it's a PUT or POST, it might be an upload. We approximate by reading ContentLength from request
+			// But for actual bytes, `rw.size` is bytes downloaded (written to client).
+			if r.Method == "GET" && rw.status == http.StatusOK {
+				metrics.AddBytesDownloaded(bucket, rw.size)
+			} else if (r.Method == "PUT" || r.Method == "POST") && rw.status == http.StatusOK {
+				// We can approximate uploaded bytes from r.ContentLength, or just use what storage layer recorded.
+				// For now, r.ContentLength is a good proxy.
+				if r.ContentLength > 0 {
+					metrics.AddBytesUploaded(bucket, r.ContentLength)
+				}
+			}
+		}
 	})
 }

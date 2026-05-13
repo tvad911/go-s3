@@ -9,10 +9,11 @@ import (
 	"gos3/internal/auth"
 	"gos3/internal/config"
 	"gos3/internal/handler"
+	"gos3/internal/metrics"
 	"gos3/internal/middleware"
 	"gos3/internal/storage"
-	"gos3/web"
 	"gos3/internal/storage/metadata"
+	"gos3/web"
 )
 
 // SetupRouter initializes and returns the main HTTP router for the server.
@@ -44,11 +45,18 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 
 		// Presign
 		r.Post("/presign", adminHandler.GeneratePresignedURL)
+
+		// Server Info
+		r.Get("/info", adminHandler.ServerInfo)
 	})
 
 	// Metrics and Health
-	r.Get("/_health", stubHandler("HealthCheck"))
-	r.Get(cfg.Metrics.Path, stubHandler("PrometheusMetrics"))
+	r.Get("/_health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`))
+	})
+	r.Get(cfg.Metrics.Path, metrics.Handler().ServeHTTP)
 
 	// Web UI stub (Phase 1.7)
 	r.Get("/_ui/*", func(w http.ResponseWriter, r *http.Request) {

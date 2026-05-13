@@ -3,12 +3,17 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"sync/atomic"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
 	"gos3/internal/auth"
+	"gos3/internal/metrics"
 	"gos3/internal/s3"
 )
+
+var startTime = time.Now()
 
 type AdminHandler struct {
 	UserStore auth.UserStore
@@ -140,4 +145,31 @@ func (h *AdminHandler) GeneratePresignedURL(w http.ResponseWriter, r *http.Reque
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(PresignResponse{URL: urlStr})
+}
+
+// ServerInfo returns general server info and storage stats
+func (h *AdminHandler) ServerInfo(w http.ResponseWriter, r *http.Request) {
+	var totalObjects, totalBytes int64
+	
+	metrics.ObjectsTotal.Range(func(key, value any) bool {
+		totalObjects += value.(*atomic.Int64).Load()
+		return true
+	})
+	
+	metrics.StorageBytes.Range(func(key, value any) bool {
+		totalBytes += value.(*atomic.Int64).Load()
+		return true
+	})
+
+	info := map[string]interface{}{
+		"version": "0.1.0",
+		"uptime_seconds": int(time.Since(startTime).Seconds()),
+		"storage": map[string]interface{}{
+			"total_objects": totalObjects,
+			"total_bytes": totalBytes,
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(info)
 }

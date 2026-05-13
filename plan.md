@@ -674,15 +674,15 @@ type Backend interface {
 
 ### 4.8 — Metrics & Health
 
-- [ ] `GET /_health` — health check (cho Docker/K8s)
-- [ ] `GET /_metrics` — Prometheus metrics:
+- [x] `GET /_health` — health check (cho Docker/K8s)
+- [x] `GET /_metrics` — Prometheus metrics:
   - `gos3_requests_total{method, bucket, status}`
   - `gos3_request_duration_seconds{method, bucket}`
   - `gos3_bytes_uploaded_total{bucket}`
   - `gos3_bytes_downloaded_total{bucket}`
   - `gos3_objects_total{bucket}`
   - `gos3_storage_bytes{bucket}`
-- [ ] `GET /_admin/info` — server info (version, uptime, storage stats)
+- [x] `GET /_admin/info` — server info (version, uptime, storage stats)
 
 ### 4.9 — Advanced Rate Limiting
 
