@@ -689,10 +689,10 @@ type Backend interface {
 > **Note:** Basic per-IP rate limiting đã implement ở Phase 1.6.
 > Phase này bổ sung per-user và per-bucket rate limiting.
 
-- [ ] Per-user rate limiting (dựa trên AccessKeyID sau auth)
-- [ ] Per-bucket rate limiting (optional, config per bucket)
-- [ ] Differentiated limits: read vs write operations
-- [ ] Dùng `golang.org/x/time/rate`
+- [x] Per-user rate limiting (dựa trên AccessKeyID sau auth)
+- [x] Per-bucket rate limiting (optional, config per bucket)
+- [x] Differentiated limits: read vs write operations
+- [x] Dùng `golang.org/x/time/rate`
 
 ### 4.10 — Request Validation
 

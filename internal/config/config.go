@@ -69,6 +69,17 @@ type RateLimitConfig struct {
 	Enabled           bool    `mapstructure:"enabled"`
 	RequestsPerSecond float64 `mapstructure:"requests_per_second"`
 	Burst             int     `mapstructure:"burst"`
+
+	// Advanced rate limits (Phase 4.9)
+	PerUserEnabled    bool    `mapstructure:"per_user_enabled"`
+	PerUserReadRPS    float64 `mapstructure:"per_user_read_rps"`
+	PerUserWriteRPS   float64 `mapstructure:"per_user_write_rps"`
+	PerUserBurst      int     `mapstructure:"per_user_burst"`
+
+	PerBucketEnabled  bool    `mapstructure:"per_bucket_enabled"`
+	PerBucketReadRPS  float64 `mapstructure:"per_bucket_read_rps"`
+	PerBucketWriteRPS float64 `mapstructure:"per_bucket_write_rps"`
+	PerBucketBurst    int     `mapstructure:"per_bucket_burst"`
 }
 
 type MetricsConfig struct {

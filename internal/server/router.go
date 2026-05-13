@@ -30,6 +30,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 	r.Use(middleware.RateLimit(&cfg.RateLimit))
 	r.Use(middleware.CORS(metaStore))
 	r.Use(middleware.Auth(verifier))
+	r.Use(middleware.AdvancedRateLimit(&cfg.RateLimit))
 
 	// Admin API
 	r.Route(cfg.Admin.PathPrefix, func(r chi.Router) {

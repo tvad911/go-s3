@@ -40,6 +40,17 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("rate_limit.requests_per_second", 1000.0)
 	v.SetDefault("rate_limit.burst", 200)
 
+	// Phase 4.9 Advanced Limits
+	v.SetDefault("rate_limit.per_user_enabled", true)
+	v.SetDefault("rate_limit.per_user_read_rps", 50.0)
+	v.SetDefault("rate_limit.per_user_write_rps", 20.0)
+	v.SetDefault("rate_limit.per_user_burst", 100)
+
+	v.SetDefault("rate_limit.per_bucket_enabled", false)
+	v.SetDefault("rate_limit.per_bucket_read_rps", 200.0)
+	v.SetDefault("rate_limit.per_bucket_write_rps", 50.0)
+	v.SetDefault("rate_limit.per_bucket_burst", 300)
+
 	v.SetDefault("metrics.enabled", true)
 	v.SetDefault("metrics.path", "/_metrics")
 
