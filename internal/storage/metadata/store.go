@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 
 	"gos3/internal/auth"
@@ -18,9 +19,9 @@ var (
 // Store defines the interface for the metadata database.
 type Store interface {
 	// CORSStore must be defined before use
-	GetBucketCORS(bucket string) (*s3.CORSConfiguration, error)
-	PutBucketCORS(bucket string, cors *s3.CORSConfiguration) error
-	DeleteBucketCORS(bucket string) error
+	GetBucketCORS(ctx context.Context, bucket string) (*s3.CORSConfiguration, error)
+	PutBucketCORS(ctx context.Context, bucket string, cors *s3.CORSConfiguration) error
+	DeleteBucketCORS(ctx context.Context, bucket string) error
 	// General
 	Close() error
 

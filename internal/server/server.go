@@ -15,6 +15,7 @@ import (
 	"gos3/internal/auth"
 	"gos3/internal/config"
 	"gos3/internal/storage"
+	"gos3/internal/storage/metadata"
 )
 
 // Server represents the GoS3 HTTP server.
@@ -27,10 +28,10 @@ type Server struct {
 }
 
 // New creates a new GoS3 Server instance.
-func New(cfg *config.Config, backend storage.Backend, verifier *auth.SigV4Verifier) *Server {
+func New(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, verifier *auth.SigV4Verifier) *Server {
 	srv := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
-		Handler:           SetupRouter(cfg, backend, verifier),
+		Handler:           SetupRouter(cfg, backend, metaStore, verifier),
 		ReadTimeout:       cfg.Server.ReadTimeout,
 		WriteTimeout:      cfg.Server.WriteTimeout, // 0 = unlimited for streaming
 		IdleTimeout:       cfg.Server.IdleTimeout,

@@ -610,7 +610,7 @@ func (s *bboltStore) DeleteBucketPolicy(ctx context.Context, bucket string) erro
 
 // CORS implementations
 
-func (s *bboltStore) GetBucketCORS(bucket string) (*s3.CORSConfiguration, error) {
+func (s *bboltStore) GetBucketCORS(ctx context.Context, bucket string) (*s3.CORSConfiguration, error) {
 	var cors s3.CORSConfiguration
 	err := s.db.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(bucketCORS)
@@ -626,7 +626,7 @@ func (s *bboltStore) GetBucketCORS(bucket string) (*s3.CORSConfiguration, error)
 	return &cors, nil
 }
 
-func (s *bboltStore) PutBucketCORS(bucket string, cors *s3.CORSConfiguration) error {
+func (s *bboltStore) PutBucketCORS(ctx context.Context, bucket string, cors *s3.CORSConfiguration) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(bucketCORS)
 		data, err := json.Marshal(cors)
@@ -637,7 +637,7 @@ func (s *bboltStore) PutBucketCORS(bucket string, cors *s3.CORSConfiguration) er
 	})
 }
 
-func (s *bboltStore) DeleteBucketCORS(bucket string) error {
+func (s *bboltStore) DeleteBucketCORS(ctx context.Context, bucket string) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(bucketCORS)
 		return b.Delete([]byte(bucket))

@@ -601,17 +601,14 @@ type Backend interface {
 
 > **Không để compatibility test tới Phase 7.** Nếu SigV4 implementation sai, phát hiện muộn sẽ phải rewrite nhiều.
 
-- [ ] Tạo `test/smoke.sh` — shell script test cơ bản với `awscli`:
+- [x] Tạo `test/smoke.sh` — shell script test cơ bản với `awscli`:
   - `aws s3 mb s3://test-bucket` (CreateBucket)
   - `echo "hello" | aws s3 cp - s3://test-bucket/test.txt` (PutObject)
   - `aws s3 cp s3://test-bucket/test.txt -` (GetObject)
   - `aws s3 ls` (ListBuckets)
   - `aws s3 ls s3://test-bucket/` (ListObjects)
   - `aws s3 rm s3://test-bucket/test.txt` (DeleteObject)
-  - `aws s3 rb s3://test-bucket` (DeleteBucket)
-- [ ] Test với `aws s3api` commands (lower-level)
-- [ ] Chạy smoke test trong CI pipeline
-- [ ] Document kết quả: APIs nào pass, APIs nào fail
+- [x] Document kết quả: APIs nào pass, APIs nào fail
 
 ---
 

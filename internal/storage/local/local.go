@@ -98,16 +98,28 @@ func (b *Backend) BucketExists(ctx context.Context, bucket string) (bool, error)
 	return true, nil
 }
 
+func (b *Backend) GetBucketPolicy(ctx context.Context, bucket string) (*auth.Policy, error) {
+	return b.meta.GetBucketPolicy(ctx, bucket)
+}
+
+func (b *Backend) PutBucketPolicy(ctx context.Context, bucket string, policy *auth.Policy) error {
+	return b.meta.PutBucketPolicy(ctx, bucket, policy)
+}
+
+func (b *Backend) DeleteBucketPolicy(ctx context.Context, bucket string) error {
+	return b.meta.DeleteBucketPolicy(ctx, bucket)
+}
+
 func (b *Backend) GetBucketCORS(ctx context.Context, bucket string) (*s3.CORSConfiguration, error) {
-	return b.meta.GetBucketCORS(bucket)
+	return b.meta.GetBucketCORS(ctx, bucket)
 }
 
 func (b *Backend) PutBucketCORS(ctx context.Context, bucket string, cors *s3.CORSConfiguration) error {
-	return b.meta.PutBucketCORS(bucket, cors)
+	return b.meta.PutBucketCORS(ctx, bucket, cors)
 }
 
 func (b *Backend) DeleteBucketCORS(ctx context.Context, bucket string) error {
-	return b.meta.DeleteBucketCORS(bucket)
+	return b.meta.DeleteBucketCORS(ctx, bucket)
 }
 
 func (b *Backend) ListBuckets(ctx context.Context) ([]storage.BucketInfo, error) {

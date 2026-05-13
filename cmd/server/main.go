@@ -69,7 +69,7 @@ func main() {
 	sigv4Verifier := auth.NewSigV4Verifier(metaStore, cfg.Auth.Region)
 
 	// Initialize and start server
-	srv := server.New(cfg, backend, sigv4Verifier)
+	srv := server.New(cfg, backend, metaStore, sigv4Verifier)
 	if err := srv.Start(); err != nil {
 		slog.Error("server error", "error", err)
 		os.Exit(1)
