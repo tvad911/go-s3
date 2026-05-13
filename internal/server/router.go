@@ -72,6 +72,8 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 				s3Handler.GetBucketPolicy(w, r)
 			} else if r.URL.Query().Has("versioning") {
 				s3Handler.GetBucketVersioning(w, r)
+			} else if r.URL.Query().Has("lifecycle") {
+				s3Handler.GetBucketLifecycle(w, r)
 			} else if r.URL.Query().Has("versions") {
 				s3Handler.ListObjectVersions(w, r)
 			} else if r.URL.Query().Has("uploads") {
@@ -89,6 +91,8 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 				s3Handler.PutBucketPolicy(w, r)
 			} else if r.URL.Query().Has("versioning") {
 				s3Handler.PutBucketVersioning(w, r)
+			} else if r.URL.Query().Has("lifecycle") {
+				s3Handler.PutBucketLifecycle(w, r)
 			} else {
 				s3Handler.CreateBucket(w, r)
 			}
@@ -96,6 +100,8 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 		r.Delete("/", func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Query().Has("cors") {
 				s3Handler.DeleteBucketCors(w, r)
+			} else if r.URL.Query().Has("lifecycle") {
+				s3Handler.DeleteBucketLifecycle(w, r)
 			} else if r.URL.Query().Has("policy") {
 				s3Handler.DeleteBucketPolicy(w, r)
 			} else {

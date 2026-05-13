@@ -22,6 +22,11 @@ type Store interface {
 	GetBucketCORS(ctx context.Context, bucket string) (*s3.CORSConfiguration, error)
 	PutBucketCORS(ctx context.Context, bucket string, cors *s3.CORSConfiguration) error
 	DeleteBucketCORS(ctx context.Context, bucket string) error
+
+	GetBucketLifecycle(ctx context.Context, bucket string) (*s3.LifecycleConfiguration, error)
+	PutBucketLifecycle(ctx context.Context, bucket string, lifecycle *s3.LifecycleConfiguration) error
+	DeleteBucketLifecycle(ctx context.Context, bucket string) error
+
 	// General
 	Close() error
 

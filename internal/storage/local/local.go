@@ -124,6 +124,18 @@ func (b *Backend) DeleteBucketCORS(ctx context.Context, bucket string) error {
 	return b.meta.DeleteBucketCORS(ctx, bucket)
 }
 
+func (b *Backend) GetBucketLifecycle(ctx context.Context, bucket string) (*s3.LifecycleConfiguration, error) {
+	return b.meta.GetBucketLifecycle(ctx, bucket)
+}
+
+func (b *Backend) PutBucketLifecycle(ctx context.Context, bucket string, lifecycle *s3.LifecycleConfiguration) error {
+	return b.meta.PutBucketLifecycle(ctx, bucket, lifecycle)
+}
+
+func (b *Backend) DeleteBucketLifecycle(ctx context.Context, bucket string) error {
+	return b.meta.DeleteBucketLifecycle(ctx, bucket)
+}
+
 func (b *Backend) ListBuckets(ctx context.Context) ([]storage.BucketInfo, error) {
 	return b.meta.ListBuckets()
 }

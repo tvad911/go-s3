@@ -421,3 +421,52 @@ func (h *S3Handler) DeleteBucketCors(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// GetBucketLifecycle handles GET /bucket?lifecycle
+func (h *S3Handler) GetBucketLifecycle(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	lifecycle, err := h.Backend.GetBucketLifecycle(ctx, bucket)
+	if err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(xml.Header))
+	xml.NewEncoder(w).Encode(lifecycle)
+}
+
+// PutBucketLifecycle handles PUT /bucket?lifecycle
+func (h *S3Handler) PutBucketLifecycle(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	var lifecycle s3.LifecycleConfiguration
+	if err := xml.NewDecoder(r.Body).Decode(&lifecycle); err != nil {
+		WriteError(w, r, s3.ErrMalformedXML)
+		return
+	}
+
+	if err := h.Backend.PutBucketLifecycle(ctx, bucket, &lifecycle); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// DeleteBucketLifecycle handles DELETE /bucket?lifecycle
+func (h *S3Handler) DeleteBucketLifecycle(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	if err := h.Backend.DeleteBucketLifecycle(ctx, bucket); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

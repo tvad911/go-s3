@@ -1,0 +1,17 @@
+{
+  "Rules": [
+    {
+      "ID": "Rule1",
+      "Filter": {
+        "Prefix": "logs/"
+      },
+      "Status": "Enabled",
+      "Expiration": {
+        "Days": 7
+      },
+      "AbortIncompleteMultipartUpload": {
+        "DaysAfterInitiation": 1
+      }
+    }
+  ]
+}

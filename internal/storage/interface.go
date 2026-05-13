@@ -233,6 +233,10 @@ type Backend interface {
 	PutBucketCORS(ctx context.Context, bucket string, cors *s3.CORSConfiguration) error
 	DeleteBucketCORS(ctx context.Context, bucket string) error
 
+	GetBucketLifecycle(ctx context.Context, bucket string) (*s3.LifecycleConfiguration, error)
+	PutBucketLifecycle(ctx context.Context, bucket string, lifecycle *s3.LifecycleConfiguration) error
+	DeleteBucketLifecycle(ctx context.Context, bucket string) error
+
 	// Object operations
 	PutObject(ctx context.Context, bucket, key string, r io.Reader, size int64, meta ObjectMeta) (*PutResult, error)
 	GetObject(ctx context.Context, bucket, key string, opts GetOptions) (*Object, error)

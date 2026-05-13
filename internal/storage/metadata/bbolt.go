@@ -23,7 +23,8 @@ var (
 	bucketUploads  = []byte("uploads")
 	bucketUsers    = []byte("users")
 	bucketPolicies = []byte("policies")
-	bucketCORS     = []byte("cors")
+	bucketCORS      = []byte("cors")
+	bucketLifecycle = []byte("lifecycle")
 )
 
 type bboltStore struct {
@@ -52,6 +53,9 @@ func NewBboltStore(path string) (Store, error) {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(bucketCORS); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketLifecycle); err != nil {
 			return err
 		}
 		return nil
@@ -827,5 +831,40 @@ func (s *bboltStore) DeleteBucketCORS(ctx context.Context, bucket string) error 
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(bucketCORS)
 		return b.Delete([]byte(bucket))
+	})
+}
+
+// Lifecycle operations
+
+func (s *bboltStore) GetBucketLifecycle(ctx context.Context, bucket string) (*s3.LifecycleConfiguration, error) {
+	var lifecycle s3.LifecycleConfiguration
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketLifecycle)
+		data := b.Get([]byte(bucket))
+		if data == nil {
+			return s3.ErrNoSuchLifecycleConfiguration
+		}
+		return json.Unmarshal(data, &lifecycle)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &lifecycle, nil
+}
+
+func (s *bboltStore) PutBucketLifecycle(ctx context.Context, bucket string, lifecycle *s3.LifecycleConfiguration) error {
+	data, err := json.Marshal(lifecycle)
+	if err != nil {
+		return err
+	}
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketLifecycle)
+		return b.Put([]byte(bucket), data)
+	})
+}
+
+func (s *bboltStore) DeleteBucketLifecycle(ctx context.Context, bucket string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		return tx.Bucket(bucketLifecycle).Delete([]byte(bucket))
 	})
 }

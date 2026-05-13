@@ -227,6 +227,32 @@ type VersioningConfiguration struct {
 	Status  string   `xml:"Status"` // "Enabled" or "Suspended"
 }
 
+// LifecycleConfiguration represents S3 Bucket Lifecycle Configuration
+type LifecycleConfiguration struct {
+	XMLName xml.Name        `xml:"LifecycleConfiguration"`
+	Rules   []LifecycleRule `xml:"Rule"`
+}
+
+type LifecycleRule struct {
+	ID                             string                          `xml:"ID"`
+	Status                         string                          `xml:"Status"` // "Enabled" or "Disabled"
+	Filter                         LifecycleFilter                 `xml:"Filter"`
+	Expiration                     *LifecycleExpiration            `xml:"Expiration,omitempty"`
+	AbortIncompleteMultipartUpload *AbortIncompleteMultipartUpload `xml:"AbortIncompleteMultipartUpload,omitempty"`
+}
+
+type LifecycleFilter struct {
+	Prefix string `xml:"Prefix"` // Simplified to just Prefix for now
+}
+
+type LifecycleExpiration struct {
+	Days int `xml:"Days"`
+}
+
+type AbortIncompleteMultipartUpload struct {
+	DaysAfterInitiation int `xml:"DaysAfterInitiation"`
+}
+
 // ListVersionsResult XML response
 type ListVersionsResult struct {
 	XMLName             xml.Name       `xml:"ListVersionsResult"`

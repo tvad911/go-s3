@@ -636,11 +636,11 @@ type Backend interface {
 
 ### 4.3 — Object Lifecycle (Basic)
 
-- [ ] Config lifecycle rules per bucket (XML)
-- [ ] Rule: `Expiration.Days` → tự xóa object sau N ngày
-- [ ] Rule: `AbortIncompleteMultipartUpload.DaysAfterInitiation`
-- [ ] Background goroutine chạy mỗi 1h để scan + apply rules
-- [ ] Lưu lifecycle config trong bbolt: `lifecycle:{bucket}`
+- [x] Config lifecycle rules per bucket (XML)
+- [x] Rule: `Expiration.Days` → tự xóa object sau N ngày
+- [x] Rule: `AbortIncompleteMultipartUpload.DaysAfterInitiation`
+- [x] Background goroutine chạy mỗi 1h để scan + apply rules
+- [x] Lưu lifecycle config trong bbolt: `lifecycle:{bucket}`
 
 ### 4.4 — Server-Side Encryption (SSE-S3 stub)
 

@@ -117,6 +117,11 @@ var (
 		Message:    "The specified multipart upload does not exist. The upload ID may be invalid, or the upload may have been aborted or completed.",
 		HTTPStatus: http.StatusNotFound,
 	}
+	ErrNoSuchLifecycleConfiguration = Error{
+		Code:       "NoSuchLifecycleConfiguration",
+		Message:    "The lifecycle configuration does not exist",
+		HTTPStatus: http.StatusNotFound,
+	}
 	ErrNotImplemented = Error{
 		Code:       "NotImplemented",
 		Message:    "A header you provided implies functionality that is not implemented",

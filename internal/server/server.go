@@ -88,6 +88,10 @@ func (s *Server) Start() error {
 		}
 	}()
 
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	defer workerCancel()
+	go s.startLifecycleWorker(workerCtx)
+
 	// Wait for interrupt signal to gracefully shutdown the server
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
