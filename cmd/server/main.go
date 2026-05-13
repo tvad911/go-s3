@@ -6,6 +6,8 @@ import (
 
 	"gos3/internal/config"
 	"gos3/internal/server"
+	"gos3/internal/storage/local"
+	"gos3/internal/storage/metadata"
 )
 
 var version = "dev"
@@ -26,8 +28,23 @@ func main() {
 
 	slog.Info("starting gos3 server", "version", version)
 
+	// Initialize metadata store
+	metaStore, err := metadata.NewBboltStore(cfg.Storage.DataDir + "/meta.db")
+	if err != nil {
+		slog.Error("failed to init metadata store", "error", err)
+		os.Exit(1)
+	}
+	defer metaStore.Close()
+
+	// Initialize storage backend
+	backend, err := local.NewBackend(cfg.Storage.DataDir, cfg.Storage.DataDir+"/tmp", metaStore)
+	if err != nil {
+		slog.Error("failed to init storage backend", "error", err)
+		os.Exit(1)
+	}
+
 	// Initialize and start server
-	srv := server.New(cfg)
+	srv := server.New(cfg, backend)
 	if err := srv.Start(); err != nil {
 		slog.Error("server error", "error", err)
 		os.Exit(1)

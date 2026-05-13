@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"gos3/internal/config"
+	"gos3/internal/storage"
 )
 
 // Server represents the GoS3 HTTP server.
@@ -21,8 +22,8 @@ type Server struct {
 }
 
 // New creates a new GoS3 Server instance.
-func New(cfg *config.Config) *Server {
-	router := SetupRouter(cfg)
+func New(cfg *config.Config, backend storage.Backend) *Server {
+	router := SetupRouter(cfg, backend)
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),

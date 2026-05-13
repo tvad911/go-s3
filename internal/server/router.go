@@ -7,13 +7,17 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"gos3/internal/config"
+	"gos3/internal/handler"
 	"gos3/internal/middleware"
+	"gos3/internal/storage"
 	"gos3/web"
 )
 
 // SetupRouter initializes and returns the main HTTP router for the server.
-func SetupRouter(cfg *config.Config) *chi.Mux {
+func SetupRouter(cfg *config.Config, backend storage.Backend) *chi.Mux {
 	r := chi.NewRouter()
+
+	s3Handler := handler.NewS3Handler(backend)
 
 	r.Use(middleware.RealIP)
 	r.Use(middleware.RequestID)
@@ -50,23 +54,23 @@ func SetupRouter(cfg *config.Config) *chi.Mux {
 	// S3 API Routes
 
 	// Service
-	r.Get("/", stubHandler("ListBuckets"))
+	r.Get("/", s3Handler.ListBuckets)
 
 	// Bucket operations
 	r.Route("/{bucket}", func(r chi.Router) {
 		// Bucket CRUD
-		r.Put("/", stubHandler("CreateBucket"))
-		r.Delete("/", stubHandler("DeleteBucket"))
-		r.Head("/", stubHandler("HeadBucket"))
+		r.Put("/", s3Handler.CreateBucket)
+		r.Delete("/", s3Handler.DeleteBucket)
+		r.Head("/", s3Handler.HeadBucket)
 		r.Post("/", stubHandler("DeleteObjectsOrPostObject")) // POST ?delete or HTML form upload
-		r.Get("/", stubHandler("ListObjects"))                // Dispatch by query: ?list-type=2, ?versions, ?uploads, etc.
+		r.Get("/", s3Handler.ListObjects)
 
 		// Object operations
 		r.Route("/{key:.*}", func(r chi.Router) {
-			r.Get("/", stubHandler("GetObject"))
-			r.Put("/", stubHandler("PutObject")) // Covers CopyObject via x-amz-copy-source and UploadPart via ?partNumber
-			r.Delete("/", stubHandler("DeleteObject"))
-			r.Head("/", stubHandler("HeadObject"))
+			r.Get("/", s3Handler.GetObject)
+			r.Put("/", s3Handler.PutObject) // Covers CopyObject via x-amz-copy-source and UploadPart via ?partNumber
+			r.Delete("/", s3Handler.DeleteObject)
+			r.Head("/", s3Handler.HeadObject)
 			r.Options("/", stubHandler("CORSPreflight"))
 			r.Post("/", stubHandler("CreateCompleteOrMultipart")) // S3 Select stub, Create/Complete/Abort Multipart based on query
 		})

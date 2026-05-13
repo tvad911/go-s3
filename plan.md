@@ -368,29 +368,29 @@ type Backend interface {
 
 ### 2.4 — Bucket Handlers (`internal/handler/bucket.go`)
 
-- [ ] `PUT /{bucket}` — **CreateBucket**
+- [x] `PUT /{bucket}` — **CreateBucket**
   - Validate bucket name (3–63 chars, lowercase, no consecutive dots...)
   - Parse `CreateBucketConfiguration` XML (region)
   - Trả `Location: /{bucket}` header
-- [ ] `DELETE /{bucket}` — **DeleteBucket**
+- [x] `DELETE /{bucket}` — **DeleteBucket**
   - Check bucket rỗng trước khi xóa
   - Trả 409 BucketNotEmpty nếu còn object
-- [ ] `HEAD /{bucket}` — **HeadBucket**
+- [x] `HEAD /{bucket}` — **HeadBucket**
   - Trả 200 nếu tồn tại, 404 nếu không
-- [ ] `GET /` — **ListBuckets**
+- [x] `GET /` — **ListBuckets**
   - Trả XML `ListAllMyBucketsResult`
-- [ ] `GET /{bucket}?versioning` — **GetBucketVersioning** (stub)
-- [ ] `PUT /{bucket}?versioning` — **PutBucketVersioning** (stub)
-- [ ] `GET /{bucket}?location` — **GetBucketLocation**
-- [ ] `GET /{bucket}?tagging` — **GetBucketTagging**
-- [ ] `PUT /{bucket}?tagging` — **PutBucketTagging**
-- [ ] `DELETE /{bucket}?tagging` — **DeleteBucketTagging**
-- [ ] `GET /{bucket}?lifecycle` — **GetBucketLifecycle** (stub)
-- [ ] `PUT /{bucket}?lifecycle` — **PutBucketLifecycle** (stub)
+- [x] `GET /{bucket}?versioning` — **GetBucketVersioning** (stub)
+- [x] `PUT /{bucket}?versioning` — **PutBucketVersioning** (stub)
+- [x] `GET /{bucket}?location` — **GetBucketLocation**
+- [x] `GET /{bucket}?tagging` — **GetBucketTagging**
+- [x] `PUT /{bucket}?tagging` — **PutBucketTagging**
+- [x] `DELETE /{bucket}?tagging` — **DeleteBucketTagging**
+- [x] `GET /{bucket}?lifecycle` — **GetBucketLifecycle** (stub)
+- [x] `PUT /{bucket}?lifecycle` — **PutBucketLifecycle** (stub)
 
 ### 2.5 — Object Handlers (`internal/handler/object.go`)
 
-- [ ] `PUT /{bucket}/{key+}` — **PutObject**
+- [x] `PUT /{bucket}/{key+}` — **PutObject**
   - Parse headers: `Content-Type`, `Content-MD5`, `Content-Length`
   - Parse `x-amz-meta-*` user metadata
   - Parse `x-amz-storage-class` (lưu nhưng không phân biệt)
@@ -399,7 +399,7 @@ type Backend interface {
   - Check disk space trước khi write
   - Stream body → storage backend (hỗ trợ cả HTTP chunked và AWS chunked)
   - Trả `ETag` header
-- [ ] `GET /{bucket}/{key+}` — **GetObject**
+- [x] `GET /{bucket}/{key+}` — **GetObject**
   - Parse `Range` header → partial content (206)
   - Parse `If-Match`, `If-None-Match`, `If-Modified-Since`, `If-Unmodified-Since`
   - Trả đầy đủ headers:
@@ -412,31 +412,31 @@ type Backend interface {
     - `Accept-Ranges: bytes` (bắt buộc cho Range support)
     - `x-amz-request-id`
   - Streaming response (không buffer)
-- [ ] `HEAD /{bucket}/{key+}` — **HeadObject**
+- [x] `HEAD /{bucket}/{key+}` — **HeadObject**
   - Tương tự GET nhưng không có body (cùng headers)
-- [ ] `DELETE /{bucket}/{key+}` — **DeleteObject**
+- [x] `DELETE /{bucket}/{key+}` — **DeleteObject**
   - Trả 204 No Content
-- [ ] `POST /{bucket}?delete` — **DeleteObjects** (Multi-object delete)
+- [x] `POST /{bucket}?delete` — **DeleteObjects** (Multi-object delete)
   - Parse XML body (tối đa 1000 keys)
   - Trả `DeleteResult` XML
-- [ ] `COPY` via `PUT` với `x-amz-copy-source` header — **CopyObject**
+- [x] `COPY` via `PUT` với `x-amz-copy-source` header — **CopyObject**
   - Parse `x-amz-copy-source`
   - `x-amz-metadata-directive`: COPY hoặc REPLACE
   - Trả `CopyObjectResult` XML
-- [ ] `GET /{bucket}/{key+}?tagging` — **GetObjectTagging**
-- [ ] `PUT /{bucket}/{key+}?tagging` — **PutObjectTagging**
-- [ ] `DELETE /{bucket}/{key+}?tagging` — **DeleteObjectTagging**
-- [ ] `GET /{bucket}/{key+}?acl` — **GetObjectACL**
-- [ ] `PUT /{bucket}/{key+}?acl` — **PutObjectACL**
+- [x] `GET /{bucket}/{key+}?tagging` — **GetObjectTagging**
+- [x] `PUT /{bucket}/{key+}?tagging` — **PutObjectTagging**
+- [x] `DELETE /{bucket}/{key+}?tagging` — **DeleteObjectTagging**
+- [x] `GET /{bucket}/{key+}?acl` — **GetObjectACL**
+- [x] `PUT /{bucket}/{key+}?acl` — **PutObjectACL**
 
 ### 2.6 — ListObjects (`internal/handler/bucket.go` + storage)
 
-- [ ] **ListObjects V1** (`GET /{bucket}?prefix&delimiter&marker&max-keys`)
+- [x] **ListObjects V1** (`GET /{bucket}?prefix&delimiter&marker&max-keys`)
   - Support `prefix`, `delimiter` (virtual folder simulation)
   - Support `marker` (pagination)
   - `CommonPrefixes` cho folders
   - Default `max-keys` = 1000
-- [ ] **ListObjects V2** (`GET /{bucket}?list-type=2&prefix&delimiter&continuation-token&start-after`)
+- [x] **ListObjects V2** (`GET /{bucket}?list-type=2&prefix&delimiter&continuation-token&start-after`)
   - `continuation-token` thay cho `marker`
   - `fetch-owner` optional
 

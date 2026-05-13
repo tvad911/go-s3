@@ -77,6 +77,11 @@ var (
 		Message:    "The requested range is not satisfiable",
 		HTTPStatus: http.StatusRequestedRangeNotSatisfiable,
 	}
+	ErrInvalidCopySource = Error{
+		Code:       "InvalidArgument",
+		Message:    "Copy Source must mention the source bucket and key: sourcebucket/sourcekey",
+		HTTPStatus: http.StatusBadRequest,
+	}
 	ErrKeyTooLongError = Error{
 		Code:       "KeyTooLongError",
 		Message:    "Your key is too long",
