@@ -24,6 +24,11 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 	key := chi.URLParam(r, "key")
 
+	if len(key) > 1024 {
+		WriteError(w, r, s3.ErrKeyTooLongError)
+		return
+	}
+
 	meta := storage.ObjectMeta{
 		ContentType:        r.Header.Get("Content-Type"),
 		ContentEncoding:    r.Header.Get("Content-Encoding"),
@@ -60,11 +65,21 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var size int64
-	if cl := r.Header.Get("Content-Length"); cl != "" {
-		s, err := strconv.ParseInt(cl, 10, 64)
-		if err == nil {
-			size = s
-		}
+	cl := r.Header.Get("Content-Length")
+	if cl == "" {
+		WriteError(w, r, s3.ErrMissingContentLength)
+		return
+	}
+	s, err := strconv.ParseInt(cl, 10, 64)
+	if err != nil || s < 0 {
+		WriteError(w, r, s3.ErrMissingContentLength)
+		return
+	}
+	size = s
+
+	if h.Config != nil && size > h.Config.Storage.MaxObjectSize {
+		WriteError(w, r, s3.ErrEntityTooLarge)
+		return
 	}
 
 	bInfo, err := h.MetaStore.GetBucket(bucket)
@@ -345,7 +360,7 @@ func (h *S3Handler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 
 	var req s3.Delete
-	if err := xml.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := xml.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&req); err != nil {
 		WriteError(w, r, s3.ErrMalformedXML)
 		return
 	}

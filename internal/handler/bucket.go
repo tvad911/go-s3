@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"encoding/xml"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,7 +27,7 @@ func (h *S3Handler) CreateBucket(w http.ResponseWriter, r *http.Request) {
 	region := "us-east-1"
 	if r.ContentLength > 0 {
 		var cfg s3.CreateBucketConfiguration
-		if err := xml.NewDecoder(r.Body).Decode(&cfg); err == nil && cfg.LocationConstraint != "" {
+		if err := xml.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&cfg); err == nil && cfg.LocationConstraint != "" {
 			region = cfg.LocationConstraint
 		}
 	}
@@ -275,7 +276,7 @@ func (h *S3Handler) PutBucketVersioning(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req s3.VersioningConfiguration
-	if err := xml.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := xml.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&req); err != nil {
 		WriteError(w, r, s3.ErrMalformedXML)
 		return
 	}
@@ -300,7 +301,7 @@ func (h *S3Handler) PutBucketPolicy(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 
 	var policy auth.Policy
-	if err := json.NewDecoder(r.Body).Decode(&policy); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&policy); err != nil {
 		WriteError(w, r, err) // map to ErrMalformedPolicy
 		return
 	}
@@ -408,7 +409,7 @@ func (h *S3Handler) PutBucketCors(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 
 	var cors s3.CORSConfiguration
-	if err := xml.NewDecoder(r.Body).Decode(&cors); err != nil {
+	if err := xml.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&cors); err != nil {
 		WriteError(w, r, s3.ErrMalformedXML)
 		return
 	}
@@ -457,7 +458,7 @@ func (h *S3Handler) PutBucketLifecycle(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 
 	var lifecycle s3.LifecycleConfiguration
-	if err := xml.NewDecoder(r.Body).Decode(&lifecycle); err != nil {
+	if err := xml.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&lifecycle); err != nil {
 		WriteError(w, r, s3.ErrMalformedXML)
 		return
 	}
@@ -506,7 +507,7 @@ func (h *S3Handler) PutBucketWebsite(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 
 	var website s3.WebsiteConfiguration
-	if err := xml.NewDecoder(r.Body).Decode(&website); err != nil {
+	if err := xml.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&website); err != nil {
 		WriteError(w, r, s3.ErrMalformedXML)
 		return
 	}

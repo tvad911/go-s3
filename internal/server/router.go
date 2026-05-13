@@ -20,8 +20,8 @@ import (
 func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, verifier *auth.SigV4Verifier) *chi.Mux {
 	r := chi.NewRouter()
 
-	s3Handler := handler.NewS3Handler(backend, metaStore, verifier)
 	adminHandler := handler.NewAdminHandler(metaStore)
+	s3Handler := handler.NewS3Handler(backend, metaStore, verifier, cfg)
 
 	r.Use(middleware.RealIP)
 	r.Use(middleware.RequestID)

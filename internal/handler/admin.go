@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -48,7 +49,7 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user auth.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&user); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -76,7 +77,7 @@ func (h *AdminHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	username := chi.URLParam(r, "username")
 	var user auth.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&user); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -113,7 +114,7 @@ type PresignResponse struct {
 
 func (h *AdminHandler) GeneratePresignedURL(w http.ResponseWriter, r *http.Request) {
 	var req PresignRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

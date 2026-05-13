@@ -696,11 +696,11 @@ type Backend interface {
 
 ### 4.10 — Request Validation
 
-- [ ] Max object size: reject nếu `Content-Length` > `maxObjectSize`
-- [ ] Bucket name validation (regex theo AWS rules)
-- [ ] Key validation: max 1024 bytes
-- [ ] Header size limits
-- [ ] XML body size limits (policy, CORS, lifecycle)
+- [x] Max object size: reject nếu `Content-Length` > `maxObjectSize`
+- [x] Bucket name validation (regex theo AWS rules)
+- [x] Key validation: max 1024 bytes
+- [x] Header size limits
+- [x] XML body size limits (policy, CORS, lifecycle)
 
 ---
 
