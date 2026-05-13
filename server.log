@@ -201,3 +201,7 @@
 {"time":"2026-05-13T14:57:39.344813302+07:00","level":"INFO","msg":"request completed","request_id":"ad55b298-2aa5-4daf-9b01-4fcd8b5d5628","method":"GET","path":"/mybucket","status":404,"size":210,"duration_ms":0,"remote_addr":"[::1]:33654"}
 {"time":"2026-05-13T14:57:39.34569425+07:00","level":"INFO","msg":"request completed","request_id":"1b8ce1a9-c6a3-49c8-aed2-de347d7f6cb4","method":"GET","path":"/mybucket","status":404,"size":210,"duration_ms":0,"remote_addr":"[::1]:33666"}
 {"time":"2026-05-13T14:57:39.345719115+07:00","level":"INFO","msg":"request completed","request_id":"8af9780c-4cda-4016-b4bc-b3d35ee78752","method":"GET","path":"/mybucket","status":404,"size":210,"duration_ms":0,"remote_addr":"[::1]:33668"}
+{"time":"2026-05-13T15:37:20.055110654+07:00","level":"INFO","msg":"running lifecycle cleanup"}
+{"time":"2026-05-13T16:15:07.603042765+07:00","level":"INFO","msg":"shutting down server","signal":15}
+{"time":"2026-05-13T16:15:07.603317455+07:00","level":"INFO","msg":"server exited properly"}
+{"time":"2026-05-13T16:15:07.603428923+07:00","level":"INFO","msg":"stopping lifecycle worker"}

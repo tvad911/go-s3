@@ -905,14 +905,14 @@ WantedBy=multi-user.target
 
 ### 7.1 — Web UI (Admin)
 
-- [ ] Server trên port `9001`
-- [ ] Single-page app (embed vào binary dùng `embed.FS`)
-- [ ] Features:
-  - Xem danh sách buckets & objects
-  - Upload/download file qua browser
-  - Quản lý users & keys
-  - Xem metrics
-  - Cấu hình CORS, policy
+- [x] Server trên port `9001`
+- [x] Single-page app (embed vào binary dùng `embed.FS`)
+- [x] Features:
+  - [x] Xem danh sách buckets & objects
+  - [x] Upload/download file qua browser
+  - [x] Quản lý users & keys
+  - [x] Xem metrics
+  - [ ] Cấu hình CORS, policy
 
 ### 7.2 — Replication
 
