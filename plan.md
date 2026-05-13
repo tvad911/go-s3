@@ -644,9 +644,9 @@ type Backend interface {
 
 ### 4.4 — Server-Side Encryption (SSE-S3 stub)
 
-- [ ] Header `x-amz-server-side-encryption: AES256`
-- [ ] Lưu flag trong metadata (không thực sự encrypt trong phase này)
-- [ ] Trả header `x-amz-server-side-encryption` trong response
+- [x] Header `x-amz-server-side-encryption: AES256`
+- [x] Lưu flag trong metadata (không thực sự encrypt trong phase này)
+- [x] Trả header `x-amz-server-side-encryption` trong response
 - [ ] (Nâng cao) SSE-C: client-provided key, AES-256-CTR encrypt/decrypt
 
 ### 4.5 — Object Lock (WORM) — Basic

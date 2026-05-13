@@ -27,6 +27,7 @@ func (h *S3Handler) CreateMultipartUpload(w http.ResponseWriter, r *http.Request
 		CacheControl:       r.Header.Get("Cache-Control"),
 		Expires:            r.Header.Get("Expires"),
 		StorageClass:       r.Header.Get("x-amz-storage-class"),
+		ServerSideEncryption: r.Header.Get("x-amz-server-side-encryption"),
 		ACL:                auth.ParseACL(r),
 		UserMeta:           make(map[string]string),
 	}
@@ -51,6 +52,10 @@ func (h *S3Handler) CreateMultipartUpload(w http.ResponseWriter, r *http.Request
 		Bucket:   bucket,
 		Key:      key,
 		UploadId: uploadID,
+	}
+
+	if meta.ServerSideEncryption != "" {
+		w.Header().Set("x-amz-server-side-encryption", meta.ServerSideEncryption)
 	}
 
 	w.Header().Set("Content-Type", "application/xml")
@@ -91,6 +96,11 @@ func (h *S3Handler) UploadPart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("ETag", `"`+part.ETag+`"`)
+
+	if meta, err := h.MetaStore.GetMultipartUpload(bucket, key, uploadID); err == nil && meta.ServerSideEncryption != "" {
+		w.Header().Set("x-amz-server-side-encryption", meta.ServerSideEncryption)
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -126,6 +136,14 @@ func (h *S3Handler) CompleteMultipartUpload(w http.ResponseWriter, r *http.Reque
 		Bucket:   bucket,
 		Key:      key,
 		ETag:     `"` + result.ETag + `"`,
+	}
+
+	if result.VersionID != "" && result.VersionID != "null" {
+		w.Header().Set("x-amz-version-id", result.VersionID)
+	}
+
+	if meta, err := h.MetaStore.GetMultipartUpload(bucket, key, uploadID); err == nil && meta.ServerSideEncryption != "" {
+		w.Header().Set("x-amz-server-side-encryption", meta.ServerSideEncryption)
 	}
 
 	w.Header().Set("Content-Type", "application/xml")

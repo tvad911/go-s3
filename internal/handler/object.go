@@ -31,6 +31,7 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 		CacheControl:       r.Header.Get("Cache-Control"),
 		Expires:            r.Header.Get("Expires"),
 		StorageClass:       r.Header.Get("x-amz-storage-class"),
+		ServerSideEncryption: r.Header.Get("x-amz-server-side-encryption"),
 		ACL:                auth.ParseACL(r),
 		UserMeta:           make(map[string]string),
 	}
@@ -78,6 +79,10 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 	if res.VersionID != "" && res.VersionID != "null" {
 		w.Header().Set("x-amz-version-id", res.VersionID)
 	}
+	if meta.ServerSideEncryption != "" {
+		w.Header().Set("x-amz-server-side-encryption", meta.ServerSideEncryption)
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -181,6 +186,9 @@ func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Expires", obj.Expires)
 	}
 	w.Header().Set("x-amz-storage-class", obj.StorageClass)
+	if obj.ServerSideEncryption != "" {
+		w.Header().Set("x-amz-server-side-encryption", obj.ServerSideEncryption)
+	}
 
 	for k, v := range obj.UserMeta {
 		w.Header().Set(k, v)
@@ -246,6 +254,9 @@ func (h *S3Handler) HeadObject(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Expires", meta.Expires)
 	}
 	w.Header().Set("x-amz-storage-class", meta.StorageClass)
+	if meta.ServerSideEncryption != "" {
+		w.Header().Set("x-amz-server-side-encryption", meta.ServerSideEncryption)
+	}
 
 	for k, v := range meta.UserMeta {
 		w.Header().Set(k, v)
@@ -356,6 +367,7 @@ func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 			CacheControl:       r.Header.Get("Cache-Control"),
 			Expires:            r.Header.Get("Expires"),
 			StorageClass:       r.Header.Get("x-amz-storage-class"),
+			ServerSideEncryption: r.Header.Get("x-amz-server-side-encryption"),
 			UserMeta:           make(map[string]string),
 		}
 		for k, v := range r.Header {

@@ -33,9 +33,10 @@ type ObjectMeta struct {
 	Tags               map[string]string
 	StorageClass       string
 	ACL                string
-	VersionID          string
-	IsDeleteMarker     bool
-	IsLatest           bool
+	VersionID            string
+	IsDeleteMarker       bool
+	IsLatest             bool
+	ServerSideEncryption string
 }
 
 // PutResult represents the result of a PutObject operation.
@@ -177,6 +178,7 @@ type CompleteResult struct {
 	Bucket   string
 	Key      string
 	ETag     string
+	VersionID string
 }
 
 // ListPartsOptions holds options for ListParts.

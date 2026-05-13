@@ -540,13 +540,28 @@ func (b *Backend) CompleteMultipartUpload(ctx context.Context, bucket, key, uplo
 		return nil, err
 	}
 
-	if err := os.Rename(finalTmpPath, finalPath); err != nil {
-		return nil, fmt.Errorf("rename failed: %w", err)
+	bInfo, err := b.meta.GetBucket(bucket)
+	if err == nil {
+		if bInfo.Versioning == "Enabled" {
+			meta.VersionID = uuid.New().String()
+		} else if bInfo.Versioning == "Suspended" {
+			meta.VersionID = "null"
+		}
 	}
+	meta.IsLatest = true
 
 	meta.ETag = finalETag
 	meta.Size = totalSize
 	meta.LastModified = time.Now().UTC()
+
+	// Rename final path to include version if applicable
+	if meta.VersionID != "" && meta.VersionID != "null" {
+		finalPath = finalPath + "@" + meta.VersionID
+	}
+
+	if err := os.Rename(finalTmpPath, finalPath); err != nil {
+		return nil, fmt.Errorf("rename failed: %w", err)
+	}
 
 	if err := b.meta.PutObject(bucket, key, *meta); err != nil {
 		os.Remove(finalPath)
@@ -558,7 +573,8 @@ func (b *Backend) CompleteMultipartUpload(ctx context.Context, bucket, key, uplo
 	os.RemoveAll(filepath.Join(b.tempDir, "multipart", uploadID))
 
 	return &storage.CompleteResult{
-		ETag: finalETag,
+		ETag:      finalETag,
+		VersionID: meta.VersionID,
 	}, nil
 }
 
