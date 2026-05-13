@@ -176,3 +176,40 @@ type Upload struct {
 	Owner     Owner     `xml:"Owner"`
 	Initiated time.Time `xml:"Initiated"`
 }
+
+// AccessControlPolicy represents an S3 ACL response.
+type AccessControlPolicy struct {
+	XMLName           string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ AccessControlPolicy"`
+	Owner             Owner  `xml:"Owner"`
+	AccessControlList struct {
+		Grant []Grant `xml:"Grant"`
+	} `xml:"AccessControlList"`
+}
+
+type Grant struct {
+	Grantee    Grantee `xml:"Grantee"`
+	Permission string  `xml:"Permission"`
+}
+
+type Grantee struct {
+	XMLName      string `xml:"Grantee"`
+	XMLNamespace string `xml:"xmlns:xsi,attr"`
+	XsiType      string `xml:"xsi:type,attr"`
+	ID           string `xml:"ID,omitempty"`
+	URI          string `xml:"URI,omitempty"`
+	DisplayName  string `xml:"DisplayName,omitempty"`
+}
+
+// CORSConfiguration represents an S3 CORS configuration.
+type CORSConfiguration struct {
+	XMLName  string     `xml:"http://s3.amazonaws.com/doc/2006-03-01/ CORSConfiguration"`
+	CORSRule []CORSRule `xml:"CORSRule"`
+}
+
+type CORSRule struct {
+	AllowedOrigin []string `xml:"AllowedOrigin"`
+	AllowedMethod []string `xml:"AllowedMethod"`
+	AllowedHeader []string `xml:"AllowedHeader,omitempty"`
+	ExposeHeader  []string `xml:"ExposeHeader,omitempty"`
+	MaxAgeSeconds int      `xml:"MaxAgeSeconds,omitempty"`
+}

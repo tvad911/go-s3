@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"gos3/internal/auth"
 	"gos3/internal/s3"
 	"gos3/internal/storage"
 	"gos3/internal/storage/local"
@@ -29,6 +30,7 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 		CacheControl:       r.Header.Get("Cache-Control"),
 		Expires:            r.Header.Get("Expires"),
 		StorageClass:       r.Header.Get("x-amz-storage-class"),
+		ACL:                auth.ParseACL(r),
 		UserMeta:           make(map[string]string),
 	}
 
@@ -322,4 +324,45 @@ func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(xml.Header))
 	xml.NewEncoder(w).Encode(res)
+}
+
+// GetObjectAcl handles GET /bucket/key?acl
+func (h *S3Handler) GetObjectAcl(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+	key := chi.URLParam(r, "key")
+
+	_, err := h.Backend.HeadObject(ctx, bucket, key)
+	if err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	res := s3.AccessControlPolicy{
+		Owner: s3.Owner{
+			ID:          "admin", // Stub
+			DisplayName: "admin",
+		},
+	}
+	res.AccessControlList.Grant = []s3.Grant{
+		{
+			Grantee: s3.Grantee{
+				XMLNamespace: "http://www.w3.org/2001/XMLSchema-instance",
+				XsiType:      "CanonicalUser",
+				ID:           "admin",
+				DisplayName:  "admin",
+			},
+			Permission: "FULL_CONTROL",
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(xml.Header))
+	xml.NewEncoder(w).Encode(res)
+}
+
+// PutObjectAcl handles PUT /bucket/key?acl
+func (h *S3Handler) PutObjectAcl(w http.ResponseWriter, r *http.Request) {
+	WriteError(w, r, s3.ErrNotImplemented)
 }

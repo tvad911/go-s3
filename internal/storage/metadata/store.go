@@ -2,7 +2,9 @@ package metadata
 
 import (
 	"errors"
+
 	"gos3/internal/auth"
+	"gos3/internal/s3"
 	"gos3/internal/storage"
 )
 
@@ -15,11 +17,15 @@ var (
 
 // Store defines the interface for the metadata database.
 type Store interface {
+	// CORSStore must be defined before use
+	GetBucketCORS(bucket string) (*s3.CORSConfiguration, error)
+	PutBucketCORS(bucket string, cors *s3.CORSConfiguration) error
+	DeleteBucketCORS(bucket string) error
 	// General
 	Close() error
 
 	// Bucket operations
-	CreateBucket(name, region, owner string) error
+	CreateBucket(name, region, owner, acl string) error
 	DeleteBucket(name string) error
 	GetBucket(name string) (*storage.BucketInfo, error)
 	ListBuckets() ([]storage.BucketInfo, error)
@@ -40,4 +46,5 @@ type Store interface {
 
 	// User management
 	auth.UserStore
+	auth.PolicyStore
 }

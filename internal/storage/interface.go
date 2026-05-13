@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 	"time"
+
+	"gos3/internal/s3"
 )
 
 // BucketInfo represents information about a bucket.
@@ -12,6 +14,7 @@ type BucketInfo struct {
 	CreationDate time.Time
 	Region       string
 	Owner        string
+	ACL          string
 }
 
 // ObjectMeta contains metadata for an object.
@@ -28,6 +31,7 @@ type ObjectMeta struct {
 	UserMeta           map[string]string
 	Tags               map[string]string
 	StorageClass       string
+	ACL                string
 }
 
 // PutResult represents the result of a PutObject operation.
@@ -185,10 +189,14 @@ type ListUploadsResult struct {
 // Backend is the main interface for the storage layer.
 type Backend interface {
 	// Bucket operations
-	CreateBucket(ctx context.Context, bucket, region string) error
+	CreateBucket(ctx context.Context, bucket, region, acl string) error
 	DeleteBucket(ctx context.Context, bucket string) error
 	BucketExists(ctx context.Context, bucket string) (bool, error)
 	ListBuckets(ctx context.Context) ([]BucketInfo, error)
+
+	GetBucketCORS(ctx context.Context, bucket string) (*s3.CORSConfiguration, error)
+	PutBucketCORS(ctx context.Context, bucket string, cors *s3.CORSConfiguration) error
+	DeleteBucketCORS(ctx context.Context, bucket string) error
 
 	// Object operations
 	PutObject(ctx context.Context, bucket, key string, r io.Reader, size int64, meta ObjectMeta) (*PutResult, error)

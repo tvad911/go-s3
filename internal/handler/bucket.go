@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 
+	"gos3/internal/auth"
 	"gos3/internal/s3"
 	"gos3/internal/storage"
 )
@@ -28,7 +30,9 @@ func (h *S3Handler) CreateBucket(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := h.Backend.CreateBucket(ctx, bucket, region); err != nil {
+	acl := auth.ParseACL(r)
+
+	if err := h.Backend.CreateBucket(ctx, bucket, region, acl); err != nil {
 		WriteError(w, r, err)
 		return
 	}
@@ -223,4 +227,145 @@ func (h *S3Handler) listObjectsV2(w http.ResponseWriter, r *http.Request, bucket
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(xml.Header))
 	xml.NewEncoder(w).Encode(res)
+}
+
+// GetBucketPolicy handles GET /bucket?policy
+func (h *S3Handler) GetBucketPolicy(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	policy, err := h.PolicyStore.GetBucketPolicy(ctx, bucket)
+	if err != nil {
+		WriteError(w, r, err) // Should map to s3.ErrNoSuchBucketPolicy
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(policy)
+}
+
+// PutBucketPolicy handles PUT /bucket?policy
+func (h *S3Handler) PutBucketPolicy(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	var policy auth.Policy
+	if err := json.NewDecoder(r.Body).Decode(&policy); err != nil {
+		WriteError(w, r, err) // MalformedPolicy
+		return
+	}
+
+	if err := h.PolicyStore.PutBucketPolicy(ctx, bucket, &policy); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// DeleteBucketPolicy handles DELETE /bucket?policy
+func (h *S3Handler) DeleteBucketPolicy(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	if err := h.PolicyStore.DeleteBucketPolicy(ctx, bucket); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetBucketAcl handles GET /bucket?acl
+func (h *S3Handler) GetBucketAcl(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	exists, err := h.Backend.BucketExists(ctx, bucket)
+	if err != nil {
+		WriteError(w, r, err)
+		return
+	}
+	if !exists {
+		WriteError(w, r, s3.ErrNoSuchBucket)
+		return
+	}
+
+	res := s3.AccessControlPolicy{
+		Owner: s3.Owner{
+			ID:          "admin", // Stub
+			DisplayName: "admin",
+		},
+	}
+	res.AccessControlList.Grant = []s3.Grant{
+		{
+			Grantee: s3.Grantee{
+				XMLNamespace: "http://www.w3.org/2001/XMLSchema-instance",
+				XsiType:      "CanonicalUser",
+				ID:           "admin",
+				DisplayName:  "admin",
+			},
+			Permission: "FULL_CONTROL",
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(xml.Header))
+	xml.NewEncoder(w).Encode(res)
+}
+
+// PutBucketAcl handles PUT /bucket?acl
+func (h *S3Handler) PutBucketAcl(w http.ResponseWriter, r *http.Request) {
+	WriteError(w, r, s3.ErrNotImplemented)
+}
+
+// GetBucketCors handles GET /bucket?cors
+func (h *S3Handler) GetBucketCors(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	cors, err := h.Backend.GetBucketCORS(ctx, bucket)
+	if err != nil {
+		WriteError(w, r, err) // Should map to NoSuchCORSConfiguration if not found
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(xml.Header))
+	xml.NewEncoder(w).Encode(cors)
+}
+
+// PutBucketCors handles PUT /bucket?cors
+func (h *S3Handler) PutBucketCors(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	var cors s3.CORSConfiguration
+	if err := xml.NewDecoder(r.Body).Decode(&cors); err != nil {
+		WriteError(w, r, s3.ErrMalformedXML)
+		return
+	}
+
+	if err := h.Backend.PutBucketCORS(ctx, bucket, &cors); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// DeleteBucketCors handles DELETE /bucket?cors
+func (h *S3Handler) DeleteBucketCors(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	bucket := chi.URLParam(r, "bucket")
+
+	if err := h.Backend.DeleteBucketCORS(ctx, bucket); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

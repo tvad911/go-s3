@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"gos3/internal/auth"
 	"gos3/internal/s3"
 	"gos3/internal/storage"
 	"gos3/internal/storage/local"
@@ -26,6 +27,7 @@ func (h *S3Handler) CreateMultipartUpload(w http.ResponseWriter, r *http.Request
 		CacheControl:       r.Header.Get("Cache-Control"),
 		Expires:            r.Header.Get("Expires"),
 		StorageClass:       r.Header.Get("x-amz-storage-class"),
+		ACL:                auth.ParseACL(r),
 		UserMeta:           make(map[string]string),
 	}
 

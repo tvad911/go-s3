@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"gos3/internal/auth"
 	"gos3/internal/s3"
 	"gos3/internal/storage"
 	"gos3/internal/storage/metadata"
@@ -57,10 +58,9 @@ func (b *Backend) cleanupTemp() error {
 	return nil
 }
 
-func (b *Backend) CreateBucket(ctx context.Context, bucket, region string) error {
-	owner := "admin" // Stub for now
-	err := b.meta.CreateBucket(bucket, region, owner)
-	if err != nil {
+func (b *Backend) CreateBucket(ctx context.Context, bucket, region, acl string) error {
+	user := auth.GetUser(ctx)
+	if err := b.meta.CreateBucket(bucket, region, user.Username, acl); err != nil {
 		if err == metadata.ErrBucketExists {
 			return s3.ErrBucketAlreadyExists
 		}
@@ -96,6 +96,18 @@ func (b *Backend) BucketExists(ctx context.Context, bucket string) (bool, error)
 		return false, err
 	}
 	return true, nil
+}
+
+func (b *Backend) GetBucketCORS(ctx context.Context, bucket string) (*s3.CORSConfiguration, error) {
+	return b.meta.GetBucketCORS(bucket)
+}
+
+func (b *Backend) PutBucketCORS(ctx context.Context, bucket string, cors *s3.CORSConfiguration) error {
+	return b.meta.PutBucketCORS(bucket, cors)
+}
+
+func (b *Backend) DeleteBucketCORS(ctx context.Context, bucket string) error {
+	return b.meta.DeleteBucketCORS(bucket)
 }
 
 func (b *Backend) ListBuckets(ctx context.Context) ([]storage.BucketInfo, error) {

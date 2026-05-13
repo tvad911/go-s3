@@ -13,13 +13,16 @@ import (
 	"go.etcd.io/bbolt"
 
 	"gos3/internal/auth"
+	"gos3/internal/s3"
 	"gos3/internal/storage"
 )
 
 var (
 	bucketBuckets = []byte("buckets")
-	bucketUploads = []byte("uploads")
-	bucketUsers   = []byte("users")
+	bucketUploads  = []byte("uploads")
+	bucketUsers    = []byte("users")
+	bucketPolicies = []byte("policies")
+	bucketCORS     = []byte("cors")
 )
 
 type bboltStore struct {
@@ -44,6 +47,12 @@ func NewBboltStore(path string) (Store, error) {
 		if _, err := tx.CreateBucketIfNotExists(bucketUsers); err != nil {
 			return err
 		}
+		if _, err := tx.CreateBucketIfNotExists(bucketPolicies); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketCORS); err != nil {
+			return err
+		}
 		return nil
 	})
 	if err != nil {
@@ -57,7 +66,7 @@ func (s *bboltStore) Close() error {
 	return s.db.Close()
 }
 
-func (s *bboltStore) CreateBucket(name, region, owner string) error {
+func (s *bboltStore) CreateBucket(name, region, owner, acl string) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket(bucketBuckets)
 		if b.Get([]byte(name)) != nil {
@@ -69,6 +78,7 @@ func (s *bboltStore) CreateBucket(name, region, owner string) error {
 			CreationDate: time.Now().UTC(),
 			Region:       region,
 			Owner:        owner,
+			ACL:          acl,
 		}
 		data, err := json.Marshal(info)
 		if err != nil {
@@ -556,5 +566,80 @@ func (s *bboltStore) DeleteUser(ctx context.Context, username string) error {
 			return auth.ErrUserNotFound
 		}
 		return b.Delete([]byte(username))
+	})
+}
+
+// PolicyStore implementation
+
+func (s *bboltStore) GetBucketPolicy(ctx context.Context, bucket string) (*auth.Policy, error) {
+	var policy auth.Policy
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketPolicies)
+		v := b.Get([]byte(bucket))
+		if v == nil {
+			return auth.ErrPolicyNotFound
+		}
+		return json.Unmarshal(v, &policy)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &policy, nil
+}
+
+func (s *bboltStore) PutBucketPolicy(ctx context.Context, bucket string, policy *auth.Policy) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketPolicies)
+		data, err := json.Marshal(policy)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(bucket), data)
+	})
+}
+
+func (s *bboltStore) DeleteBucketPolicy(ctx context.Context, bucket string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketPolicies)
+		if b.Get([]byte(bucket)) == nil {
+			return auth.ErrPolicyNotFound
+		}
+		return b.Delete([]byte(bucket))
+	})
+}
+
+// CORS implementations
+
+func (s *bboltStore) GetBucketCORS(bucket string) (*s3.CORSConfiguration, error) {
+	var cors s3.CORSConfiguration
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketCORS)
+		v := b.Get([]byte(bucket))
+		if v == nil {
+			return s3.ErrNoSuchBucket // Wait, usually NoSuchCORSConfiguration, we'll map later
+		}
+		return json.Unmarshal(v, &cors)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &cors, nil
+}
+
+func (s *bboltStore) PutBucketCORS(bucket string, cors *s3.CORSConfiguration) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketCORS)
+		data, err := json.Marshal(cors)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(bucket), data)
+	})
+}
+
+func (s *bboltStore) DeleteBucketCORS(bucket string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketCORS)
+		return b.Delete([]byte(bucket))
 	})
 }

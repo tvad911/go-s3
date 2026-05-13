@@ -18,7 +18,7 @@ import (
 func SetupRouter(cfg *config.Config, backend storage.Backend, verifier *auth.SigV4Verifier) *chi.Mux {
 	r := chi.NewRouter()
 
-	s3Handler := handler.NewS3Handler(backend)
+	s3Handler := handler.NewS3Handler(backend, backend.(auth.PolicyStore))
 	adminHandler := handler.NewAdminHandler(backend.(auth.UserStore)) // backend should implement UserStore if we passed it correctly, or we need to pass store to SetupRouter
 
 	r.Use(middleware.RealIP)
@@ -26,9 +26,8 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, verifier *auth.Sig
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RateLimit(&cfg.RateLimit))
+	r.Use(middleware.CORS(backend.(middleware.CORSStore)))
 	r.Use(middleware.Auth(verifier))
-	// TODO: Add CORS
-	// r.Use(middleware.CORS)
 
 	// Admin API
 	r.Route(cfg.Admin.PathPrefix, func(r chi.Router) {
@@ -60,8 +59,39 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, verifier *auth.Sig
 	// Bucket operations
 	r.Route("/{bucket}", func(r chi.Router) {
 		// Bucket CRUD
-		r.Put("/", s3Handler.CreateBucket)
-		r.Delete("/", s3Handler.DeleteBucket)
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Query().Has("acl") {
+				s3Handler.GetBucketAcl(w, r)
+			} else if r.URL.Query().Has("cors") {
+				s3Handler.GetBucketCors(w, r)
+			} else if r.URL.Query().Has("policy") {
+				s3Handler.GetBucketPolicy(w, r)
+			} else if r.URL.Query().Has("uploads") {
+				s3Handler.ListMultipartUploads(w, r)
+			} else {
+				s3Handler.ListObjects(w, r)
+			}
+		})
+		r.Put("/", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Query().Has("acl") {
+				s3Handler.PutBucketAcl(w, r)
+			} else if r.URL.Query().Has("cors") {
+				s3Handler.PutBucketCors(w, r)
+			} else if r.URL.Query().Has("policy") {
+				s3Handler.PutBucketPolicy(w, r)
+			} else {
+				s3Handler.CreateBucket(w, r)
+			}
+		})
+		r.Delete("/", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Query().Has("cors") {
+				s3Handler.DeleteBucketCors(w, r)
+			} else if r.URL.Query().Has("policy") {
+				s3Handler.DeleteBucketPolicy(w, r)
+			} else {
+				s3Handler.DeleteBucket(w, r)
+			}
+		})
 		r.Head("/", s3Handler.HeadBucket)
 		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
 			if r.URL.Query().Has("delete") {
@@ -70,25 +100,22 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, verifier *auth.Sig
 				stubHandler("PostObject")(w, r)
 			}
 		})
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Query().Has("uploads") {
-				s3Handler.ListMultipartUploads(w, r)
-			} else {
-				s3Handler.ListObjects(w, r)
-			}
-		})
 
 		// Object operations
 		r.Route("/{key:.*}", func(r chi.Router) {
 			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Query().Has("uploadId") {
+				if r.URL.Query().Has("acl") {
+					s3Handler.GetObjectAcl(w, r)
+				} else if r.URL.Query().Has("uploadId") {
 					s3Handler.ListParts(w, r)
 				} else {
 					s3Handler.GetObject(w, r)
 				}
 			})
 			r.Put("/", func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Query().Has("partNumber") && r.URL.Query().Has("uploadId") {
+				if r.URL.Query().Has("acl") {
+					s3Handler.PutObjectAcl(w, r)
+				} else if r.URL.Query().Has("partNumber") && r.URL.Query().Has("uploadId") {
 					s3Handler.UploadPart(w, r)
 				} else if r.Header.Get("x-amz-copy-source") != "" {
 					s3Handler.CopyObject(w, r)
