@@ -1,0 +1,21 @@
+# Binaries
+bin/
+gos3
+gos3c
+
+# Test and coverage
+coverage.out
+*.test
+
+# Data directories
+data/
+tmp/
+
+# OS specific
+.DS_Store
+*.exe
+
+# Editor config
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,54 @@
+# config.yaml
+server:
+  host: "0.0.0.0"
+  port: 9000
+  read_timeout: 30s
+  write_timeout: 0s      # 0 = unlimited (cho streaming large objects)
+  idle_timeout: 120s
+  read_header_timeout: 10s  # chống slowloris attack
+  max_header_bytes: 1048576 # 1MB max header size
+  tls:
+    enabled: false
+    cert: "/certs/server.crt"
+    key:  "/certs/server.key"
+
+storage:
+  data_dir: "./data/objects"
+  temp_dir: "./data/tmp"
+  meta_db:  "./data/meta.db"
+  max_object_size: 5497558138880  # 5TB
+  multipart_cleanup_days: 7
+
+auth:
+  root_access_key: "minioadmin"
+  root_secret_key: "minioadmin"
+  region: "us-east-1"
+  token_expiry_minutes: 15   # SigV4 clock skew tolerance
+
+cors:
+  global_allowed_origins:
+    - "*"
+  global_allowed_methods:
+    - "GET"
+    - "PUT"
+    - "POST"
+    - "DELETE"
+    - "HEAD"
+
+log:
+  level: "info"      # debug | info | warn | error
+  format: "json"     # json | text
+  output: "stdout"   # stdout | /path/to/file
+
+rate_limit:
+  enabled: true
+  requests_per_second: 1000
+  burst: 200
+
+metrics:
+  enabled: true
+  path: "/_metrics"
+
+admin:
+  api_enabled: true
+  path_prefix: "/_admin"
