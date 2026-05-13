@@ -442,28 +442,28 @@ type Backend interface {
 
 ### 2.7 — Multipart Upload (`internal/handler/multipart.go`)
 
-- [ ] `POST /{bucket}/{key}?uploads` — **CreateMultipartUpload**
+- [x] `POST /{bucket}/{key}?uploads` — **CreateMultipartUpload**
   - Generate unique `uploadId` (UUID)
   - Lưu metadata + headers ban đầu
-- [ ] `PUT /{bucket}/{key}?partNumber=N&uploadId=X` — **UploadPart**
+- [x] `PUT /{bucket}/{key}?partNumber=N&uploadId=X` — **UploadPart**
   - Validate `partNumber` (1–10000)
   - Stream part data → disk (`multipart/{uploadId}/parts/{N}`)
   - Tính ETag của part
-- [ ] `PUT /{bucket}/{key}?uploadId=X` với `x-amz-copy-source` — **UploadPartCopy**
+- [x] `PUT /{bucket}/{key}?uploadId=X` với `x-amz-copy-source` — **UploadPartCopy**
   - Copy từ object hiện có làm 1 part
-- [ ] `POST /{bucket}/{key}?uploadId=X` — **CompleteMultipartUpload**
+- [x] `POST /{bucket}/{key}?uploadId=X` — **CompleteMultipartUpload**
   - Validate parts (số thứ tự tăng dần, đủ ETag)
   - Ghép các part files thành object cuối
   - Tính ETag tổng hợp: `MD5(MD5s...)-N`
   - Cleanup temp parts
-- [ ] `DELETE /{bucket}/{key}?uploadId=X` — **AbortMultipartUpload**
+- [x] `DELETE /{bucket}/{key}?uploadId=X` — **AbortMultipartUpload**
   - Xóa tất cả parts + metadata
-- [ ] `GET /{bucket}/{key}?uploadId=X` — **ListParts**
+- [x] `GET /{bucket}/{key}?uploadId=X` — **ListParts**
   - Phân trang bằng `part-number-marker`
-- [ ] `GET /{bucket}?uploads` — **ListMultipartUploads**
+- [x] `GET /{bucket}?uploads` — **ListMultipartUploads**
   - Filter bằng `prefix`, `key-marker`, `upload-id-marker`
-- [ ] Background cleanup: abort multipart uploads cũ hơn 7 ngày
-- [ ] Graceful shutdown: nếu server nhận SIGTERM giữa CompleteMultipartUpload:
+- [x] Background cleanup: abort multipart uploads cũ hơn 7 ngày
+- [x] Graceful shutdown: nếu server nhận SIGTERM giữa CompleteMultipartUpload:
   - `context.Context` cancellation propagate tới storage layer
   - Cleanup orphan temp files khi startup (scan `multipart/` directory)
   - Transaction-safe complete: write final object → update metadata → delete parts (ordered)

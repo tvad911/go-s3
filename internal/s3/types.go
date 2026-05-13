@@ -104,3 +104,75 @@ type CopyObjectResult struct {
 	LastModified time.Time `xml:"LastModified"`
 	ETag         string    `xml:"ETag"`
 }
+
+// InitiateMultipartUploadResult is the response for CreateMultipartUpload.
+type InitiateMultipartUploadResult struct {
+	XMLName  string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ InitiateMultipartUploadResult"`
+	Bucket   string `xml:"Bucket"`
+	Key      string `xml:"Key"`
+	UploadId string `xml:"UploadId"`
+}
+
+// CompleteMultipartUpload is the request body for CompleteMultipartUpload.
+type CompleteMultipartUpload struct {
+	XMLName string `xml:"CompleteMultipartUpload"`
+	Parts   []Part `xml:"Part"`
+}
+
+type Part struct {
+	PartNumber int    `xml:"PartNumber"`
+	ETag       string `xml:"ETag"`
+}
+
+// CompleteMultipartUploadResult is the response for CompleteMultipartUpload.
+type CompleteMultipartUploadResult struct {
+	XMLName  string `xml:"http://s3.amazonaws.com/doc/2006-03-01/ CompleteMultipartUploadResult"`
+	Location string `xml:"Location"`
+	Bucket   string `xml:"Bucket"`
+	Key      string `xml:"Key"`
+	ETag     string `xml:"ETag"`
+}
+
+// ListPartsResult is the response for ListParts.
+type ListPartsResult struct {
+	XMLName              string     `xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListPartsResult"`
+	Bucket               string     `xml:"Bucket"`
+	Key                  string     `xml:"Key"`
+	UploadId             string     `xml:"UploadId"`
+	PartNumberMarker     int        `xml:"PartNumberMarker"`
+	NextPartNumberMarker int        `xml:"NextPartNumberMarker"`
+	MaxParts             int        `xml:"MaxParts"`
+	IsTruncated          bool       `xml:"IsTruncated"`
+	Initiator            Owner      `xml:"Initiator"`
+	Owner                Owner      `xml:"Owner"`
+	Parts                []PartInfo `xml:"Part"`
+}
+
+type PartInfo struct {
+	PartNumber   int       `xml:"PartNumber"`
+	LastModified time.Time `xml:"LastModified"`
+	ETag         string    `xml:"ETag"`
+	Size         int64     `xml:"Size"`
+}
+
+// ListMultipartUploadsResult is the response for ListMultipartUploads.
+type ListMultipartUploadsResult struct {
+	XMLName            string         `xml:"http://s3.amazonaws.com/doc/2006-03-01/ ListMultipartUploadsResult"`
+	Bucket             string         `xml:"Bucket"`
+	KeyMarker          string         `xml:"KeyMarker"`
+	UploadIdMarker     string         `xml:"UploadIdMarker"`
+	NextKeyMarker      string         `xml:"NextKeyMarker"`
+	NextUploadIdMarker string         `xml:"NextUploadIdMarker"`
+	MaxUploads         int            `xml:"MaxUploads"`
+	IsTruncated        bool           `xml:"IsTruncated"`
+	Uploads            []Upload       `xml:"Upload"`
+	CommonPrefixes     []CommonPrefix `xml:"CommonPrefixes,omitempty"`
+}
+
+type Upload struct {
+	Key       string    `xml:"Key"`
+	UploadId  string    `xml:"UploadId"`
+	Initiator Owner     `xml:"Initiator"`
+	Owner     Owner     `xml:"Owner"`
+	Initiated time.Time `xml:"Initiated"`
+}

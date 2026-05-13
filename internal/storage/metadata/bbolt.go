@@ -1,12 +1,14 @@
 package metadata
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 
 	"gos3/internal/storage"
@@ -256,26 +258,199 @@ func (s *bboltStore) ListObjects(bucket, prefix, delimiter, marker string, maxKe
 }
 
 func (s *bboltStore) CreateMultipartUpload(bucket, key string, meta storage.ObjectMeta) (string, error) {
-	// Not implemented completely yet for simplicity in this example
-	return "", errors.New("not implemented")
+	uploadID := uuid.New().String()
+
+	err := s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketUploads)
+
+		info := storage.UploadInfo{
+			Key:       key,
+			UploadID:  uploadID,
+			Initiated: time.Now().UTC(),
+			Owner:     "admin",
+			Initiator: "admin",
+		}
+
+		data, err := json.Marshal(info)
+		if err != nil {
+			return err
+		}
+
+		// Key format for uploads bucket: bucket:key:uploadID
+		k := fmt.Sprintf("%s:%s:%s", bucket, key, uploadID)
+		if err := b.Put([]byte(k), data); err != nil {
+			return err
+		}
+
+		// Save metadata
+		metaData, err := json.Marshal(meta)
+		if err != nil {
+			return err
+		}
+		mk := fmt.Sprintf("meta:%s:%s:%s", bucket, key, uploadID)
+		if err := b.Put([]byte(mk), metaData); err != nil {
+			return err
+		}
+
+		_, err = tx.CreateBucketIfNotExists([]byte("parts:" + uploadID))
+		return err
+	})
+
+	return uploadID, err
 }
 
 func (s *bboltStore) GetMultipartUpload(bucket, key, uploadID string) (*storage.ObjectMeta, error) {
-	return nil, errors.New("not implemented")
+	var meta storage.ObjectMeta
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketUploads)
+		mk := fmt.Sprintf("meta:%s:%s:%s", bucket, key, uploadID)
+		data := b.Get([]byte(mk))
+		if data == nil {
+			return ErrUploadNotFound
+		}
+		return json.Unmarshal(data, &meta)
+	})
+	return &meta, err
 }
 
 func (s *bboltStore) DeleteMultipartUpload(bucket, key, uploadID string) error {
-	return errors.New("not implemented")
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketUploads)
+		k := fmt.Sprintf("%s:%s:%s", bucket, key, uploadID)
+		mk := fmt.Sprintf("meta:%s:%s:%s", bucket, key, uploadID)
+
+		if b.Get([]byte(k)) == nil {
+			return ErrUploadNotFound
+		}
+
+		b.Delete([]byte(k))
+		b.Delete([]byte(mk))
+
+		tx.DeleteBucket([]byte("parts:" + uploadID))
+		return nil
+	})
 }
 
 func (s *bboltStore) PutObjectPart(uploadID string, partNum int, partInfo storage.PartInfo) error {
-	return errors.New("not implemented")
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte("parts:" + uploadID))
+		if b == nil {
+			return ErrUploadNotFound
+		}
+
+		data, err := json.Marshal(partInfo)
+		if err != nil {
+			return err
+		}
+
+		// Pad partNum so it sorts correctly
+		k := fmt.Sprintf("%05d", partNum)
+		return b.Put([]byte(k), data)
+	})
 }
 
 func (s *bboltStore) ListObjectParts(uploadID string, partNumberMarker, maxParts int) ([]storage.PartInfo, int, error) {
-	return nil, 0, errors.New("not implemented")
+	var parts []storage.PartInfo
+	var nextMarker int
+
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket([]byte("parts:" + uploadID))
+		if b == nil {
+			return ErrUploadNotFound
+		}
+
+		c := b.Cursor()
+		k, v := c.First()
+		if partNumberMarker > 0 {
+			k, v = c.Seek([]byte(fmt.Sprintf("%05d", partNumberMarker)))
+			if k != nil && string(k) == fmt.Sprintf("%05d", partNumberMarker) {
+				k, v = c.Next()
+			}
+		}
+
+		for ; k != nil; k, v = c.Next() {
+			var part storage.PartInfo
+			if err := json.Unmarshal(v, &part); err != nil {
+				return err
+			}
+			parts = append(parts, part)
+
+			if len(parts) >= maxParts {
+				// Look ahead to see if there's more
+				k2, _ := c.Next()
+				if k2 != nil {
+					nextMarker = part.PartNumber
+				}
+				break
+			}
+		}
+		return nil
+	})
+
+	return parts, nextMarker, err
 }
 
 func (s *bboltStore) ListMultipartUploads(bucket, prefix, delimiter, keyMarker, uploadIDMarker string, maxUploads int) ([]storage.UploadInfo, []string, string, string, error) {
-	return nil, nil, "", "", errors.New("not implemented")
+	var uploads []storage.UploadInfo
+	var commonPrefixes []string
+	var nextKeyMarker, nextUploadIDMarker string
+
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketUploads)
+		c := b.Cursor()
+
+		prefixBytes := []byte(bucket + ":")
+		if prefix != "" {
+			prefixBytes = []byte(bucket + ":" + prefix)
+		}
+
+		k, v := c.Seek(prefixBytes)
+
+		// Very simplified marker logic for the stub
+		// A full implementation would handle keyMarker & uploadIDMarker precisely.
+
+		prefixes := make(map[string]bool)
+
+		for ; k != nil && bytes.HasPrefix(k, []byte(bucket+":")); k, v = c.Next() {
+			// key format: bucket:key:uploadID
+			parts := strings.Split(string(k), ":")
+			if len(parts) != 3 || parts[0] != "meta" && string(k) != parts[0]+":"+parts[1]+":"+parts[2] {
+				// Skip meta records
+				continue
+			}
+			keyStr := parts[1]
+
+			if delimiter != "" {
+				rem := keyStr[len(prefix):]
+				if idx := strings.Index(rem, delimiter); idx >= 0 {
+					pfx := prefix + rem[:idx+len(delimiter)]
+					if !prefixes[pfx] {
+						prefixes[pfx] = true
+						commonPrefixes = append(commonPrefixes, pfx)
+						if len(uploads)+len(commonPrefixes) >= maxUploads {
+							nextKeyMarker = keyStr
+							return nil
+						}
+					}
+					continue
+				}
+			}
+
+			var info storage.UploadInfo
+			if err := json.Unmarshal(v, &info); err != nil {
+				return err
+			}
+			uploads = append(uploads, info)
+
+			if len(uploads)+len(commonPrefixes) >= maxUploads {
+				nextKeyMarker = info.Key
+				nextUploadIDMarker = info.UploadID
+				return nil
+			}
+		}
+
+		return nil
+	})
+
+	return uploads, commonPrefixes, nextKeyMarker, nextUploadIDMarker, err
 }

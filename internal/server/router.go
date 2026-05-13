@@ -62,17 +62,57 @@ func SetupRouter(cfg *config.Config, backend storage.Backend) *chi.Mux {
 		r.Put("/", s3Handler.CreateBucket)
 		r.Delete("/", s3Handler.DeleteBucket)
 		r.Head("/", s3Handler.HeadBucket)
-		r.Post("/", stubHandler("DeleteObjectsOrPostObject")) // POST ?delete or HTML form upload
-		r.Get("/", s3Handler.ListObjects)
+		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Query().Has("delete") {
+				s3Handler.DeleteObjects(w, r)
+			} else {
+				stubHandler("PostObject")(w, r)
+			}
+		})
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Query().Has("uploads") {
+				s3Handler.ListMultipartUploads(w, r)
+			} else {
+				s3Handler.ListObjects(w, r)
+			}
+		})
 
 		// Object operations
 		r.Route("/{key:.*}", func(r chi.Router) {
-			r.Get("/", s3Handler.GetObject)
-			r.Put("/", s3Handler.PutObject) // Covers CopyObject via x-amz-copy-source and UploadPart via ?partNumber
-			r.Delete("/", s3Handler.DeleteObject)
+			r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Query().Has("uploadId") {
+					s3Handler.ListParts(w, r)
+				} else {
+					s3Handler.GetObject(w, r)
+				}
+			})
+			r.Put("/", func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Query().Has("partNumber") && r.URL.Query().Has("uploadId") {
+					s3Handler.UploadPart(w, r)
+				} else if r.Header.Get("x-amz-copy-source") != "" {
+					s3Handler.CopyObject(w, r)
+				} else {
+					s3Handler.PutObject(w, r)
+				}
+			})
+			r.Delete("/", func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Query().Has("uploadId") {
+					s3Handler.AbortMultipartUpload(w, r)
+				} else {
+					s3Handler.DeleteObject(w, r)
+				}
+			})
 			r.Head("/", s3Handler.HeadObject)
 			r.Options("/", stubHandler("CORSPreflight"))
-			r.Post("/", stubHandler("CreateCompleteOrMultipart")) // S3 Select stub, Create/Complete/Abort Multipart based on query
+			r.Post("/", func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Query().Has("uploads") {
+					s3Handler.CreateMultipartUpload(w, r)
+				} else if r.URL.Query().Has("uploadId") {
+					s3Handler.CompleteMultipartUpload(w, r)
+				} else {
+					stubHandler("PostObject")(w, r)
+				}
+			})
 		})
 	})
 
