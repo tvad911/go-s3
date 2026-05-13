@@ -319,8 +319,8 @@ type Backend interface {
 
 ### 2.2 — Local Filesystem Backend (`internal/storage/local/`)
 
-- [ ] **local.go** — implement `Backend` interface
-- [ ] **Layout thư mục trên disk:**
+- [x] **local.go** — implement `Backend` interface
+- [x] **Layout thư mục trên disk:**
   ```
   {dataDir}/
   ├── buckets/
@@ -334,33 +334,33 @@ type Backend interface {
   │           └── {partNumber}
   └── meta.db         ← bbolt database
   ```
-- [ ] Object lưu raw bytes, metadata lưu trong bbolt
-- [ ] **chunk.go** — streaming write theo chunks (không buffer toàn bộ RAM)
-- [ ] **disk.go** — kiểm tra dung lượng disk trước khi write (`syscall.Statfs`)
+- [x] Object lưu raw bytes, metadata lưu trong bbolt
+- [x] **chunk.go** — streaming write theo chunks (không buffer toàn bộ RAM)
+- [x] **disk.go** — kiểm tra dung lượng disk trước khi write (`syscall.Statfs`)
   - PutObject và UploadPart **phải** check disk space trước
   - Trả `InsufficientStorage` error nếu không đủ dung lượng
-- [ ] Atomic write: write → temp file → rename (tránh corruption)
-- [ ] `PutObject`: tính ETag = MD5(content) trong khi stream
-- [ ] `PutObject`: hỗ trợ AWS Chunked Upload (`x-amz-content-sha256: STREAMING-AWS4-HMAC-SHA256-PAYLOAD`)
+- [x] Atomic write: write → temp file → rename (tránh corruption)
+- [x] `PutObject`: tính ETag = MD5(content) trong khi stream
+- [x] `PutObject`: hỗ trợ AWS Chunked Upload (`x-amz-content-sha256: STREAMING-AWS4-HMAC-SHA256-PAYLOAD`)
   - Parse chunk format: `{hex-size};chunk-signature={sig}\r\n{data}\r\n`
   - Stream trực tiếp vào storage, không buffer toàn bộ body
   - **Lý do di chuyển từ Phase 4:** AWS SDK Go v2 và awscli gửi chunked **mặc định**, nếu không handle ở Phase 2, server sẽ không tương thích với bất kỳ AWS SDK nào
-- [ ] `PutObject`: hỗ trợ `Transfer-Encoding: chunked` (HTTP chunked)
-- [ ] `GetObject`: support `Range` header (byte ranges)
-- [ ] `CopyObject`: server-side copy, có thể copy metadata
-- [ ] `DeleteObjects` (batch delete, tối đa 1000 keys/request)
-- [ ] Startup cleanup: scan `tmp/` directory, xóa orphan temp files từ lần chạy trước (graceful recovery)
+- [x] `PutObject`: hỗ trợ `Transfer-Encoding: chunked` (HTTP chunked)
+- [x] `GetObject`: support `Range` header (byte ranges)
+- [x] `CopyObject`: server-side copy, có thể copy metadata
+- [x] `DeleteObjects` (batch delete, tối đa 1000 keys/request)
+- [x] Startup cleanup: scan `tmp/` directory, xóa orphan temp files từ lần chạy trước (graceful recovery)
 
 ### 2.3 — Metadata Store (`internal/storage/metadata/`)
 
-- [ ] Dùng **bbolt** (embedded key-value, không cần external DB)
-- [ ] Buckets: `bucket:{name}` → `BucketMeta{Created, Region, Owner}`
-- [ ] Objects: `object:{bucket}:{key}` → `ObjectMeta{Size, ETag, ContentType, ContentEncoding, ContentDisposition, ContentLanguage, CacheControl, Expires, LastModified, UserMeta, Tags, StorageClass}`
-- [ ] Multipart: `upload:{uploadId}` → `UploadMeta{...}`
-- [ ] Parts: `part:{uploadId}:{partNum}` → `PartMeta{ETag, Size}`
-- [ ] Index để list: `list:{bucket}:` prefix scan cho ListObjects
-- [ ] Bucket tags: `tag:bucket:{name}` → JSON
-- [ ] Object tags: `tag:object:{bucket}:{key}` → JSON
+- [x] Dùng **bbolt** (embedded key-value, không cần external DB)
+- [x] Buckets: `bucket:{name}` → `BucketMeta{Created, Region, Owner}`
+- [x] Objects: `object:{bucket}:{key}` → `ObjectMeta{Size, ETag, ContentType, ContentEncoding, ContentDisposition, ContentLanguage, CacheControl, Expires, LastModified, UserMeta, Tags, StorageClass}`
+- [x] Multipart: `upload:{uploadId}` → `UploadMeta{...}`
+- [x] Parts: `part:{uploadId}:{partNum}` → `PartMeta{ETag, Size}`
+- [x] Index để list: `list:{bucket}:` prefix scan cho ListObjects
+- [x] Bucket tags: `tag:bucket:{name}` → JSON
+- [x] Object tags: `tag:object:{bucket}:{key}` → JSON
 
 > **bbolt write contention note:** bbolt cho phép **1 write transaction tại 1 thời điểm** (MVCC single-writer).
 > Phase này chấp nhận limitation này (ok cho small/medium scale).
