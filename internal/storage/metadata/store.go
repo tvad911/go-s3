@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"errors"
+	"gos3/internal/auth"
 	"gos3/internal/storage"
 )
 
@@ -36,4 +37,7 @@ type Store interface {
 	PutObjectPart(uploadID string, partNum int, partInfo storage.PartInfo) error
 	ListObjectParts(uploadID string, partNumberMarker, maxParts int) ([]storage.PartInfo, int, error)
 	ListMultipartUploads(bucket, prefix, delimiter, keyMarker, uploadIDMarker string, maxUploads int) ([]storage.UploadInfo, []string, string, string, error)
+
+	// User management
+	auth.UserStore
 }

@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
+	"time"
 
+	"gos3/internal/auth"
 	"gos3/internal/config"
 	"gos3/internal/server"
 	"gos3/internal/storage/local"
@@ -49,8 +52,24 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Ensure root user exists
+	rootUser := &auth.User{
+		Username:    "root",
+		AccessKeyID: cfg.Auth.RootAccessKey,
+		SecretKey:   cfg.Auth.RootSecretKey,
+		IsRoot:      true,
+		CreatedAt:   time.Now().UTC(),
+	}
+	// Try to get root by access key; if it doesn't exist, create it.
+	// In a real app we might update the secret key if it changed in config.
+	if _, err := metaStore.GetUserByAccessKey(context.Background(), cfg.Auth.RootAccessKey); err != nil {
+		_ = metaStore.CreateUser(context.Background(), rootUser)
+	}
+
+	sigv4Verifier := auth.NewSigV4Verifier(metaStore, cfg.Auth.Region)
+
 	// Initialize and start server
-	srv := server.New(cfg, backend)
+	srv := server.New(cfg, backend, sigv4Verifier)
 	if err := srv.Start(); err != nil {
 		slog.Error("server error", "error", err)
 		os.Exit(1)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"gos3/internal/auth"
 	"gos3/internal/config"
 	"gos3/internal/handler"
 	"gos3/internal/middleware"
@@ -14,32 +15,32 @@ import (
 )
 
 // SetupRouter initializes and returns the main HTTP router for the server.
-func SetupRouter(cfg *config.Config, backend storage.Backend) *chi.Mux {
+func SetupRouter(cfg *config.Config, backend storage.Backend, verifier *auth.SigV4Verifier) *chi.Mux {
 	r := chi.NewRouter()
 
 	s3Handler := handler.NewS3Handler(backend)
+	adminHandler := handler.NewAdminHandler(backend.(auth.UserStore)) // backend should implement UserStore if we passed it correctly, or we need to pass store to SetupRouter
 
 	r.Use(middleware.RealIP)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RateLimit(&cfg.RateLimit))
-	// TODO: Add auth and cors
-	// r.Use(mw.CORS)
-	// r.Use(mw.Auth)
+	r.Use(middleware.Auth(verifier))
+	// TODO: Add CORS
+	// r.Use(middleware.CORS)
 
 	// Admin API
 	r.Route(cfg.Admin.PathPrefix, func(r chi.Router) {
-		r.Get("/info", stubHandler("GetAdminInfo"))
-		r.Post("/presign", stubHandler("GeneratePresignedURL"))
-		r.Route("/users", func(r chi.Router) {
-			r.Get("/", stubHandler("ListUsers"))
-			r.Post("/", stubHandler("CreateUser"))
-			r.Get("/{username}", stubHandler("GetUser"))
-			r.Put("/{username}", stubHandler("UpdateUser"))
-			r.Delete("/{username}", stubHandler("DeleteUser"))
-			r.Post("/{username}/rotate-key", stubHandler("RotateUserKey"))
-		})
+		r.Use(handler.EnsureRoot) // Must be root
+
+		// User Management
+		r.Get("/users", adminHandler.ListUsers)
+		r.Post("/users", adminHandler.CreateUser)
+		r.Get("/users/{username}", adminHandler.GetUser)
+		r.Put("/users/{username}", adminHandler.UpdateUser)
+		r.Delete("/users/{username}", adminHandler.DeleteUser)
+		r.Post("/users/{username}/rotate-key", stubHandler("RotateUserKey"))
 	})
 
 	// Metrics and Health

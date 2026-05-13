@@ -474,17 +474,17 @@ type Backend interface {
 
 ### 3.1 — AWS Signature Version 4 (`internal/auth/sigv4.go`)
 
-- [ ] Parse `Authorization` header:
+- [x] Parse `Authorization` header:
   ```
   AWS4-HMAC-SHA256 Credential=.../aws4_request,
   SignedHeaders=..., Signature=...
   ```
-- [ ] Parse query-string auth (presigned URLs):
+- [x] Parse query-string auth (presigned URLs):
   ```
   X-Amz-Algorithm, X-Amz-Credential, X-Amz-Date,
   X-Amz-Expires, X-Amz-SignedHeaders, X-Amz-Signature
   ```
-- [ ] Verify các bước:
+- [x] Verify các bước:
   1. Extract `AccessKeyId` từ Credential
   2. Lookup secret key từ user store
   3. Tính lại `StringToSign`:
@@ -492,14 +492,14 @@ type Backend interface {
      - `CredentialScope` (date/region/service/aws4_request)
   4. Tính `SigningKey`: HMAC chain (date→region→service→request)
   5. So sánh `HMAC-SHA256(SigningKey, StringToSign)` với signature nhận được
-- [ ] Handle `x-amz-content-sha256: UNSIGNED-PAYLOAD`
+- [x] Handle `x-amz-content-sha256: UNSIGNED-PAYLOAD`
 - [ ] Handle `x-amz-content-sha256: STREAMING-AWS4-HMAC-SHA256-PAYLOAD` (chunked upload)
-- [ ] Validate timestamp: từ chối request có `X-Amz-Date` lệch > 15 phút
-- [ ] Presigned URL: kiểm tra `X-Amz-Expires` chưa hết hạn
+- [x] Validate timestamp: từ chối request có `X-Amz-Date` lệch > 15 phút
+- [x] Presigned URL: kiểm tra `X-Amz-Expires` chưa hết hạn
 
 ### 3.2 — IAM & User Management (`internal/auth/iam.go`)
 
-- [ ] Struct `User`:
+- [x] Struct `User`:
   ```go
   type User struct {
       Username    string
@@ -511,9 +511,9 @@ type Backend interface {
       CreatedAt   time.Time
   }
   ```
-- [ ] Root user: từ config (`auth.rootAccessKey`, `auth.rootSecretKey`)
-- [ ] User store: lưu trong bbolt (`users` bucket)
-- [ ] CRUD users qua admin API (chỉ root được dùng):
+- [x] Root user: từ config (`auth.rootAccessKey`, `auth.rootSecretKey`)
+- [x] User store: lưu trong bbolt (`users` bucket)
+- [x] CRUD users qua admin API (chỉ root được dùng):
   - `POST /_admin/users` — tạo user
   - `GET /_admin/users` — list users
   - `GET /_admin/users/{username}` — get user

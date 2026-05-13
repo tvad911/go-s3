@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,12 +12,14 @@ import (
 	"github.com/google/uuid"
 	"go.etcd.io/bbolt"
 
+	"gos3/internal/auth"
 	"gos3/internal/storage"
 )
 
 var (
 	bucketBuckets = []byte("buckets")
 	bucketUploads = []byte("uploads")
+	bucketUsers   = []byte("users")
 )
 
 type bboltStore struct {
@@ -36,6 +39,9 @@ func NewBboltStore(path string) (Store, error) {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(bucketUploads); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketUsers); err != nil {
 			return err
 		}
 		return nil
@@ -453,4 +459,102 @@ func (s *bboltStore) ListMultipartUploads(bucket, prefix, delimiter, keyMarker, 
 	})
 
 	return uploads, commonPrefixes, nextKeyMarker, nextUploadIDMarker, err
+}
+
+// UserStore implementation
+
+func (s *bboltStore) GetUserByAccessKey(ctx context.Context, accessKey string) (*auth.User, error) {
+	var matched *auth.User
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketUsers)
+		return b.ForEach(func(k, v []byte) error {
+			var u auth.User
+			if err := json.Unmarshal(v, &u); err == nil {
+				if u.AccessKeyID == accessKey {
+					matched = &u
+					return errors.New("found")
+				}
+			}
+			return nil
+		})
+	})
+	if matched != nil {
+		return matched, nil
+	}
+	if err != nil && err.Error() == "found" {
+		return matched, nil
+	}
+	return nil, auth.ErrUserNotFound
+}
+
+func (s *bboltStore) GetUserByUsername(ctx context.Context, username string) (*auth.User, error) {
+	var matched *auth.User
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketUsers)
+		v := b.Get([]byte(username))
+		if v == nil {
+			return auth.ErrUserNotFound
+		}
+		var u auth.User
+		if err := json.Unmarshal(v, &u); err != nil {
+			return err
+		}
+		matched = &u
+		return nil
+	})
+	return matched, err
+}
+
+func (s *bboltStore) ListUsers(ctx context.Context) ([]*auth.User, error) {
+	var users []*auth.User
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketUsers)
+		return b.ForEach(func(k, v []byte) error {
+			var u auth.User
+			if err := json.Unmarshal(v, &u); err != nil {
+				return err
+			}
+			users = append(users, &u)
+			return nil
+		})
+	})
+	return users, err
+}
+
+func (s *bboltStore) CreateUser(ctx context.Context, user *auth.User) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketUsers)
+		if b.Get([]byte(user.Username)) != nil {
+			return auth.ErrUserExists
+		}
+		data, err := json.Marshal(user)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(user.Username), data)
+	})
+}
+
+func (s *bboltStore) UpdateUser(ctx context.Context, user *auth.User) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketUsers)
+		if b.Get([]byte(user.Username)) == nil {
+			return auth.ErrUserNotFound
+		}
+		data, err := json.Marshal(user)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(user.Username), data)
+	})
+}
+
+func (s *bboltStore) DeleteUser(ctx context.Context, username string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketUsers)
+		if b.Get([]byte(username)) == nil {
+			return auth.ErrUserNotFound
+		}
+		return b.Delete([]byte(username))
+	})
 }

@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"gos3/internal/auth"
 	"gos3/internal/config"
 	"gos3/internal/storage"
 )
@@ -19,15 +20,15 @@ import (
 type Server struct {
 	httpServer *http.Server
 	config     *config.Config
+	backend    storage.Backend
+	verifier   *auth.SigV4Verifier
 }
 
 // New creates a new GoS3 Server instance.
-func New(cfg *config.Config, backend storage.Backend) *Server {
-	router := SetupRouter(cfg, backend)
-
+func New(cfg *config.Config, backend storage.Backend, verifier *auth.SigV4Verifier) *Server {
 	srv := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
-		Handler:           router,
+		Handler:           SetupRouter(cfg, backend, verifier),
 		ReadTimeout:       cfg.Server.ReadTimeout,
 		WriteTimeout:      cfg.Server.WriteTimeout, // 0 = unlimited for streaming
 		IdleTimeout:       cfg.Server.IdleTimeout,
@@ -38,6 +39,8 @@ func New(cfg *config.Config, backend storage.Backend) *Server {
 	return &Server{
 		httpServer: srv,
 		config:     cfg,
+		backend:    backend,
+		verifier:   verifier,
 	}
 }
 
