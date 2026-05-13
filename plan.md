@@ -582,12 +582,12 @@ type Backend interface {
 
 ### 3.6 — Presigned URLs (`internal/handler/presign.go`)
 
-- [ ] Server tự generate presigned URL: `POST /_admin/presign`
-- [ ] Client generate presigned URL (trong client library)
-- [ ] Validate presigned URL khi request đến:
+- [x] Server tự generate presigned URL: `POST /_admin/presign`
+- [x] Client generate presigned URL (trong client library)
+- [x] Validate presigned URL khi request đến:
   - Check `X-Amz-Expires` (max 7 ngày)
   - Verify signature theo SigV4 query-string flow
-- [ ] Hỗ trợ method: `GET`, `PUT`, `DELETE`
+- [x] Hỗ trợ method: `GET`, `PUT`, `DELETE`
 - [ ] `POST /{bucket}/{key}?X-Amz-...` (presigned POST form upload)
 
 ### 3.7 — TLS / HTTPS

@@ -40,6 +40,9 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, verifier *auth.Sig
 		r.Put("/users/{username}", adminHandler.UpdateUser)
 		r.Delete("/users/{username}", adminHandler.DeleteUser)
 		r.Post("/users/{username}/rotate-key", stubHandler("RotateUserKey"))
+
+		// Presign
+		r.Post("/presign", adminHandler.GeneratePresignedURL)
 	})
 
 	// Metrics and Health

@@ -94,3 +94,50 @@ func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+type PresignRequest struct {
+	Method  string `json:"method"`
+	Bucket  string `json:"bucket"`
+	Key     string `json:"key"`
+	Expires int64  `json:"expires"`
+}
+
+type PresignResponse struct {
+	URL string `json:"url"`
+}
+
+func (h *AdminHandler) GeneratePresignedURL(w http.ResponseWriter, r *http.Request) {
+	var req PresignRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if req.Method == "" || req.Bucket == "" || req.Expires <= 0 {
+		http.Error(w, "missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// For the admin generating the URL, we use their credentials.
+	// In a real scenario, they might want to generate it for a specific user,
+	// but the plan says "Server tự generate presigned URL".
+	user := auth.GetUser(r.Context())
+	if user == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	scheme := "http://"
+	if r.TLS != nil {
+		scheme = "https://"
+	}
+	endpoint := scheme + r.Host
+
+	// Hardcode region for now, should ideally be from config
+	region := "us-east-1"
+
+	urlStr := auth.GeneratePresignedURL(req.Method, endpoint, region, user.AccessKeyID, user.SecretKey, req.Bucket, req.Key, req.Expires)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(PresignResponse{URL: urlStr})
+}

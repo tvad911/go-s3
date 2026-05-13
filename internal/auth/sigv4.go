@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"strconv"
 	"time"
 )
 
@@ -161,7 +162,23 @@ func (v *SigV4Verifier) verifyQueryString(r *http.Request) (*User, error) {
 	}
 
 	// Verify Expiry
-	// ... (omitted for brevity, but could be added based on X-Amz-Expires)
+	expiresStr := q.Get("X-Amz-Expires")
+	if expiresStr == "" {
+		return nil, ErrAuthHeaderMalformed
+	}
+	expires, err := strconv.ParseInt(expiresStr, 10, 64)
+	if err != nil || expires < 1 || expires > 604800 { // Max 7 days
+		return nil, ErrAuthHeaderMalformed
+	}
+
+	reqTime, err := time.Parse("20060102T150405Z", amzDate)
+	if err != nil {
+		return nil, ErrAuthHeaderMalformed
+	}
+
+	if time.Since(reqTime) > time.Duration(expires)*time.Second || time.Until(reqTime) > 15*time.Minute {
+		return nil, ErrRequestTimeTooSkewed
+	}
 
 	return user, nil
 }
@@ -244,4 +261,65 @@ func getSignatureKey(key, dateStamp, regionName, serviceName string) []byte {
 	kService := hmacSHA256(kRegion, serviceName)
 	kSigning := hmacSHA256(kService, "aws4_request")
 	return kSigning
+}
+
+// GeneratePresignedURL generates a presigned URL for the given parameters.
+func GeneratePresignedURL(method, endpoint, region, accessKey, secretKey, bucket, key string, expires int64) string {
+	now := time.Now().UTC()
+	amzDate := now.Format("20060102T150405Z")
+	dateStamp := now.Format("20060102")
+	service := "s3"
+
+	// Construct path
+	path := "/"
+	if bucket != "" {
+		path += bucket
+		if key != "" {
+			path += "/" + key
+		}
+	}
+
+	credential := fmt.Sprintf("%s/%s/%s/%s/aws4_request", accessKey, dateStamp, region, service)
+	signedHeaders := "host"
+
+	q := url.Values{}
+	q.Set("X-Amz-Algorithm", "AWS4-HMAC-SHA256")
+	q.Set("X-Amz-Credential", credential)
+	q.Set("X-Amz-Date", amzDate)
+	q.Set("X-Amz-Expires", strconv.FormatInt(expires, 10))
+	q.Set("X-Amz-SignedHeaders", signedHeaders)
+
+	// Host logic: assuming endpoint contains the host
+	u, _ := url.Parse(endpoint)
+	host := u.Host
+	if host == "" {
+		host = endpoint // fallback
+	}
+
+	canonicalURI := path
+	canonicalQueryString := strings.ReplaceAll(q.Encode(), "+", "%20")
+	canonicalHeaders := "host:" + host + "\n"
+
+	payloadHash := "UNSIGNED-PAYLOAD"
+
+	canonicalRequest := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s",
+		method,
+		canonicalURI,
+		canonicalQueryString,
+		canonicalHeaders,
+		signedHeaders,
+		payloadHash)
+
+	stringToSign := fmt.Sprintf("AWS4-HMAC-SHA256\n%s\n%s/%s/%s/aws4_request\n%s",
+		amzDate, dateStamp, region, service, hashSHA256([]byte(canonicalRequest)))
+
+	signingKey := getSignatureKey(secretKey, dateStamp, region, service)
+	signature := hex.EncodeToString(hmacSHA256(signingKey, stringToSign))
+
+	q.Set("X-Amz-Signature", signature)
+
+	// Format final URL
+	endpoint = strings.TrimSuffix(endpoint, "/")
+	finalURL := fmt.Sprintf("%s%s?%s", endpoint, path, strings.ReplaceAll(q.Encode(), "+", "%20"))
+	return finalURL
 }
