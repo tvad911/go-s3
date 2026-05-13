@@ -735,39 +735,39 @@ Dùng `github.com/spf13/cobra`:
 #### Commands:
 
 **Bucket operations:**
-- [ ] `gos3c mb s3://bucket-name` — tạo bucket
-- [ ] `gos3c rb s3://bucket-name` — xóa bucket (--force để xóa kể cả có object)
-- [ ] `gos3c ls` — list all buckets
-- [ ] `gos3c ls s3://bucket/prefix/` — list objects
+- [x] `gos3c mb s3://bucket-name` — tạo bucket
+- [x] `gos3c rb s3://bucket-name` — xóa bucket (--force để xóa kể cả có object)
+- [x] `gos3c ls` — list all buckets
+- [x] `gos3c ls s3://bucket/prefix/` — list objects
 
 **Object operations:**
-- [ ] `gos3c cp /local/file s3://bucket/key` — upload
-- [ ] `gos3c cp s3://bucket/key /local/file` — download
-- [ ] `gos3c cp s3://src/key s3://dst/key` — server-side copy
-- [ ] `gos3c cp --recursive /local/dir/ s3://bucket/prefix/` — upload folder
-- [ ] `gos3c cp --recursive s3://bucket/prefix/ /local/dir/` — download folder
-- [ ] `gos3c mv ...` — giống cp nhưng xóa source sau đó
-- [ ] `gos3c rm s3://bucket/key` — xóa object
-- [ ] `gos3c rm --recursive s3://bucket/prefix/` — xóa theo prefix
-- [ ] `gos3c stat s3://bucket/key` — xem metadata
+- [x] `gos3c cp /local/file s3://bucket/key` — upload
+- [x] `gos3c cp s3://bucket/key /local/file` — download
+- [x] `gos3c cp s3://src/key s3://dst/key` — server-side copy
+- [x] `gos3c cp --recursive /local/dir/ s3://bucket/prefix/` — upload folder
+- [x] `gos3c cp --recursive s3://bucket/prefix/ /local/dir/` — download folder
+- [x] `gos3c mv ...` — giống cp nhưng xóa source sau đó
+- [x] `gos3c rm s3://bucket/key` — xóa object
+- [x] `gos3c rm --recursive s3://bucket/prefix/` — xóa theo prefix
+- [x] `gos3c stat s3://bucket/key` — xem metadata
 
 **Advanced:**
-- [ ] `gos3c presign s3://bucket/key --expires 3600` — tạo presigned URL
-- [ ] `gos3c sync /local/dir s3://bucket/prefix/` — sync (chỉ upload thay đổi)
-- [ ] `gos3c sync s3://bucket/prefix/ /local/dir/` — sync download
-- [ ] `gos3c cat s3://bucket/key` — stream object ra stdout
-- [ ] `gos3c pipe s3://bucket/key` — stdin → object (streaming upload)
+- [x] `gos3c presign s3://bucket/key --expires 3600` — tạo presigned URL
+- [x] `gos3c sync /local/dir s3://bucket/prefix/` — sync (chỉ upload thay đổi)
+- [x] `gos3c sync s3://bucket/prefix/ /local/dir/` — sync download
+- [x] `gos3c cat s3://bucket/key` — stream object ra stdout
+- [x] `gos3c pipe s3://bucket/key` — stdin → object (streaming upload)
 
 **Admin (chỉ dùng được với root):**
-- [ ] `gos3c admin user add <name>` — tạo user, in ra key pair
-- [ ] `gos3c admin user ls` — list users
-- [ ] `gos3c admin user rm <name>` — xóa user
-- [ ] `gos3c admin user rotate-key <name>` — đổi key
-- [ ] `gos3c admin info` — xem server stats
+- [x] `gos3c admin user add <name>` — tạo user, in ra key pair
+- [x] `gos3c admin user ls` — list users
+- [x] `gos3c admin user rm <name>` — xóa user
+- [x] `gos3c admin user rotate-key <name>` — đổi key
+- [x] `gos3c admin info` — xem server stats
 
 **Output formats:**
-- [ ] Default: human-readable table
-- [ ] `--json` — JSON output
+- [x] Default: human-readable table
+- [x] `--json` — JSON output
 - [ ] Progress bar khi upload/download (dùng `github.com/schollz/progressbar`)
 - [ ] `--quiet` — suppress output
 
