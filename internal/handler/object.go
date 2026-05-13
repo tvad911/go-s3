@@ -19,7 +19,7 @@ import (
 func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "*")
+	key := chi.URLParam(r, "key")
 
 	meta := storage.ObjectMeta{
 		ContentType:        r.Header.Get("Content-Type"),
@@ -68,7 +68,7 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "*")
+	key := chi.URLParam(r, "key")
 
 	opts := storage.GetOptions{}
 	if rng := r.Header.Get("Range"); rng != "" {
@@ -173,7 +173,7 @@ func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) HeadObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "*")
+	key := chi.URLParam(r, "key")
 
 	meta, err := h.Backend.HeadObject(ctx, bucket, key)
 	if err != nil {
@@ -216,7 +216,7 @@ func (h *S3Handler) HeadObject(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) DeleteObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "*")
+	key := chi.URLParam(r, "key")
 
 	if err := h.Backend.DeleteObject(ctx, bucket, key); err != nil {
 		WriteError(w, r, err)
@@ -270,7 +270,7 @@ func (h *S3Handler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "*")
+	key := chi.URLParam(r, "key")
 
 	copySource := r.Header.Get("x-amz-copy-source")
 	if copySource == "" {

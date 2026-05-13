@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/xml"
+	"log/slog"
 	"net/http"
 
 	"gos3/internal/s3"
@@ -11,6 +12,7 @@ import (
 func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	s3Err, ok := err.(s3.Error)
 	if !ok {
+		slog.Error("internal error", "error", err)
 		s3Err = s3.ErrInternalError
 	}
 

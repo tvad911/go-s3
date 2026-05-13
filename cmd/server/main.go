@@ -28,6 +28,12 @@ func main() {
 
 	slog.Info("starting gos3 server", "version", version)
 
+	// Ensure data directory exists before initializing stores
+	if err := os.MkdirAll(cfg.Storage.DataDir, 0755); err != nil {
+		slog.Error("failed to create data directory", "error", err)
+		os.Exit(1)
+	}
+
 	// Initialize metadata store
 	metaStore, err := metadata.NewBboltStore(cfg.Storage.DataDir + "/meta.db")
 	if err != nil {
