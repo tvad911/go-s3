@@ -795,7 +795,7 @@ prod:
 
 ## Phase 6 — Ops & Deployment
 
-### 6.1 — Dockerfile
+### 6.1 — Dockerfile (Hoàn thành)
 
 ```dockerfile
 # Multi-stage build

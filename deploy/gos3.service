@@ -1,0 +1,13 @@
+[Unit]
+Description=GoS3 S3-Compatible Object Storage
+After=network.target
+
+[Service]
+Type=simple
+User=gos3
+ExecStart=/usr/local/bin/gos3 --config /etc/gos3/config.yaml
+Restart=on-failure
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

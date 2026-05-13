@@ -1,0 +1,24 @@
+services:
+  gos3:
+    image: gos3:latest
+    build: 
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Admin UI (future)
+    volumes:
+      - gos3-data:/data
+      - ./config.example.yaml:/app/config.yaml:ro
+    environment:
+      GOS3_AUTH_ROOT_ACCESS_KEY: minioadmin
+      GOS3_AUTH_ROOT_SECRET_KEY: minioadmin
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9000/_health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  gos3-data:
