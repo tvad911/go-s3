@@ -853,6 +853,29 @@ async function fetchBucketPolicy() {
     }
 }
 
+window.validateJSONConfig = (textarea, errorDivId) => {
+    const errorDiv = document.getElementById(errorDivId);
+    if (!textarea || !errorDiv) return true;
+    
+    const val = textarea.value.trim();
+    if (!val) {
+        textarea.style.borderColor = 'rgba(255,255,255,0.1)';
+        errorDiv.style.display = 'none';
+        return true;
+    }
+    try {
+        JSON.parse(val);
+        textarea.style.borderColor = '#10b981'; // success green
+        errorDiv.style.display = 'none';
+        return true;
+    } catch (e) {
+        textarea.style.borderColor = '#ef4444'; // danger red
+        errorDiv.textContent = 'Invalid JSON: ' + e.message;
+        errorDiv.style.display = 'block';
+        return false;
+    }
+};
+
 window.setBucketPolicyPreset = (type) => {
     const policy = {
         "Version": "2012-10-17",
@@ -865,21 +888,29 @@ window.setBucketPolicyPreset = (type) => {
             }
         ]
     };
+    const textarea = document.getElementById('bucket-policy-json');
     if (type === 'public') {
-        document.getElementById('bucket-policy-json').value = JSON.stringify(policy, null, 2);
+        textarea.value = JSON.stringify(policy, null, 2);
     } else {
-        document.getElementById('bucket-policy-json').value = '';
+        textarea.value = '';
     }
+    validateJSONConfig(textarea, 'bucket-policy-error');
 };
 
 window.saveBucketPolicy = async () => {
-    const policyStr = document.getElementById('bucket-policy-json').value.trim();
+    const textarea = document.getElementById('bucket-policy-json');
+    const policyStr = textarea.value.trim();
+    
+    if (policyStr && !validateJSONConfig(textarea, 'bucket-policy-error')) {
+        showToast('Please fix JSON errors before saving', 'error');
+        return;
+    }
+
     try {
         if (!policyStr) {
             await api('DELETE', `/_admin/buckets/${currentBucket}/policy`);
             showToast('Policy deleted (Bucket is private)', 'success');
         } else {
-            // Validate JSON
             const policyObj = JSON.parse(policyStr);
             await api('PUT', `/_admin/buckets/${currentBucket}/policy`, policyObj);
             showToast('Policy saved', 'success');
@@ -913,21 +944,29 @@ window.setBucketCORSPreset = (type) => {
             }
         ]
     };
+    const textarea = document.getElementById('bucket-cors-json');
     if (type === 'allow-all') {
-        document.getElementById('bucket-cors-json').value = JSON.stringify(cors, null, 2);
+        textarea.value = JSON.stringify(cors, null, 2);
     } else {
-        document.getElementById('bucket-cors-json').value = '';
+        textarea.value = '';
     }
+    validateJSONConfig(textarea, 'bucket-cors-error');
 };
 
 window.saveBucketCORS = async () => {
-    const corsStr = document.getElementById('bucket-cors-json').value.trim();
+    const textarea = document.getElementById('bucket-cors-json');
+    const corsStr = textarea.value.trim();
+    
+    if (corsStr && !validateJSONConfig(textarea, 'bucket-cors-error')) {
+        showToast('Please fix JSON errors before saving', 'error');
+        return;
+    }
+
     try {
         if (!corsStr) {
             await api('DELETE', `/_admin/buckets/${currentBucket}/cors`);
             showToast('CORS cleared', 'success');
         } else {
-            // Validate JSON
             const corsObj = JSON.parse(corsStr);
             await api('PUT', `/_admin/buckets/${currentBucket}/cors`, corsObj);
             showToast('CORS saved', 'success');
