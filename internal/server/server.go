@@ -27,11 +27,12 @@ type Server struct {
 	config      *config.Config
 	backend     storage.Backend
 	verifier    *auth.SigV4Verifier
+	sessionCfg  *auth.SessionConfig
 	repl        *replication.Service
 }
 
 // New creates a new GoS3 Server instance.
-func New(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, verifier *auth.SigV4Verifier) *Server {
+func New(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, verifier *auth.SigV4Verifier, sessionCfg *auth.SessionConfig) *Server {
 	repl, err := replication.NewService(cfg, backend)
 	if err != nil {
 		slog.Error("failed to init replication service", "error", err)
@@ -39,7 +40,7 @@ func New(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, 
 
 	srv := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
-		Handler:           SetupRouter(cfg, backend, metaStore, verifier, repl),
+		Handler:           SetupRouter(cfg, backend, metaStore, verifier, repl, sessionCfg),
 		ReadTimeout:       cfg.Server.ReadTimeout,
 		WriteTimeout:      cfg.Server.WriteTimeout, // 0 = unlimited for streaming
 		IdleTimeout:       cfg.Server.IdleTimeout,
@@ -52,6 +53,7 @@ func New(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, 
 		config:     cfg,
 		backend:    backend,
 		verifier:   verifier,
+		sessionCfg: sessionCfg,
 		repl:       repl,
 	}
 

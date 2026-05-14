@@ -58,24 +58,48 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Ensure root user exists
-	rootUser := &auth.User{
-		Username:    "root",
-		AccessKeyID: cfg.Auth.RootAccessKey,
-		SecretKey:   cfg.Auth.RootSecretKey,
-		IsRoot:      true,
-		CreatedAt:   time.Now().UTC(),
-	}
-	// Try to get root by access key; if it doesn't exist, create it.
-	// In a real app we might update the secret key if it changed in config.
-	if _, err := metaStore.GetUserByAccessKey(context.Background(), cfg.Auth.RootAccessKey); err != nil {
-		_ = metaStore.CreateUser(context.Background(), rootUser)
+	// Ensure root user exists with password hash
+	passwordHash, err := auth.HashPassword(cfg.Auth.RootSecretKey)
+	if err != nil {
+		slog.Error("failed to hash root password", "error", err)
+		os.Exit(1)
 	}
 
-	sigv4Verifier := auth.NewSigV4Verifier(metaStore, cfg.Auth.Region)
+	rootUser := &auth.User{
+		Username:     "root",
+		PasswordHash: passwordHash,
+		AccessKeyID:  cfg.Auth.RootAccessKey,
+		SecretKey:    cfg.Auth.RootSecretKey,
+		IsRoot:       true,
+		CreatedAt:    time.Now().UTC(),
+	}
+	// Create root user if it doesn't exist.
+	if _, err := metaStore.GetUserByUsername(context.Background(), "root"); err != nil {
+		_ = metaStore.CreateUser(context.Background(), rootUser)
+		slog.Info("created root user")
+	}
+
+	// Ensure root service account exists (backward compat with config's root_access_key/root_secret_key)
+	if _, err := metaStore.GetServiceAccountByAccessKey(context.Background(), cfg.Auth.RootAccessKey); err != nil {
+		rootSA := &auth.ServiceAccount{
+			ID:          "root-sa",
+			AccessKeyID: cfg.Auth.RootAccessKey,
+			SecretKey:   cfg.Auth.RootSecretKey,
+			ParentUser:  "root",
+			Description: "Root service account (auto-created from config)",
+			CreatedAt:   time.Now().UTC(),
+		}
+		_ = metaStore.CreateServiceAccount(context.Background(), rootSA)
+		slog.Info("created root service account")
+	}
+
+	// Initialize session config for Web Console JWT auth
+	sessionCfg := auth.DefaultSessionConfig(nil)
+
+	sigv4Verifier := auth.NewSigV4Verifier(metaStore, metaStore, cfg.Auth.Region)
 
 	// Initialize and start server
-	srv := server.New(cfg, backend, metaStore, sigv4Verifier)
+	srv := server.New(cfg, backend, metaStore, sigv4Verifier, sessionCfg)
 	if err := srv.Start(); err != nil {
 		slog.Error("server error", "error", err)
 		os.Exit(1)

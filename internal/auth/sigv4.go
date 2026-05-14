@@ -24,13 +24,15 @@ var (
 )
 
 type SigV4Verifier struct {
-	UserStore UserStore
-	Region    string
+	UserStore    UserStore
+	SAStore      ServiceAccountStore
+	Region       string
 }
 
-func NewSigV4Verifier(store UserStore, region string) *SigV4Verifier {
+func NewSigV4Verifier(store UserStore, saStore ServiceAccountStore, region string) *SigV4Verifier {
 	return &SigV4Verifier{
 		UserStore: store,
+		SAStore:   saStore,
 		Region:    region,
 	}
 }
@@ -92,8 +94,9 @@ func (v *SigV4Verifier) verifyHeader(r *http.Request, authHeader string) (*User,
 		amzDate = r.Header.Get("Date")
 	}
 
-	// Lookup user
-	user, err := v.UserStore.GetUserByAccessKey(r.Context(), accessKey)
+	// Lookup user by access key.
+	// Try service accounts first, then fall back to legacy user table.
+	user, secretKey, err := v.lookupByAccessKey(r.Context(), accessKey)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +109,7 @@ func (v *SigV4Verifier) verifyHeader(r *http.Request, authHeader string) (*User,
 		payloadHash = "UNSIGNED-PAYLOAD"
 	}
 
-	expectedSig := v.computeSignature(r, signedHeadersStr, payloadHash, amzDate, dateStamp, region, service, user.SecretKey)
+	expectedSig := v.computeSignature(r, signedHeadersStr, payloadHash, amzDate, dateStamp, region, service, secretKey)
 
 	if subtle.ConstantTimeCompare([]byte(expectedSig), []byte(providedSig)) != 1 {
 		return nil, ErrSignatureDoesNotMatch
@@ -121,6 +124,35 @@ func (v *SigV4Verifier) verifyHeader(r *http.Request, authHeader string) (*User,
 	}
 
 	return user, nil
+}
+
+// lookupByAccessKey resolves an access key to a User and its secret key.
+// Priority: ServiceAccountStore first, then UserStore (backward compat).
+func (v *SigV4Verifier) lookupByAccessKey(ctx context.Context, accessKey string) (*User, string, error) {
+	// Try service accounts first
+	if v.SAStore != nil {
+		sa, err := v.SAStore.GetServiceAccountByAccessKey(ctx, accessKey)
+		if err == nil {
+			if sa.Disabled || sa.IsExpired() {
+				return nil, "", ErrAuthHeaderMissing
+			}
+			// Resolve the parent user
+			user, err := v.UserStore.GetUserByUsername(ctx, sa.ParentUser)
+			if err != nil {
+				return nil, "", err
+			}
+			if user.Disabled {
+				return nil, "", ErrAuthHeaderMissing
+			}
+			return user, sa.SecretKey, nil
+		}
+	}
+	// Fallback to legacy user table (backward compatibility for root_access_key)
+	user, err := v.UserStore.GetUserByAccessKey(ctx, accessKey)
+	if err != nil {
+		return nil, "", err
+	}
+	return user, user.SecretKey, nil
 }
 
 func (v *SigV4Verifier) verifyQueryString(r *http.Request) (*User, error) {
@@ -143,7 +175,7 @@ func (v *SigV4Verifier) verifyQueryString(r *http.Request) (*User, error) {
 	region := credFields[2]
 	service := credFields[3]
 
-	user, err := v.UserStore.GetUserByAccessKey(r.Context(), accessKey)
+	user, secretKey, err := v.lookupByAccessKey(r.Context(), accessKey)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +188,7 @@ func (v *SigV4Verifier) verifyQueryString(r *http.Request) (*User, error) {
 	newQ.Del("X-Amz-Signature")
 	reqCopy.URL.RawQuery = strings.ReplaceAll(newQ.Encode(), "+", "%20")
 
-	expectedSig := v.computeSignature(reqCopy, signedHeadersStr, payloadHash, amzDate, dateStamp, region, service, user.SecretKey)
+	expectedSig := v.computeSignature(reqCopy, signedHeadersStr, payloadHash, amzDate, dateStamp, region, service, secretKey)
 
 	if subtle.ConstantTimeCompare([]byte(expectedSig), []byte(providedSig)) != 1 {
 		return nil, ErrSignatureDoesNotMatch
@@ -271,12 +303,12 @@ func (v *SigV4Verifier) VerifyPostPolicy(ctx context.Context, credential, date, 
 		return nil, ErrAuthHeaderMalformed
 	}
 
-	user, err := v.UserStore.GetUserByAccessKey(ctx, accessKey)
+	user, secretKey, err := v.lookupByAccessKey(ctx, accessKey)
 	if err != nil {
 		return nil, err
 	}
 
-	signingKey := getSignatureKey(user.SecretKey, dateStamp, region, service)
+	signingKey := getSignatureKey(secretKey, dateStamp, region, service)
 	
 	// For POST uploads, the string to sign is literally the base64-encoded policy
 	expectedSig := hex.EncodeToString(hmacSHA256(signingKey, policyB64))

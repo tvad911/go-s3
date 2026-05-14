@@ -26,6 +26,7 @@ var (
 	bucketCORS      = []byte("cors")
 	bucketLifecycle = []byte("lifecycle")
 	bucketWebsite   = []byte("website")
+	bucketServiceAccounts = []byte("service_accounts")
 )
 
 type bboltStore struct {
@@ -60,6 +61,9 @@ func NewBboltStore(path string) (Store, error) {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(bucketWebsite); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketServiceAccounts); err != nil {
 			return err
 		}
 		return nil
@@ -909,5 +913,113 @@ func (s *bboltStore) PutBucketWebsite(ctx context.Context, bucket string, websit
 func (s *bboltStore) DeleteBucketWebsite(ctx context.Context, bucket string) error {
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		return tx.Bucket(bucketWebsite).Delete([]byte(bucket))
+	})
+}
+
+// ServiceAccountStore implementation
+
+func (s *bboltStore) CreateServiceAccount(ctx context.Context, sa *auth.ServiceAccount) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketServiceAccounts)
+		if b.Get([]byte(sa.AccessKeyID)) != nil {
+			return fmt.Errorf("service account with access key %s already exists", sa.AccessKeyID)
+		}
+		data, err := json.Marshal(sa)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(sa.AccessKeyID), data)
+	})
+}
+
+func (s *bboltStore) GetServiceAccountByAccessKey(ctx context.Context, accessKey string) (*auth.ServiceAccount, error) {
+	var sa auth.ServiceAccount
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketServiceAccounts)
+		v := b.Get([]byte(accessKey))
+		if v == nil {
+			return auth.ErrUserNotFound
+		}
+		return json.Unmarshal(v, &sa)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &sa, nil
+}
+
+func (s *bboltStore) ListServiceAccountsByUser(ctx context.Context, parentUser string) ([]*auth.ServiceAccount, error) {
+	var accounts []*auth.ServiceAccount
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketServiceAccounts)
+		return b.ForEach(func(k, v []byte) error {
+			var sa auth.ServiceAccount
+			if err := json.Unmarshal(v, &sa); err != nil {
+				return err
+			}
+			if sa.ParentUser == parentUser {
+				// Clear secret key from list responses
+				sa.SecretKey = ""
+				accounts = append(accounts, &sa)
+			}
+			return nil
+		})
+	})
+	return accounts, err
+}
+
+func (s *bboltStore) DeleteServiceAccount(ctx context.Context, id string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketServiceAccounts)
+		// Find by ID (iterate since key is AccessKeyID, not ID)
+		var keyToDelete []byte
+		err := b.ForEach(func(k, v []byte) error {
+			var sa auth.ServiceAccount
+			if err := json.Unmarshal(v, &sa); err != nil {
+				return err
+			}
+			if sa.ID == id {
+				keyToDelete = k
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		if keyToDelete == nil {
+			return auth.ErrUserNotFound
+		}
+		return b.Delete(keyToDelete)
+	})
+}
+
+func (s *bboltStore) DisableServiceAccount(ctx context.Context, id string, disabled bool) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketServiceAccounts)
+		var found *auth.ServiceAccount
+		var foundKey []byte
+		err := b.ForEach(func(k, v []byte) error {
+			var sa auth.ServiceAccount
+			if err := json.Unmarshal(v, &sa); err != nil {
+				return err
+			}
+			if sa.ID == id {
+				found = &sa
+				foundKey = k
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		if found == nil {
+			return auth.ErrUserNotFound
+		}
+		found.Disabled = disabled
+		data, err := json.Marshal(found)
+		if err != nil {
+			return err
+		}
+		return b.Put(foundKey, data)
 	})
 }

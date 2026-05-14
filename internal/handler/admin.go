@@ -43,6 +43,12 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Strip sensitive fields before sending to client
+	for _, u := range users {
+		u.SecretKey = ""
+		u.PasswordHash = ""
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(users)
 }
