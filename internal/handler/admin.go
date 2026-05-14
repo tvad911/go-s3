@@ -1,8 +1,10 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"sync/atomic"
 	"time"
@@ -39,6 +41,29 @@ func EnsureRoot(next http.Handler) http.Handler {
 	})
 }
 
+func (h *AdminHandler) recordAudit(r *http.Request, action, target, details string) {
+	user := auth.GetUser(r.Context())
+	username := "system"
+	if user.Username != "" {
+		username = user.Username
+	}
+	
+	log := metadata.AuditLog{
+		User:    username,
+		Action:  action,
+		Target:  target,
+		Details: details,
+		IP:      r.RemoteAddr,
+	}
+	
+	// Fire and forget
+	go func() {
+		if err := h.MetaStore.RecordAuditLog(context.Background(), &log); err != nil {
+			slog.Error("failed to record audit log", "error", err, "action", action)
+		}
+	}()
+}
+
 func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := h.MetaStore.ListUsers(r.Context())
 	if err != nil {
@@ -68,6 +93,7 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.recordAudit(r, "CreateUser", user.Username, "")
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -97,6 +123,7 @@ func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.recordAudit(r, "UpdateUser", username, "")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -107,6 +134,7 @@ func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.recordAudit(r, "DeleteUser", username, "")
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -274,11 +302,28 @@ func (h *AdminHandler) RenameObject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.recordAudit(r, "RenameObject", req.Bucket+"/"+req.OldKey, "NewName: "+req.NewKey)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"message": "renamed successfully",
 		"oldKey":  req.OldKey,
 		"newKey":  req.NewKey,
 	})
+}
+
+func (h *AdminHandler) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
+	logs, err := h.MetaStore.ListAuditLogs(r.Context(), 100) // limit to 100 recent logs
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if logs == nil {
+		logs = []metadata.AuditLog{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(logs)
 }
 

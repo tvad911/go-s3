@@ -128,6 +128,9 @@ function loadView(viewName) {
     } else if (viewName === 'info') {
         breadcrumb.innerHTML = `<span>Server Info</span>`;
         fetchServerInfo();
+    } else if (viewName === 'audit-logs') {
+        breadcrumb.innerHTML = `<span>Audit Logs</span>`;
+        loadAuditLogs();
     }
 }
 
@@ -986,13 +989,94 @@ async function loadConnectionInfo() {
     document.getElementById('conn-endpoint').value = `${proto}//${s3Host}:${s3Port}`;
     
     try {
-        const sas = await api('GET', '/_admin/service-accounts');
+        const sas = await api('GET', '/api/v1/service-accounts');
         if (sas && sas.length > 0) {
-            document.getElementById('conn-access').value = sas[0].accessKey;
+            document.getElementById('conn-access').value = sas[0].accessKeyId;
         } else {
             document.getElementById('conn-access').value = '(No Access Key Found)';
         }
     } catch (e) {
         document.getElementById('conn-access').value = 'Error loading key';
     }
+}
+
+// ==================== Audit Logs ====================
+function escapeHTML(str) {
+    if (!str) return '';
+    return str.toString().replace(/[&<>'"]/g, 
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag] || tag)
+    );
+}
+
+let globalAuditLogs = [];
+
+async function loadAuditLogs() {
+    const tbody = document.getElementById('audit-logs-table-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Loading...</td></tr>';
+    try {
+        globalAuditLogs = await api('GET', '/_admin/audit-logs') || [];
+        
+        // Reset filter
+        const filterInput = document.getElementById('audit-log-filter');
+        if (filterInput) filterInput.value = '';
+        
+        renderAuditLogs(globalAuditLogs);
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ef4444;">Error: ${escapeHTML(err.message)}</td></tr>`;
+        showToast('Failed to load audit logs', 'error');
+    }
+}
+
+function renderAuditLogs(logs) {
+    const tbody = document.getElementById('audit-logs-table-body');
+    if (!tbody) return;
+
+    if (!logs || logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">No audit logs found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = logs.map((log) => `
+        <tr>
+            <td style="white-space:nowrap; color:var(--text-secondary);">${new Date(log.timestamp).toLocaleString()}</td>
+            <td><span class="badge" style="background:rgba(255,255,255,0.1); color:white;">${escapeHTML(log.user)}</span></td>
+            <td><span style="color:#60a5fa; font-weight:500;">${escapeHTML(log.action)}</span></td>
+            <td style="font-family:monospace; color:var(--text-primary);">${escapeHTML(log.target)}</td>
+            <td style="color:var(--text-muted); font-family:monospace;">${escapeHTML(log.ip)}</td>
+            <td>
+                <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.8rem;" onclick="viewAuditLogDetails('${escapeHTML(log.id)}')">Details</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterAuditLogs() {
+    const query = (document.getElementById('audit-log-filter')?.value || '').toLowerCase();
+    if (!query) {
+        renderAuditLogs(globalAuditLogs);
+        return;
+    }
+    const filtered = globalAuditLogs.filter(log => 
+        (log.target && log.target.toLowerCase().includes(query)) ||
+        (log.action && log.action.toLowerCase().includes(query)) ||
+        (log.user && log.user.toLowerCase().includes(query))
+    );
+    renderAuditLogs(filtered);
+}
+
+function viewAuditLogDetails(id) {
+    const log = globalAuditLogs.find(l => l.id === id);
+    if (!log) return;
+    
+    const pre = document.getElementById('audit-log-details-content');
+    pre.textContent = JSON.stringify(log, null, 2);
+    openModal('view-log-modal');
 }

@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"errors"
+	"time"
 
 	"gos3/internal/auth"
 	"gos3/internal/s3"
@@ -15,6 +16,21 @@ var (
 	ErrObjectNotFound = errors.New("object not found")
 	ErrUploadNotFound = errors.New("upload not found")
 )
+
+type AuditLog struct {
+	ID        string    `json:"id"`
+	Timestamp time.Time `json:"timestamp"`
+	User      string    `json:"user"`
+	Action    string    `json:"action"`
+	Target    string    `json:"target"`
+	Details   string    `json:"details,omitempty"`
+	IP        string    `json:"ip"`
+}
+
+type AuditStore interface {
+	RecordAuditLog(ctx context.Context, log *AuditLog) error
+	ListAuditLogs(ctx context.Context, limit int) ([]AuditLog, error)
+}
 
 // Store defines the interface for the metadata database.
 type Store interface {
@@ -61,4 +77,5 @@ type Store interface {
 	auth.UserStore
 	auth.PolicyStore
 	auth.ServiceAccountStore
+	AuditStore
 }

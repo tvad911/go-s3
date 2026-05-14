@@ -78,6 +78,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 
 			// Server Info
 			r.Get("/info", adminHandler.ServerInfo)
+			r.Get("/audit-logs", adminHandler.ListAuditLogs)
 
 			// Buckets Stats
 			r.Get("/buckets/{bucket}/stats", adminHandler.BucketStats)

@@ -40,6 +40,7 @@ func (h *AdminHandler) CreateBucket(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	h.recordAudit(r, "CreateBucket", bucket, "")
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -51,6 +52,7 @@ func (h *AdminHandler) DeleteBucket(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	h.recordAudit(r, "DeleteBucket", bucket, "")
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -122,6 +124,7 @@ func (h *AdminHandler) PutBucketPolicy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	h.recordAudit(r, "PutBucketPolicy", bucket, "")
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -132,6 +135,7 @@ func (h *AdminHandler) DeleteBucketPolicy(w http.ResponseWriter, r *http.Request
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	h.recordAudit(r, "DeleteBucketPolicy", bucket, "")
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -163,6 +167,7 @@ func (h *AdminHandler) PutBucketCORS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
+	h.recordAudit(r, "PutBucketCORS", bucket, "")
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -173,5 +178,6 @@ func (h *AdminHandler) DeleteBucketCORS(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	h.recordAudit(r, "DeleteBucketCORS", bucket, "")
 	w.WriteHeader(http.StatusNoContent)
 }

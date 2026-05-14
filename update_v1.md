@@ -183,9 +183,16 @@ Click icon Settings trên Bucket card → Trang chi tiết với các tab:
 - Bảng danh sách: hiển thị Username, Policies, Status (Active/Disabled), Created At.
 - Action per user: Edit (đổi password, gán policy), Disable, Delete.
 
-#### Identity — Policies (Trang mới)
-- Danh sách preset policies: `ReadOnly`, `ReadWrite`, `WriteOnly`, `Admin`.
-- Cho phép tạo Custom Policy bằng JSON editor (chuẩn AWS IAM Policy format).
+#### Identity — Policies (Trang mới + Cấu trúc Backend)
+- **Cấu trúc lưu trữ:** Bảng `policies` mới trong bbolt, lưu policy dưới định dạng JSON chuẩn AWS IAM Policy (hỗ trợ `Version`, `Statement` với `Effect`, `Action`, `Resource`, `Condition`).
+- **Preset Policies:** Tích hợp sẵn (không thể xóa) các policy cơ bản: `ReadOnly`, `ReadWrite`, `WriteOnly`, `Admin`.
+- **Policy Engine (Backend):** 
+  - Mặc định là **Deny** (nếu không có policy nào Allow một action cụ thể).
+  - Viết middleware/hàm đánh giá quyền truy cập chạy sau xác thực (auth).
+  - Khớp các `Action` (hỗ trợ wildcard, ví dụ: `s3:Get*`, `s3:PutObject`) và `Resource` (ví dụ: `arn:aws:s3:::my-bucket/*`).
+  - Hợp nhất (Union) quyền hạn: Nếu một thao tác được Allow bởi **User Policy** hoặc **Bucket Policy** (và không bị Explicit Deny), thì thao tác đó được phép.
+- **Giao diện:** Cho phép tạo Custom Policy bằng JSON editor (kiểm tra cú pháp hợp lệ trước khi lưu).
+- **Gán quyền:** Cho phép gắn nhiều Policy vào một User hoặc Service Account. Khi đánh giá, các quyền sẽ được gộp lại.
 
 #### Service Accounts (Trang mới)
 - Mỗi user (sau khi login) thấy danh sách Access Keys của mình.
@@ -243,7 +250,9 @@ Click icon Settings trên Bucket card → Trang chi tiết với các tab:
 - [ ] Trang Users: form tạo user với username + password
 - [ ] Trang Users: action đổi password, gán policy, disable
 - [ ] Trang Policies: danh sách preset + custom JSON editor
-- [ ] Enforce policy logic trong middleware (hiện tại chỉ check `IsRoot`)
+- [ ] Xây dựng `Policy Engine` hỗ trợ matching `Action`, `Resource`, `Wildcard` theo chuẩn AWS.
+- [ ] Tích hợp Policy Engine vào logic xử lý S3 API (chặn request nếu không được Allow).
+- [ ] Enforce phân quyền trong middleware cho Admin API (không chỉ check `IsRoot` mà còn check các action như `admin:ListUsers`).
 
 ### Phase 4: Service Accounts UI + Dashboard (P1)
 **Mục tiêu:** User tự quản lý API keys, Dashboard tổng quan.

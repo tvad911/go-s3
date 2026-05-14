@@ -24,9 +24,10 @@ var (
 	bucketUsers    = []byte("users")
 	bucketPolicies = []byte("policies")
 	bucketCORS      = []byte("cors")
-	bucketLifecycle = []byte("lifecycle")
-	bucketWebsite   = []byte("website")
+	bucketLifecycle       = []byte("lifecycle")
+	bucketWebsite         = []byte("website")
 	bucketServiceAccounts = []byte("service_accounts")
+	bucketAuditLogs       = []byte("audit_logs")
 )
 
 type bboltStore struct {
@@ -64,6 +65,9 @@ func NewBboltStore(path string) (Store, error) {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(bucketServiceAccounts); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketAuditLogs); err != nil {
 			return err
 		}
 		return nil
@@ -1047,4 +1051,55 @@ func (db *bboltStore) GetBucketStats(name string) (int64, int64, error) {
 		})
 	})
 	return objects, bytes, err
+}
+
+// ==================== Audit Logs ====================
+
+func (b *bboltStore) RecordAuditLog(ctx context.Context, log *AuditLog) error {
+	if log.ID == "" {
+		log.ID = uuid.New().String()
+	}
+	if log.Timestamp.IsZero() {
+		log.Timestamp = time.Now()
+	}
+
+	return b.db.Update(func(tx *bbolt.Tx) error {
+		bkt := tx.Bucket(bucketAuditLogs)
+		if bkt == nil {
+			return errors.New("audit_logs bucket not found")
+		}
+
+		// Use RFC3339Nano for sorting chronologically
+		key := []byte(log.Timestamp.UTC().Format(time.RFC3339Nano) + "_" + log.ID)
+		val, err := json.Marshal(log)
+		if err != nil {
+			return err
+		}
+		return bkt.Put(key, val)
+	})
+}
+
+func (b *bboltStore) ListAuditLogs(ctx context.Context, limit int) ([]AuditLog, error) {
+	var logs []AuditLog
+	err := b.db.View(func(tx *bbolt.Tx) error {
+		bkt := tx.Bucket(bucketAuditLogs)
+		if bkt == nil {
+			return nil
+		}
+
+		c := bkt.Cursor()
+		// Start from the last item and go backwards (newest first)
+		for k, v := c.Last(); k != nil; k, v = c.Prev() {
+			var log AuditLog
+			if err := json.Unmarshal(v, &log); err != nil {
+				continue
+			}
+			logs = append(logs, log)
+			if limit > 0 && len(logs) >= limit {
+				break
+			}
+		}
+		return nil
+	})
+	return logs, err
 }

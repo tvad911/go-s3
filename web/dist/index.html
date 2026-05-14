@@ -73,6 +73,10 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                     Server Info
                 </li>
+                <li data-view="audit-logs">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    Audit Logs
+                </li>
             </ul>
             <div class="sidebar-footer">
                 <span id="user-display" style="color:var(--text-muted);font-size:0.85rem;"></span>
@@ -167,7 +171,7 @@
                 </div>
 
                 <!-- Connection Settings View -->
-                <div id="view-connection" class="view" style="display:none;">
+                <div id="view-connection" class="view">
                     <div class="glass-panel" style="max-width: 600px;">
                         <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
                             <h2 style="font-size: 1.25rem; font-weight: 500;">S3 Connection Config</h2>
@@ -207,8 +211,39 @@
                 </div>
 
                 <!-- Server Info View -->
-                <div id="view-info" class="view" style="display:none;">
+                <div id="view-info" class="view">
                     <div class="grid cols-2" id="info-grid"></div>
+                </div>
+
+                <!-- Audit Logs View -->
+                <div id="view-audit-logs" class="view">
+                    <div class="header-actions" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem; flex-wrap:wrap; gap:1rem;">
+                        <h2>Audit Logs</h2>
+                        <div style="display:flex; gap:1rem; flex:1; max-width:400px;">
+                            <input type="text" id="audit-log-filter" placeholder="Filter by target (bucket), action, or user..." style="flex:1;" oninput="filterAuditLogs()">
+                        </div>
+                        <button class="btn btn-primary" onclick="loadAuditLogs()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:0.5rem;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <div class="glass-panel" style="padding:1rem; overflow-x:auto;">
+                        <table class="data-table" style="width:100%; text-align:left;">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Target / Bucket</th>
+                                    <th>IP Address</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="audit-logs-table-body">
+                                <tr><td colspan="6" style="text-align:center;">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- Bucket Settings View -->
@@ -441,7 +476,20 @@ aws --endpoint-url &lt;endpoint&gt; s3 ls</pre>
         </div>
     </div>
 
+    <!-- View Audit Log Modal -->
+    <div class="modal-overlay" id="view-log-modal">
+        <div class="glass-card modal" style="max-width:600px;">
+            <div class="modal-header"><h3>Audit Log Details</h3><button class="btn-close" onclick="closeModal('view-log-modal')">&times;</button></div>
+            <div class="modal-body">
+                <pre id="audit-log-details-content" style="background:var(--bg-secondary); padding:1rem; border-radius:8px; overflow-x:auto; font-family:monospace; font-size:0.9rem; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;"></pre>
+                <div class="modal-actions" style="margin-top:1.5rem;display:flex;justify-content:flex-end;">
+                    <button class="btn btn-primary" onclick="closeModal('view-log-modal')">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="toast-container"></div>
-    <script src="app.js?v=11"></script>
+    <script src="app.js?v=14"></script>
 </body>
 </html>
