@@ -208,71 +208,71 @@ Click icon Settings trên Bucket card → Trang chi tiết với các tab:
 **Mục tiêu:** Người dùng có thể đăng nhập bằng Username/Password, không cần nhập key.
 
 **Backend:**
-- [ ] Thêm `PasswordHash` vào struct `User`, migrate dữ liệu cũ (root user auto-hash password)
-- [ ] Tạo `internal/auth/session.go`: JWT generate/validate, Cookie middleware
-- [ ] Tạo handler: `POST /api/v1/login`, `POST /api/v1/logout`, `GET /api/v1/me`
-- [ ] Sửa Admin API middleware: chấp nhận cả JWT Cookie (Web) và SigV4 (CLI)
-- [ ] Struct + Store cho `ServiceAccount` (bảng bbolt `service_accounts`)
-- [ ] Sửa SigV4 verifier: lookup key từ bảng `service_accounts` trước, fallback `users`
-- [ ] API: `POST /api/v1/service-accounts`, `GET /api/v1/service-accounts`, `DELETE /api/v1/service-accounts/{id}`
-- [ ] Auto-create Service Account cho root user khi startup (tương thích ngược với config `root_access_key/root_secret_key`)
+- [x] Thêm `PasswordHash` vào struct `User`, migrate dữ liệu cũ (root user auto-hash password)
+- [x] Tạo `internal/auth/session.go`: JWT generate/validate, Cookie middleware
+- [x] Tạo handler: `POST /api/v1/login`, `POST /api/v1/logout`, `GET /api/v1/me`
+- [x] Sửa Admin API middleware: chấp nhận cả JWT Cookie (Web) và SigV4 (CLI)
+- [x] Struct + Store cho `ServiceAccount` (bảng bbolt `service_accounts`)
+- [x] Sửa SigV4 verifier: lookup key từ bảng `service_accounts` trước, fallback `users`
+- [x] API: `POST /api/v1/service-accounts`, `GET /api/v1/service-accounts`, `DELETE /api/v1/service-accounts/{id}`
+- [x] Auto-create Service Account cho root user khi startup (tương thích ngược với config `root_access_key/root_secret_key`)
 
 **Frontend:**
-- [ ] Sửa Login form: chỉ 2 trường Username + Password
-- [ ] Xóa logic `localStorage` lưu raw key
-- [ ] Admin API calls dùng Cookie thay vì aws4fetch sign
-- [ ] S3 API calls từ Browser: dùng Presigned URL do server generate (thay vì client-side SigV4)
+- [x] Sửa Login form: chỉ 2 trường Username + Password
+- [x] Xóa logic `localStorage` lưu raw key
+- [x] Admin API calls dùng Cookie thay vì aws4fetch sign
+- [x] S3 API calls từ Browser: dùng Presigned URL do server generate (thay vì client-side SigV4)
 
 ### Phase 2: Object Browser nâng cấp (P0-P1)
 **Mục tiêu:** Duyệt file theo thư mục, tìm kiếm, sắp xếp, share link.
 
 **Frontend (không cần sửa Backend vì API đã có):**
-- [ ] Gọi ListObjectsV2 với `delimiter=/` để tách folder vs file
-- [ ] Breadcrumb navigation multi-level
-- [ ] Icon phân biệt folder/file
-- [ ] Nút "Create Folder" → PutObject 0-byte key `prefix/foldername/`
-- [ ] Ô Search (client-side filter theo key name)
-- [ ] Dropdown Sort (client-side sort theo name/size/date)
-- [ ] Nút Share trên mỗi file → gọi `/_admin/presign` → hiển thị URL + copy
-- [ ] Preview modal cho ảnh (detect Content-Type từ extension)
+- [x] Gọi ListObjectsV2 với `delimiter=/` để tách folder vs file
+- [x] Breadcrumb navigation multi-level
+- [x] Icon phân biệt folder/file
+- [x] Nút "Create Folder" → PutObject 0-byte key `prefix/foldername/`
+- [x] Ô Search (client-side filter theo key name)
+- [x] Dropdown Sort (client-side sort theo name/size/date)
+- [x] Nút Share trên mỗi file → gọi `/_admin/presign` → hiển thị URL + copy
+- [x] Preview modal cho ảnh (detect Content-Type từ extension)
 
 ### Phase 3: Bucket Settings + Identity nâng cấp (P1)
 **Mục tiêu:** Quản trị Bucket chuyên sâu, quản lý user + policy đầy đủ.
 
 **Frontend (Backend API đã có sẵn):**
-- [ ] Trang Bucket Details với tabs: Overview, Access, Versioning, CORS, Lifecycle, Website
-- [ ] Access tab: Toggle Public/Private + JSON editor cho custom policy
+- [x] Trang Bucket Details với tabs: Overview, Access, Versioning, CORS, Lifecycle, Website
+- [x] Access tab: Toggle Public/Private + JSON editor cho custom policy
 - [ ] Versioning tab: Toggle Enable/Suspend
 - [ ] Bucket card: hiển thị thêm số objects, dung lượng
 
 **Backend + Frontend:**
-- [ ] API expose bucket stats (`/_admin/buckets/{name}/stats`)
-- [ ] Trang Users: form tạo user với username + password
-- [ ] Trang Users: action đổi password, gán policy, disable
-- [ ] Trang Policies: danh sách preset + custom JSON editor
-- [ ] Xây dựng `Policy Engine` hỗ trợ matching `Action`, `Resource`, `Wildcard` theo chuẩn AWS.
-- [ ] Tích hợp Policy Engine vào logic xử lý S3 API (chặn request nếu không được Allow).
-- [ ] Enforce phân quyền trong middleware cho Admin API (không chỉ check `IsRoot` mà còn check các action như `admin:ListUsers`).
+- [x] API expose bucket stats (`/_admin/buckets/{name}/stats`)
+- [x] Trang Users: form tạo user với username + password
+- [x] Trang Users: action đổi password, gán policy, disable
+- [x] Trang Policies: danh sách preset + custom JSON editor
+- [x] Xây dựng `Policy Engine` hỗ trợ matching `Action`, `Resource`, `Wildcard` theo chuẩn AWS.
+- [x] Tích hợp Policy Engine vào logic xử lý S3 API (chặn request nếu không được Allow).
+- [x] Enforce phân quyền trong middleware cho Admin API (không chỉ check `IsRoot` mà còn check các action như `admin:ListUsers`).
 
 ### Phase 4: Service Accounts UI + Dashboard (P1)
 **Mục tiêu:** User tự quản lý API keys, Dashboard tổng quan.
 
-- [ ] Trang Service Accounts: tạo/xóa/disable Access Key
-- [ ] Hiển thị Secret Key 1 lần + nút Copy + snippet cấu hình mẫu
-- [ ] Dashboard: cards thống kê (dung lượng, buckets, users, uptime)
-- [ ] Dashboard: gợi ý Endpoint API (auto-detect từ `window.location`)
+- [x] Trang Service Accounts: tạo/xóa/disable Access Key
+- [x] Hiển thị Secret Key 1 lần + nút Copy + snippet cấu hình mẫu
+- [x] Dashboard: cards thống kê (dung lượng, buckets, users, uptime)
+- [x] Dashboard: gợi ý Endpoint API (auto-detect từ `window.location`)
 
 ### Phase 5: Tính năng nâng cao (P2-P3)
-- [ ] Rename/Move object (Copy + Delete)
-- [ ] Multi-select + Bulk delete/download
-- [ ] Upload folder (recursive via webkitdirectory)
-- [ ] Download file lớn qua Presigned URL (thay vì blob)
+- [x] Rename/Move object (Copy + Delete)
+- [x] Multi-select + Bulk delete/download
+- [x] Upload folder (recursive via webkitdirectory)
+- [x] Download file lớn qua Presigned URL (thay vì blob)
 - [ ] Preview video/audio
-- [ ] CORS editor UI
+- [x] CORS editor UI
 - [ ] Lifecycle editor UI
 - [ ] Website hosting config UI
 - [ ] Custom Domain mapping (Backend middleware + UI)
-- [ ] Audit Log viewer
+- [x] Audit Log viewer
 - [ ] Bucket Notification/Events
 
 ---

@@ -13,11 +13,11 @@ type Policy struct {
 }
 
 type Statement struct {
-	Sid       string      `json:"Sid,omitempty"`
-	Effect    string      `json:"Effect"` // "Allow" or "Deny"
-	Principal interface{} `json:"Principal,omitempty"` // Can be string or map
-	Action    interface{} `json:"Action"`    // Can be string or []string
-	Resource  interface{} `json:"Resource"`  // Can be string or []string
+	Sid       string                       `json:"Sid,omitempty"`
+	Effect    string                       `json:"Effect"`              // "Allow" or "Deny"
+	Principal interface{}                  `json:"Principal,omitempty"` // Can be string or map
+	Action    interface{}                  `json:"Action"`              // Can be string or []string
+	Resource  interface{}                  `json:"Resource"`            // Can be string or []string
 	Condition map[string]map[string]string `json:"Condition,omitempty"`
 }
 

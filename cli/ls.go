@@ -53,7 +53,7 @@ var lsCmd = &cobra.Command{
 				objects = append(objects, obj)
 				continue
 			}
-			
+
 			if obj.Size == 0 && obj.LastModified.IsZero() {
 				// Directory (CommonPrefix)
 				fmt.Printf("                           PRE %s\n", obj.Key)

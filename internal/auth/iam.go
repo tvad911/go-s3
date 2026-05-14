@@ -22,10 +22,10 @@ func GetUser(ctx context.Context) *User {
 }
 
 var (
-	ErrUserNotFound      = errors.New("user not found")
-	ErrUserExists        = errors.New("user already exists")
-	ErrInvalidPassword   = errors.New("invalid password")
-	ErrPasswordRequired  = errors.New("password is required")
+	ErrUserNotFound     = errors.New("user not found")
+	ErrUserExists       = errors.New("user already exists")
+	ErrInvalidPassword  = errors.New("invalid password")
+	ErrPasswordRequired = errors.New("password is required")
 )
 
 // User represents an identity in the system.

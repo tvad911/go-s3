@@ -10,34 +10,34 @@ import (
 
 // BucketInfo represents information about a bucket.
 type BucketInfo struct {
-	Name         string
-	CreationDate time.Time
-	Region       string
-	Owner        string
-	ACL          string
-	Versioning   string // "" (Disabled), "Enabled", "Suspended"
+	Name              string
+	CreationDate      time.Time
+	Region            string
+	Owner             string
+	ACL               string
+	Versioning        string // "" (Disabled), "Enabled", "Suspended"
 	ObjectLockEnabled bool
 }
 
 // ObjectMeta contains metadata for an object.
 type ObjectMeta struct {
-	Size               int64
-	ETag               string
-	ContentType        string
-	ContentEncoding    string
-	ContentDisposition string
-	ContentLanguage    string
-	CacheControl       string
-	Expires            string
-	LastModified       time.Time
-	UserMeta           map[string]string
-	Tags               map[string]string
-	StorageClass       string
-	ACL                string
-	VersionID            string
-	IsDeleteMarker       bool
-	IsLatest             bool
-	ServerSideEncryption string
+	Size                      int64
+	ETag                      string
+	ContentType               string
+	ContentEncoding           string
+	ContentDisposition        string
+	ContentLanguage           string
+	CacheControl              string
+	Expires                   string
+	LastModified              time.Time
+	UserMeta                  map[string]string
+	Tags                      map[string]string
+	StorageClass              string
+	ACL                       string
+	VersionID                 string
+	IsDeleteMarker            bool
+	IsLatest                  bool
+	ServerSideEncryption      string
 	ObjectLockMode            string
 	ObjectLockRetainUntilDate *time.Time
 	ObjectLockLegalHoldStatus string
@@ -178,10 +178,10 @@ type CompletePart struct {
 
 // CompleteResult holds the result of completing a multipart upload.
 type CompleteResult struct {
-	Location string
-	Bucket   string
-	Key      string
-	ETag     string
+	Location  string
+	Bucket    string
+	Key       string
+	ETag      string
 	VersionID string
 }
 

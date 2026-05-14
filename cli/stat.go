@@ -37,7 +37,7 @@ var statCmd = &cobra.Command{
 		for k, v := range info.Metadata {
 			fmt.Printf("%s: %s\n", k, v)
 		}
-		
+
 		return nil
 	},
 }

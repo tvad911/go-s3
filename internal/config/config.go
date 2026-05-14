@@ -10,12 +10,12 @@ import (
 
 // Config represents the complete application configuration.
 type Config struct {
-	Server    ServerConfig    `mapstructure:"server"`
-	Storage   StorageConfig   `mapstructure:"storage"`
-	Auth      AuthConfig      `mapstructure:"auth"`
-	CORS      CORSConfig      `mapstructure:"cors"`
-	Log       LogConfig       `mapstructure:"log"`
-	RateLimit RateLimitConfig `mapstructure:"rate_limit"`
+	Server      ServerConfig      `mapstructure:"server"`
+	Storage     StorageConfig     `mapstructure:"storage"`
+	Auth        AuthConfig        `mapstructure:"auth"`
+	CORS        CORSConfig        `mapstructure:"cors"`
+	Log         LogConfig         `mapstructure:"log"`
+	RateLimit   RateLimitConfig   `mapstructure:"rate_limit"`
 	Metrics     MetricsConfig     `mapstructure:"metrics"`
 	Admin       AdminConfig       `mapstructure:"admin"`
 	Replication ReplicationConfig `mapstructure:"replication"`
@@ -72,10 +72,10 @@ type RateLimitConfig struct {
 	Burst             int     `mapstructure:"burst"`
 
 	// Advanced rate limits (Phase 4.9)
-	PerUserEnabled    bool    `mapstructure:"per_user_enabled"`
-	PerUserReadRPS    float64 `mapstructure:"per_user_read_rps"`
-	PerUserWriteRPS   float64 `mapstructure:"per_user_write_rps"`
-	PerUserBurst      int     `mapstructure:"per_user_burst"`
+	PerUserEnabled  bool    `mapstructure:"per_user_enabled"`
+	PerUserReadRPS  float64 `mapstructure:"per_user_read_rps"`
+	PerUserWriteRPS float64 `mapstructure:"per_user_write_rps"`
+	PerUserBurst    int     `mapstructure:"per_user_burst"`
 
 	PerBucketEnabled  bool    `mapstructure:"per_bucket_enabled"`
 	PerBucketReadRPS  float64 `mapstructure:"per_bucket_read_rps"`

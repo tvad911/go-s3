@@ -47,7 +47,7 @@ func CORS(store CORSStore) func(http.Handler) http.Handler {
 			// If no specific bucket config, allow all for development (or could be strict)
 			// S3 default is no CORS allowed unless configured. We'll be permissive if not configured for now,
 			// or strict if requested. Let's implement strict but with a fallback.
-			
+
 			if corsConfig != nil && len(corsConfig.CORSRule) > 0 {
 				applyCORSRules(w, r, origin, corsConfig.CORSRule)
 			} else {

@@ -263,19 +263,19 @@ type AbortIncompleteMultipartUpload struct {
 
 // ListVersionsResult XML response
 type ListVersionsResult struct {
-	XMLName             xml.Name       `xml:"ListVersionsResult"`
-	Name                string         `xml:"Name"`
-	Prefix              string         `xml:"Prefix"`
-	KeyMarker           string         `xml:"KeyMarker"`
-	VersionIdMarker     string         `xml:"VersionIdMarker"`
-	MaxKeys             int            `xml:"MaxKeys"`
-	Delimiter           string         `xml:"Delimiter,omitempty"`
-	IsTruncated         bool           `xml:"IsTruncated"`
-	NextKeyMarker       string         `xml:"NextKeyMarker,omitempty"`
-	NextVersionIdMarker string         `xml:"NextVersionIdMarker,omitempty"`
+	XMLName             xml.Name        `xml:"ListVersionsResult"`
+	Name                string          `xml:"Name"`
+	Prefix              string          `xml:"Prefix"`
+	KeyMarker           string          `xml:"KeyMarker"`
+	VersionIdMarker     string          `xml:"VersionIdMarker"`
+	MaxKeys             int             `xml:"MaxKeys"`
+	Delimiter           string          `xml:"Delimiter,omitempty"`
+	IsTruncated         bool            `xml:"IsTruncated"`
+	NextKeyMarker       string          `xml:"NextKeyMarker,omitempty"`
+	NextVersionIdMarker string          `xml:"NextVersionIdMarker,omitempty"`
 	Version             []ObjectVersion `xml:"Version"`
 	DeleteMarker        []ObjectVersion `xml:"DeleteMarker"`
-	CommonPrefixes      []CommonPrefix `xml:"CommonPrefixes,omitempty"`
+	CommonPrefixes      []CommonPrefix  `xml:"CommonPrefixes,omitempty"`
 }
 
 type ObjectVersion struct {
@@ -283,10 +283,10 @@ type ObjectVersion struct {
 	VersionId    string    `xml:"VersionId"`
 	IsLatest     bool      `xml:"IsLatest"`
 	LastModified time.Time `xml:"LastModified"`
-	ETag         string `xml:"ETag,omitempty"` // DeleteMarker does not have ETag/Size/StorageClass
-	Size         int64  `xml:"Size,omitempty"`
-	StorageClass string `xml:"StorageClass,omitempty"`
-	Owner        *Owner `xml:"Owner,omitempty"`
+	ETag         string    `xml:"ETag,omitempty"` // DeleteMarker does not have ETag/Size/StorageClass
+	Size         int64     `xml:"Size,omitempty"`
+	StorageClass string    `xml:"StorageClass,omitempty"`
+	Owner        *Owner    `xml:"Owner,omitempty"`
 }
 
 // WebsiteConfiguration represents the configuration for website hosting.

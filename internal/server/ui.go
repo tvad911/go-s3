@@ -45,14 +45,14 @@ func SetupUIRouter(cfg *config.Config) *chi.Mux {
 		if path == "" {
 			path = "."
 		}
-		
+
 		// If file exists in static dir, serve it
 		_, err := fs.Stat(subFS, path)
 		if err == nil {
 			fileServer.ServeHTTP(w, r)
 			return
 		}
-		
+
 		// Otherwise, proxy to main API (e.g. for Presigned URLs and S3 operations)
 		proxy.ServeHTTP(w, r)
 	}))

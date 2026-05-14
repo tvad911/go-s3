@@ -22,7 +22,7 @@ type InitiateMultipartUploadResult struct {
 
 // CompleteMultipartUpload represents the XML request to complete a multipart upload.
 type CompleteMultipartUpload struct {
-	XMLName xml.Name            `xml:"CompleteMultipartUpload"`
+	XMLName xml.Name        `xml:"CompleteMultipartUpload"`
 	Parts   []CompletedPart `xml:"Part"`
 }
 
@@ -69,7 +69,7 @@ func (c *Client) PutObjectMultipart(ctx context.Context, bucket, key string, fil
 	if err != nil {
 		return err
 	}
-	
+
 	if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
 		return c.parseErrorResponse(resp)
@@ -89,7 +89,7 @@ func (c *Client) PutObjectMultipart(ctx context.Context, bucket, key string, fil
 	// Parallel upload can be added later.
 	partSize := int64(minPartSize)
 	var completedParts []CompletedPart
-	
+
 	for partNum := 1; ; partNum++ {
 		offset := int64(partNum-1) * partSize
 		if offset >= totalSize {
@@ -102,7 +102,7 @@ func (c *Client) PutObjectMultipart(ctx context.Context, bucket, key string, fil
 		}
 
 		partBody := io.NewSectionReader(file, offset, size)
-		
+
 		pu := c.buildURL(bucket, key) + fmt.Sprintf("?partNumber=%d&uploadId=%s", partNum, uploadID)
 		preq, err := http.NewRequest("PUT", pu, partBody)
 		if err != nil {

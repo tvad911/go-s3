@@ -75,11 +75,11 @@ func (s *Server) Start() error {
 	go func() {
 		if s.config.Server.TLS.Enabled {
 			slog.Info("starting HTTPS server", "addr", s.httpServer.Addr)
-			
+
 			if s.config.Server.TLS.AutoRedirect {
 				httpAddr := fmt.Sprintf("%s:%d", s.config.Server.Host, s.config.Server.TLS.HTTPPort)
 				slog.Info("starting HTTP redirect server", "addr", httpAddr)
-				
+
 				redirectMux := http.NewServeMux()
 				redirectMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 					host := r.Host
@@ -89,7 +89,7 @@ func (s *Server) Start() error {
 					target := fmt.Sprintf("https://%s:%d%s", host, s.config.Server.Port, r.URL.RequestURI())
 					http.Redirect(w, r, target, http.StatusMovedPermanently)
 				})
-				
+
 				s.redirectSrv = &http.Server{Addr: httpAddr, Handler: redirectMux}
 				go func() {
 					if err := s.redirectSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

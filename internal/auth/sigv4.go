@@ -11,22 +11,22 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	"strings"
 	"strconv"
+	"strings"
 	"time"
 )
 
 var (
-	ErrAuthHeaderMissing    = errors.New("authorization header missing")
-	ErrAuthHeaderMalformed  = errors.New("authorization header malformed")
+	ErrAuthHeaderMissing     = errors.New("authorization header missing")
+	ErrAuthHeaderMalformed   = errors.New("authorization header malformed")
 	ErrSignatureDoesNotMatch = errors.New("signature does not match")
 	ErrRequestTimeTooSkewed  = errors.New("request time too skewed")
 )
 
 type SigV4Verifier struct {
-	UserStore    UserStore
-	SAStore      ServiceAccountStore
-	Region       string
+	UserStore UserStore
+	SAStore   ServiceAccountStore
+	Region    string
 }
 
 func NewSigV4Verifier(store UserStore, saStore ServiceAccountStore, region string) *SigV4Verifier {
@@ -190,7 +190,7 @@ func (v *SigV4Verifier) verifyQueryString(r *http.Request) (*User, error) {
 	}
 
 	payloadHash := "UNSIGNED-PAYLOAD"
-	
+
 	// Create a copy of the request to strip X-Amz-Signature for canonical request
 	reqCopy := r.Clone(r.Context())
 	newQ := reqCopy.URL.Query()
@@ -318,7 +318,7 @@ func (v *SigV4Verifier) VerifyPostPolicy(ctx context.Context, credential, date, 
 	}
 
 	signingKey := getSignatureKey(secretKey, dateStamp, region, service)
-	
+
 	// For POST uploads, the string to sign is literally the base64-encoded policy
 	expectedSig := hex.EncodeToString(hmacSHA256(signingKey, policyB64))
 

@@ -107,11 +107,22 @@
                 <div id="view-objects" class="view">
                     <div id="upload-zone" class="upload-zone">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                        <p>Drag & Drop files here or <span>browse</span> to upload</p>
+                                                <p>Drag & Drop files here or <span>browse</span> to upload</p>
+                        <div style="display:flex; justify-content:center; gap: 1rem; margin-top: 1rem;">
+                            <button class="btn btn-secondary" onclick="document.getElementById('file-input').click()">Upload Files</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('folder-input').click()">Upload Folder</button>
+                        </div>
                         <input type="file" id="file-input" multiple hidden>
+                        <input type="file" id="folder-input" webkitdirectory directory multiple hidden>
                     </div>
-                    <div class="object-toolbar">
-                        <input type="text" id="object-search" placeholder="Search files..." oninput="renderObjects()" class="search-input">
+                                        <div class="object-toolbar">
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="text" id="object-search" placeholder="Search files..." oninput="renderObjects()" class="search-input">
+                            <div id="bulk-actions" style="display: none; gap: 0.5rem; margin-left: 1rem;">
+                                <button class="btn btn-primary" onclick="bulkDownloadObjects()" style="padding: 0.3rem 0.6rem; font-size: 0.9rem;">Download</button>
+                                <button class="btn btn-danger" onclick="bulkDeleteObjects()" style="padding: 0.3rem 0.6rem; font-size: 0.9rem;">Delete (<span id="selected-count">0</span>)</button>
+                            </div>
+                        </div>
                         <div class="sort-btns">
                             <button id="sort-btn-key" class="btn btn-ghost btn-sm sort-active" onclick="toggleSort('key')">Name <span id="sort-btn-icon-key" style="font-size:0.8em;">▲</span></button>
                             <button id="sort-btn-size" class="btn btn-ghost btn-sm" onclick="toggleSort('size')">Size <span id="sort-btn-icon-size" style="font-size:0.8em;">⇅</span></button>
@@ -121,6 +132,7 @@
                     <div class="table-container glass-panel mt-4">
                         <table class="data-table">
                             <thead><tr>
+                                <th style="width:40px;text-align:center;"><input type="checkbox" id="select-all-objects" onclick="toggleSelectAllObjects()"></th>
                                 <th style="cursor:pointer;" onclick="toggleSort('key')">Name <span id="sort-icon-key" style="font-size:0.8em;opacity:0.8;">&#9650;</span></th>
                                 <th style="cursor:pointer;" onclick="toggleSort('size')">Size <span id="sort-icon-size" style="font-size:0.8em;opacity:0.5;">&#8645;</span></th>
                                 <th style="cursor:pointer;" onclick="toggleSort('date')">Last Modified <span id="sort-icon-date" style="font-size:0.8em;opacity:0.5;">&#8645;</span></th>

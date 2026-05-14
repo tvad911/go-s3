@@ -14,14 +14,14 @@ import (
 
 // AuthHandler handles authentication endpoints for the Web Console.
 type AuthHandler struct {
-	store     metadata.Store
+	store      metadata.Store
 	sessionCfg *auth.SessionConfig
 }
 
 // NewAuthHandler creates a new AuthHandler.
 func NewAuthHandler(store metadata.Store, sessionCfg *auth.SessionConfig) *AuthHandler {
 	return &AuthHandler{
-		store:     store,
+		store:      store,
 		sessionCfg: sessionCfg,
 	}
 }

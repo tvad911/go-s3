@@ -48,7 +48,7 @@ func (h *AdminHandler) recordAudit(r *http.Request, action, target, details stri
 	if user.Username != "" {
 		username = user.Username
 	}
-	
+
 	log := metadata.AuditLog{
 		User:    username,
 		Action:  action,
@@ -56,7 +56,7 @@ func (h *AdminHandler) recordAudit(r *http.Request, action, target, details stri
 		Details: details,
 		IP:      r.RemoteAddr,
 	}
-	
+
 	// Fire and forget
 	go func() {
 		if err := h.MetaStore.RecordAuditLog(context.Background(), &log); err != nil {
@@ -240,23 +240,23 @@ func (h *AdminHandler) ServerInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var totalObjects, totalBytes int64
-	
+
 	metrics.ObjectsTotal.Range(func(key, value any) bool {
 		totalObjects += value.(*atomic.Int64).Load()
 		return true
 	})
-	
+
 	metrics.StorageBytes.Range(func(key, value any) bool {
 		totalBytes += value.(*atomic.Int64).Load()
 		return true
 	})
 
 	info := map[string]interface{}{
-		"version": "0.1.0",
+		"version":        "0.1.0",
 		"uptime_seconds": int(time.Since(startTime).Seconds()),
 		"storage": map[string]interface{}{
 			"total_objects": totalObjects,
-			"total_bytes": totalBytes,
+			"total_bytes":   totalBytes,
 		},
 	}
 
@@ -273,9 +273,9 @@ func (h *AdminHandler) BucketStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	stats := map[string]interface{}{
-		"bucket": bucket,
+		"bucket":  bucket,
 		"objects": objects,
-		"bytes": bytes,
+		"bytes":   bytes,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -367,4 +367,3 @@ func (h *AdminHandler) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(logs)
 }
-

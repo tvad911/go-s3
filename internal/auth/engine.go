@@ -7,7 +7,7 @@ import (
 
 // Engine evaluates whether a user is allowed to perform an action on a resource.
 type Engine struct {
-	iamStore IAMPolicyStore
+	iamStore    IAMPolicyStore
 	policyStore PolicyStore
 }
 

@@ -366,7 +366,6 @@ func (h *S3Handler) DeleteBucketPolicy(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-
 // GetBucketAcl handles GET /bucket?acl
 func (h *S3Handler) GetBucketAcl(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()

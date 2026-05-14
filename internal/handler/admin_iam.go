@@ -58,7 +58,7 @@ func (h *AdminHandler) PutIAMPolicy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := chi.URLParam(r, "name")
-	
+
 	var policy auth.Policy
 	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&policy); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

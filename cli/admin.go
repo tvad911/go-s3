@@ -47,13 +47,13 @@ var adminUserAddCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		
+
 		if jsonOut {
 			fmt.Println(string(res))
 		} else {
 			var m map[string]interface{}
 			json.Unmarshal(res, &m)
-			fmt.Printf("User created.\nUsername: %v\nAccessKey: %v\nSecretKey: %v\n", 
+			fmt.Printf("User created.\nUsername: %v\nAccessKey: %v\nSecretKey: %v\n",
 				m["username"], m["accessKey"], m["secretKey"])
 		}
 		return nil
@@ -68,7 +68,7 @@ var adminUserLsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		
+
 		if jsonOut {
 			fmt.Println(string(res))
 		} else {
@@ -107,13 +107,13 @@ var adminUserRotateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		
+
 		if jsonOut {
 			fmt.Println(string(res))
 		} else {
 			var m map[string]interface{}
 			json.Unmarshal(res, &m)
-			fmt.Printf("Keys rotated.\nUsername: %v\nAccessKey: %v\nSecretKey: %v\n", 
+			fmt.Printf("Keys rotated.\nUsername: %v\nAccessKey: %v\nSecretKey: %v\n",
 				m["username"], m["accessKey"], m["secretKey"])
 		}
 		return nil
@@ -128,13 +128,13 @@ var adminInfoCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		
+
 		if jsonOut {
 			fmt.Println(string(res))
 		} else {
 			var m map[string]interface{}
 			json.Unmarshal(res, &m)
-			fmt.Printf("Server Version: %v\nUptime: %v seconds\nStorage Total: %v\nStorage Free: %v\n", 
+			fmt.Printf("Server Version: %v\nUptime: %v seconds\nStorage Total: %v\nStorage Free: %v\n",
 				m["version"], m["uptime_seconds"], m["storage_total_bytes"], m["storage_free_bytes"])
 		}
 		return nil
@@ -144,7 +144,7 @@ var adminInfoCmd = &cobra.Command{
 func init() {
 	adminCmd.AddCommand(adminUserCmd)
 	adminCmd.AddCommand(adminInfoCmd)
-	
+
 	adminUserCmd.AddCommand(adminUserAddCmd)
 	adminUserCmd.AddCommand(adminUserLsCmd)
 	adminUserCmd.AddCommand(adminUserRmCmd)

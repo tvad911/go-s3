@@ -27,22 +27,22 @@ var rootCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Initialize the S3 client using flags and env vars
 		// Env vars fallback can be added via viper if needed, but for now we'll do simple env checking
-		
+
 		ep := endpoint
 		if ep == "" {
 			ep = os.Getenv("GOS3C_ENDPOINT")
 		}
-		
+
 		ak := accessKey
 		if ak == "" {
 			ak = os.Getenv("GOS3C_ACCESS_KEY")
 		}
-		
+
 		sk := secretKey
 		if sk == "" {
 			sk = os.Getenv("GOS3C_SECRET_KEY")
 		}
-		
+
 		rg := region
 		if rg == "" {
 			rg = os.Getenv("GOS3C_REGION")

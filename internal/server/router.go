@@ -89,6 +89,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 			r.Put("/buckets/{bucket}", adminHandler.CreateBucket)
 			r.Delete("/buckets/{bucket}", adminHandler.DeleteBucket)
 			r.Get("/buckets/{bucket}/objects", adminHandler.ListObjects)
+			r.Post("/buckets/{bucket}/objects/delete", adminHandler.DeleteObjects)
 
 			// Web UI Bucket Policy API
 			r.Get("/buckets/{bucket}/policy", adminHandler.GetBucketPolicy)

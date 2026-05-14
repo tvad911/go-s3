@@ -10,10 +10,10 @@ import (
 
 var (
 	// Counters
-	RequestsTotal           sync.Map // key: "method|bucket|status" -> *atomic.Uint64
-	RequestDurationTotal    sync.Map // key: "method|bucket" -> *atomic.Uint64 (stores duration in milliseconds to preserve precision, exported as seconds)
-	BytesUploadedTotal      sync.Map // key: "bucket" -> *atomic.Uint64
-	BytesDownloadedTotal    sync.Map // key: "bucket" -> *atomic.Uint64
+	RequestsTotal        sync.Map // key: "method|bucket|status" -> *atomic.Uint64
+	RequestDurationTotal sync.Map // key: "method|bucket" -> *atomic.Uint64 (stores duration in milliseconds to preserve precision, exported as seconds)
+	BytesUploadedTotal   sync.Map // key: "bucket" -> *atomic.Uint64
+	BytesDownloadedTotal sync.Map // key: "bucket" -> *atomic.Uint64
 
 	// Gauges
 	ObjectsTotal sync.Map // key: "bucket" -> *atomic.Int64
@@ -76,7 +76,7 @@ func SetStorageBytes(bucket string, bytes int64) {
 func Handler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
-		
+
 		fmt.Fprintln(w, "# HELP gos3_requests_total Total number of requests")
 		fmt.Fprintln(w, "# TYPE gos3_requests_total counter")
 		RequestsTotal.Range(func(key, value any) bool {

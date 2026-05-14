@@ -3,6 +3,7 @@ let currentView = 'buckets';
 let currentBucket = null;
 let currentPrefix = '';
 let currentUser = null;
+let selectedObjects = new Set();
 
 // DOM Elements
 const loginScreen = document.getElementById('login-screen');
@@ -310,6 +311,8 @@ window.changePageSize = () => {
 };
 
 async function fetchObjects() {
+    selectedObjects.clear();
+    if(window.updateBulkActionsUI) updateBulkActionsUI();
     const tbody = document.getElementById('objects-table-body');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;"><div class="loading-spinner" style="margin:1rem auto;width:24px;height:24px;"></div></td></tr>';
     
@@ -414,16 +417,17 @@ function renderObjects() {
     }
 
     if (paginated.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Empty — upload files or create a folder.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">Empty — upload files or create a folder.</td></tr>';
         return;
     }
 
     tbody.innerHTML = paginated.map(obj => {
         const displayName = obj.isFolder ? obj.key.replace(currentPrefix, '').replace(/\/$/, '') : obj.key.replace(currentPrefix, '');
         if (obj.isFolder) {
-            return `<tr onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;">
-                <td><div class="file-name"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path></svg> ${displayName}/</div></td>
-                <td>—</td><td>—</td><td></td></tr>`;
+            return `<tr>
+                <td style="text-align:center;"><input type="checkbox" onclick="toggleObjectSelection(event, '${obj.key}')" ${selectedObjects.has(obj.key) ? 'checked' : ''}></td>
+                <td onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;"><div class="file-name"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path></svg> ${displayName}/</div></td>
+                <td onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;">—</td><td onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;">—</td><td></td></tr>`;
         }
         const lastMod = obj.lastModified ? new Date(obj.lastModified).toLocaleString() : '';
         const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(obj.key);
@@ -432,6 +436,7 @@ function renderObjects() {
             : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
         
         return `<tr>
+            <td style="text-align:center;"><input type="checkbox" onclick="toggleObjectSelection(event, '${obj.key}')" ${selectedObjects.has(obj.key) ? 'checked' : ''}></td>
             <td><div class="file-name" ${isImage ? `onclick="previewObject('${obj.key}')" style="cursor:pointer;color:var(--accent-primary)"` : ''}>${icon} ${displayName}</div></td>
             <td>${formatBytes(obj.size)}</td>
             <td>${lastMod}</td>
@@ -630,31 +635,42 @@ window.copyToClipboardInput = (id) => {
     }
 };
 
+
 // Upload
 const uploadZone = document.getElementById('upload-zone');
 const fileInput = document.getElementById('file-input');
+const folderInput = document.getElementById('folder-input');
 if (uploadZone) {
-    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'BUTTON') fileInput.click();
+    });
     uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
     uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
-    uploadZone.addEventListener('drop', (e) => { e.preventDefault(); uploadZone.classList.remove('dragover'); if (e.dataTransfer.files.length) handleUploads(e.dataTransfer.files); });
+    uploadZone.addEventListener('drop', (e) => { 
+        e.preventDefault(); 
+        uploadZone.classList.remove('dragover'); 
+        if (e.dataTransfer.files.length) handleUploads(e.dataTransfer.files); 
+    });
 }
 if (fileInput) fileInput.addEventListener('change', () => { if (fileInput.files.length) handleUploads(fileInput.files); });
+if (folderInput) folderInput.addEventListener('change', () => { if (folderInput.files.length) handleUploads(folderInput.files); });
 
 async function handleUploads(files) {
     if (!currentBucket) { showToast('Select a bucket first', 'error'); return; }
     for (const file of files) {
         try {
-            showToast(`Uploading ${file.name}...`, 'info');
-            // Get presigned PUT URL from admin API
-            const data = await api('POST', '/_admin/presign', { method: 'PUT', bucket: currentBucket, key: `${currentPrefix}${file.name}`, expires: 3600 });
+            const relativePath = file.webkitRelativePath || file.name;
+            showToast(`Uploading ${relativePath}...`, 'info');
+            const key = `${currentPrefix}${relativePath}`;
+            const data = await api('POST', '/_admin/presign', { method: 'PUT', bucket: currentBucket, key, expires: 3600 });
             const res = await fetch(data.url, { method: 'PUT', body: file });
             if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-            showToast(`${file.name} uploaded`, 'success');
+            showToast(`${relativePath} uploaded`, 'success');
         } catch (err) { showToast(err.message, 'error'); }
     }
     fetchObjects();
 }
+
 
 // ==================== Service Accounts ====================
 async function fetchServiceAccounts() {
@@ -794,6 +810,83 @@ function formatDuration(seconds) {
 }
 
 // Sort handler
+
+
+// ==================== Multi-Select & Bulk Actions ====================
+window.toggleObjectSelection = (e, key) => {
+    e.stopPropagation();
+    if (e.target.checked) selectedObjects.add(key);
+    else selectedObjects.delete(key);
+    updateBulkActionsUI();
+    
+    // Update header checkbox
+    const allCheckboxes = document.querySelectorAll('#objects-table-body input[type="checkbox"]');
+    const allChecked = Array.from(allCheckboxes).every(cb => cb.checked) && allCheckboxes.length > 0;
+    const selectAllCb = document.getElementById("select-all-objects");
+    if (selectAllCb) selectAllCb.checked = allChecked;
+};
+
+window.toggleSelectAllObjects = () => {
+    const selectAllCb = document.getElementById("select-all-objects");
+    const isChecked = selectAllCb ? selectAllCb.checked : false;
+    const checkboxes = document.querySelectorAll('#objects-table-body input[type="checkbox"]');
+    
+    checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+        const match = cb.getAttribute("onclick").match(/'([^']+)'/);
+        if (match) {
+            if (isChecked) selectedObjects.add(match[1]);
+            else selectedObjects.delete(match[1]);
+        }
+    });
+    updateBulkActionsUI();
+};
+
+window.updateBulkActionsUI = () => {
+    const bulkActions = document.getElementById("bulk-actions");
+    const selectedCountSpan = document.getElementById("selected-count");
+    if (bulkActions && selectedCountSpan) {
+        if (selectedObjects.size > 0) {
+            bulkActions.style.display = "flex";
+            selectedCountSpan.textContent = selectedObjects.size;
+        } else {
+            bulkActions.style.display = "none";
+        }
+    }
+};
+
+window.bulkDeleteObjects = async () => {
+    if (selectedObjects.size === 0) return;
+    if (!confirm(`Delete ${selectedObjects.size} selected items?`)) return;
+    
+    try {
+        const keys = Array.from(selectedObjects);
+        await api("POST", `/_admin/buckets/${currentBucket}/objects/delete`, keys);
+        showToast(`Deleted ${keys.length} items`, "success");
+        fetchObjects();
+    } catch (err) {
+        showToast(err.message, "error");
+    }
+};
+
+window.bulkDownloadObjects = async () => {
+    if (selectedObjects.size === 0) return;
+    showToast(`Starting download for ${selectedObjects.size} items...`, "info");
+    for (const key of selectedObjects) {
+        try {
+            const data = await api("POST", "/_admin/presign", { method: "GET", bucket: currentBucket, key, expires: 3600 });
+            const a = document.createElement("a");
+            a.href = data.url;
+            a.download = key.split("/").pop() || "download";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            await new Promise(r => setTimeout(r, 200));
+        } catch (err) {
+            showToast(`Failed to download ${key}: ${err.message}`, "error");
+        }
+    }
+};
 
 // ==================== Bucket Settings ====================
 window.openBucketSettings = (name) => {

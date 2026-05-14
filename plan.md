@@ -524,7 +524,7 @@ type Backend interface {
 
 ### 3.3 — Policy Engine (`internal/auth/policy.go`)
 
-- [ ] Hỗ trợ **bucket policy** (subset của AWS IAM policy JSON)
+- [x] Hỗ trợ **bucket policy** (subset của AWS IAM policy JSON)
 - [ ] Struct `Policy`:
   ```go
   type Statement struct {
@@ -545,7 +545,7 @@ type Backend interface {
   - `s3:AbortMultipartUpload`, `s3:ListMultipartUploadParts`
   - `s3:*` (wildcard)
 - [ ] Evaluate: Deny > Allow, nếu không match → Deny mặc định
-- [ ] Lưu bucket policy vào bbolt: `policy:bucket:{name}`
+- [x] Lưu bucket policy vào bbolt`
 - [ ] Endpoints:
   - `GET /{bucket}?policy` — GetBucketPolicy
   - `PUT /{bucket}?policy` — PutBucketPolicy

@@ -1,12 +1,12 @@
 package client
 
 import (
+	"encoding/hex"
 	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
-	"encoding/hex"
 )
 
 // PresignGetObject generates a presigned URL for downloading an object.

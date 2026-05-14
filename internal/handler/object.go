@@ -37,18 +37,18 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	meta := storage.ObjectMeta{
-		ContentType:        r.Header.Get("Content-Type"),
-		ContentEncoding:    r.Header.Get("Content-Encoding"),
-		ContentDisposition: r.Header.Get("Content-Disposition"),
-		ContentLanguage:    r.Header.Get("Content-Language"),
-		CacheControl:       r.Header.Get("Cache-Control"),
-		Expires:            r.Header.Get("Expires"),
-		StorageClass:       r.Header.Get("x-amz-storage-class"),
-		ServerSideEncryption: r.Header.Get("x-amz-server-side-encryption"),
-		ObjectLockMode:       r.Header.Get("x-amz-object-lock-mode"),
+		ContentType:               r.Header.Get("Content-Type"),
+		ContentEncoding:           r.Header.Get("Content-Encoding"),
+		ContentDisposition:        r.Header.Get("Content-Disposition"),
+		ContentLanguage:           r.Header.Get("Content-Language"),
+		CacheControl:              r.Header.Get("Cache-Control"),
+		Expires:                   r.Header.Get("Expires"),
+		StorageClass:              r.Header.Get("x-amz-storage-class"),
+		ServerSideEncryption:      r.Header.Get("x-amz-server-side-encryption"),
+		ObjectLockMode:            r.Header.Get("x-amz-object-lock-mode"),
 		ObjectLockLegalHoldStatus: r.Header.Get("x-amz-object-lock-legal-hold"),
-		ACL:                auth.ParseACL(r),
-		UserMeta:           make(map[string]string),
+		ACL:                       auth.ParseACL(r),
+		UserMeta:                  make(map[string]string),
 	}
 
 	if retainDate := r.Header.Get("x-amz-object-lock-retain-until-date"); retainDate != "" {
@@ -430,7 +430,7 @@ func (h *S3Handler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
 			res.Deleted = append(res.Deleted, s3.DeletedItem{
 				Key:       k.Key,
 				VersionId: k.VersionID,
-				// For a full implementation, we'd check if a DeleteMarker was created 
+				// For a full implementation, we'd check if a DeleteMarker was created
 				// and set DeleteMarker/DeleteMarkerVersionId accordingly.
 				// Since we just return k.VersionID, we use it directly.
 			})
@@ -493,17 +493,17 @@ func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 	var meta *storage.ObjectMeta
 	if r.Header.Get("x-amz-metadata-directive") == "REPLACE" {
 		m := storage.ObjectMeta{
-			ContentType:        r.Header.Get("Content-Type"),
-			ContentEncoding:    r.Header.Get("Content-Encoding"),
-			ContentDisposition: r.Header.Get("Content-Disposition"),
-			ContentLanguage:    r.Header.Get("Content-Language"),
-			CacheControl:       r.Header.Get("Cache-Control"),
-			Expires:            r.Header.Get("Expires"),
-			StorageClass:       r.Header.Get("x-amz-storage-class"),
-			ServerSideEncryption: r.Header.Get("x-amz-server-side-encryption"),
-			ObjectLockMode:       r.Header.Get("x-amz-object-lock-mode"),
+			ContentType:               r.Header.Get("Content-Type"),
+			ContentEncoding:           r.Header.Get("Content-Encoding"),
+			ContentDisposition:        r.Header.Get("Content-Disposition"),
+			ContentLanguage:           r.Header.Get("Content-Language"),
+			CacheControl:              r.Header.Get("Cache-Control"),
+			Expires:                   r.Header.Get("Expires"),
+			StorageClass:              r.Header.Get("x-amz-storage-class"),
+			ServerSideEncryption:      r.Header.Get("x-amz-server-side-encryption"),
+			ObjectLockMode:            r.Header.Get("x-amz-object-lock-mode"),
 			ObjectLockLegalHoldStatus: r.Header.Get("x-amz-object-lock-legal-hold"),
-			UserMeta:           make(map[string]string),
+			UserMeta:                  make(map[string]string),
 		}
 		if m.StorageClass == "" {
 			m.StorageClass = "STANDARD"

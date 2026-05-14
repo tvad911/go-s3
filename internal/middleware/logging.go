@@ -101,12 +101,12 @@ func Logger(next http.Handler) http.Handler {
 		if len(pathParts) > 0 && pathParts[0] != "" {
 			bucket = pathParts[0]
 		}
-		
+
 		if bucket != "" && !strings.HasPrefix(bucket, "_") {
 			statusStr := strconv.Itoa(rw.status)
 			metrics.IncRequest(r.Method, bucket, statusStr)
 			metrics.AddDuration(r.Method, bucket, duration.Milliseconds())
-			
+
 			// If it's a PUT or POST, it might be an upload. We approximate by reading ContentLength from request
 			// But for actual bytes, `rw.size` is bytes downloaded (written to client).
 			if r.Method == "GET" && rw.status == http.StatusOK {

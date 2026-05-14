@@ -19,10 +19,10 @@ var (
 
 // SessionConfig holds JWT session configuration.
 type SessionConfig struct {
-	SigningKey     []byte
-	TokenExpiry   time.Duration
-	CookieName    string
-	CookieSecure  bool
+	SigningKey   []byte
+	TokenExpiry  time.Duration
+	CookieName   string
+	CookieSecure bool
 }
 
 // DefaultSessionConfig returns a config with sensible defaults.
@@ -42,10 +42,10 @@ func DefaultSessionConfig(signingKey []byte) *SessionConfig {
 
 // Claims represents the JWT payload.
 type Claims struct {
-	Username string `json:"sub"`
-	IsRoot   bool   `json:"root"`
-	IssuedAt int64  `json:"iat"`
-	ExpiresAt int64 `json:"exp"`
+	Username  string `json:"sub"`
+	IsRoot    bool   `json:"root"`
+	IssuedAt  int64  `json:"iat"`
+	ExpiresAt int64  `json:"exp"`
 }
 
 // jwtHeader is a fixed header for HS256.

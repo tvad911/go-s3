@@ -59,7 +59,7 @@ func main() {
 	w.WriteField("policy", policyB64)
 	w.WriteField("x-amz-signature", signature)
 	w.WriteField("success_action_status", "201")
-	
+
 	fw, _ := w.CreateFormFile("file", key)
 	fw.Write(content)
 	w.Close()

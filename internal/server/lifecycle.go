@@ -119,7 +119,7 @@ func (s *Server) applyAbortIncompleteMultipartUploadRule(ctx context.Context, bu
 	cutoff := time.Now().Add(-time.Duration(rule.AbortIncompleteMultipartUpload.DaysAfterInitiation) * 24 * time.Hour)
 
 	opts := storage.ListUploadsOptions{
-		Prefix:  rule.Filter.Prefix,
+		Prefix:     rule.Filter.Prefix,
 		MaxUploads: 10000,
 	}
 

@@ -27,7 +27,7 @@ func (c *Client) ListObjectsV2(ctx context.Context, bucket string, opts ListObje
 			parsed, _ := url.Parse(u)
 			q := parsed.Query()
 			q.Set("list-type", "2")
-			
+
 			if opts.Prefix != "" {
 				q.Set("prefix", opts.Prefix)
 			}
@@ -103,7 +103,7 @@ func (c *Client) ListObjects(ctx context.Context, bucket string, opts ListObject
 			u := c.buildURL(bucket, "")
 			parsed, _ := url.Parse(u)
 			q := parsed.Query()
-			
+
 			if opts.Prefix != "" {
 				q.Set("prefix", opts.Prefix)
 			}

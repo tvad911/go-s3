@@ -13,8 +13,8 @@ import (
 
 // S3Handler handles S3 HTTP requests.
 type S3Handler struct {
-	Backend     storage.Backend
-	MetaStore   metadata.Store
+	Backend      storage.Backend
+	MetaStore    metadata.Store
 	Verifier     *auth.SigV4Verifier
 	Config       *config.Config
 	Replication  *replication.Service

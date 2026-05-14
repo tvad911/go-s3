@@ -26,18 +26,18 @@ func (h *S3Handler) CreateMultipartUpload(w http.ResponseWriter, r *http.Request
 	}
 
 	meta := storage.ObjectMeta{
-		ContentType:        r.Header.Get("Content-Type"),
-		ContentEncoding:    r.Header.Get("Content-Encoding"),
-		ContentDisposition: r.Header.Get("Content-Disposition"),
-		ContentLanguage:    r.Header.Get("Content-Language"),
-		CacheControl:       r.Header.Get("Cache-Control"),
-		Expires:            r.Header.Get("Expires"),
-		StorageClass:       r.Header.Get("x-amz-storage-class"),
-		ServerSideEncryption: r.Header.Get("x-amz-server-side-encryption"),
-		ObjectLockMode:       r.Header.Get("x-amz-object-lock-mode"),
+		ContentType:               r.Header.Get("Content-Type"),
+		ContentEncoding:           r.Header.Get("Content-Encoding"),
+		ContentDisposition:        r.Header.Get("Content-Disposition"),
+		ContentLanguage:           r.Header.Get("Content-Language"),
+		CacheControl:              r.Header.Get("Cache-Control"),
+		Expires:                   r.Header.Get("Expires"),
+		StorageClass:              r.Header.Get("x-amz-storage-class"),
+		ServerSideEncryption:      r.Header.Get("x-amz-server-side-encryption"),
+		ObjectLockMode:            r.Header.Get("x-amz-object-lock-mode"),
 		ObjectLockLegalHoldStatus: r.Header.Get("x-amz-object-lock-legal-hold"),
-		ACL:                auth.ParseACL(r),
-		UserMeta:           make(map[string]string),
+		ACL:                       auth.ParseACL(r),
+		UserMeta:                  make(map[string]string),
 	}
 
 	if retainDate := r.Header.Get("x-amz-object-lock-retain-until-date"); retainDate != "" {

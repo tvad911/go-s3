@@ -19,11 +19,11 @@ import (
 )
 
 var (
-	bucketBuckets = []byte("buckets")
-	bucketUploads  = []byte("uploads")
-	bucketUsers    = []byte("users")
-	bucketPolicies = []byte("policies")
-	bucketCORS      = []byte("cors")
+	bucketBuckets         = []byte("buckets")
+	bucketUploads         = []byte("uploads")
+	bucketUsers           = []byte("users")
+	bucketPolicies        = []byte("policies")
+	bucketCORS            = []byte("cors")
 	bucketLifecycle       = []byte("lifecycle")
 	bucketWebsite         = []byte("website")
 	bucketServiceAccounts = []byte("service_accounts")
@@ -95,11 +95,11 @@ func (s *bboltStore) CreateBucket(name, region, owner, acl string, objectLockEna
 		}
 
 		info := storage.BucketInfo{
-			Name:         name,
-			CreationDate: time.Now().UTC(),
-			Region:       region,
-			Owner:        owner,
-			ACL:          acl,
+			Name:              name,
+			CreationDate:      time.Now().UTC(),
+			Region:            region,
+			Owner:             owner,
+			ACL:               acl,
 			ObjectLockEnabled: objectLockEnabled,
 		}
 		if objectLockEnabled {
@@ -252,7 +252,7 @@ func (s *bboltStore) DeleteObject(bucket, key, versionId string) error {
 		if b == nil {
 			return ErrBucketNotFound
 		}
-		
+
 		if versionId == "" {
 			b.Delete([]byte(key))
 			vb := tx.Bucket([]byte("versions:" + bucket))
@@ -270,7 +270,7 @@ func (s *bboltStore) DeleteObject(bucket, key, versionId string) error {
 		if vb != nil {
 			versionKey := fmt.Sprintf("%s\x00%s", key, versionId)
 			vb.Delete([]byte(versionKey))
-			
+
 			c := vb.Cursor()
 			prefix := []byte(key + "\x00")
 			var latestMeta *storage.ObjectMeta
@@ -284,7 +284,7 @@ func (s *bboltStore) DeleteObject(bucket, key, versionId string) error {
 					}
 				}
 			}
-			
+
 			if latestMeta != nil {
 				latestMeta.IsLatest = true
 				latestData, _ = json.Marshal(latestMeta)
@@ -395,7 +395,7 @@ func (s *bboltStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, ve
 
 		c := vb.Cursor()
 		var k, v []byte
-		
+
 		if keyMarker != "" {
 			k, v = c.Seek([]byte(keyMarker))
 		} else if prefix != "" {
@@ -425,7 +425,7 @@ func (s *bboltStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, ve
 					if !prefixes[pfx] {
 						prefixes[pfx] = true
 						commonPrefixes = append(commonPrefixes, pfx)
-						
+
 						if len(objects)+len(commonPrefixes) >= maxKeys {
 							nextKeyMarker = pfx
 							return nil
@@ -458,7 +458,7 @@ func (s *bboltStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, ve
 					}
 					continue
 				}
-				
+
 				objects = append(objects, storage.ObjectInfo{
 					Key:            keyStr,
 					VersionID:      meta.VersionID,
@@ -1092,7 +1092,7 @@ func (db *bboltStore) GetBucketStats(name string) (int64, int64, error) {
 		if b == nil {
 			return nil // empty bucket
 		}
-		
+
 		return b.ForEach(func(k, v []byte) error {
 			// Object keys might include versions, let's just count total non-delete-marker bytes
 			var meta storage.ObjectMeta

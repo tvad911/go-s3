@@ -19,7 +19,7 @@ func (c *Client) DoAdminRequest(ctx context.Context, method, path string, body i
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
