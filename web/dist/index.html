@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
     <div class="bg-orb orb-1"></div>
@@ -61,8 +61,12 @@
                     IAM Users
                 </li>
                 <li data-view="service-accounts">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
                     Access Keys
+                </li>
+                <li data-view="connection">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    S3 Connection
                 </li>
                 <li data-view="info">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
@@ -100,16 +104,36 @@
                     <div class="object-toolbar">
                         <input type="text" id="object-search" placeholder="Search files..." oninput="renderObjects()" class="search-input">
                         <div class="sort-btns">
-                            <button class="btn btn-ghost btn-sm" onclick="sortObjects('key')">Name</button>
-                            <button class="btn btn-ghost btn-sm" onclick="sortObjects('size')">Size</button>
-                            <button class="btn btn-ghost btn-sm" onclick="sortObjects('lastModified')">Date</button>
+                            <button id="sort-btn-key" class="btn btn-ghost btn-sm sort-active" onclick="toggleSort('key')">Name <span id="sort-btn-icon-key" style="font-size:0.8em;">▲</span></button>
+                            <button id="sort-btn-size" class="btn btn-ghost btn-sm" onclick="toggleSort('size')">Size <span id="sort-btn-icon-size" style="font-size:0.8em;">⇅</span></button>
+                            <button id="sort-btn-date" class="btn btn-ghost btn-sm" onclick="toggleSort('date')">Date <span id="sort-btn-icon-date" style="font-size:0.8em;">⇅</span></button>
                         </div>
                     </div>
                     <div class="table-container glass-panel mt-4">
                         <table class="data-table">
-                            <thead><tr><th>Name</th><th>Size</th><th>Last Modified</th><th>Actions</th></tr></thead>
+                            <thead><tr>
+                                <th style="cursor:pointer;" onclick="toggleSort('key')">Name <span id="sort-icon-key" style="font-size:0.8em;opacity:0.8;">&#9650;</span></th>
+                                <th style="cursor:pointer;" onclick="toggleSort('size')">Size <span id="sort-icon-size" style="font-size:0.8em;opacity:0.5;">&#8645;</span></th>
+                                <th style="cursor:pointer;" onclick="toggleSort('date')">Last Modified <span id="sort-icon-date" style="font-size:0.8em;opacity:0.5;">&#8645;</span></th>
+                                <th>Actions</th>
+                            </tr></thead>
                             <tbody id="objects-table-body"></tbody>
                         </table>
+                    </div>
+                    <div id="objects-pagination" style="display:none; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                        <div id="pagination-controls" style="display:flex; gap:0.25rem; align-items:center;">
+                            <!-- Page numbers will be injected here via JS -->
+                        </div>
+                        <div style="display:flex; align-items:center; gap:1rem;">
+                            <span id="page-info" class="text-secondary" style="font-size: 0.9rem;">Total: 0</span>
+                            <select id="page-size-select" onchange="changePageSize()" style="background:var(--bg-secondary);color:var(--text-primary);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:0.2rem 0.5rem;font-size:0.9rem;">
+                                <option value="10" selected>10 / page</option>
+                                <option value="20">20 / page</option>
+                                <option value="50">50 / page</option>
+                                <option value="100">100 / page</option>
+                                <option value="500">500 / page</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -141,9 +165,96 @@
                     </div>
                 </div>
 
+                <!-- Connection Settings View -->
+                <div id="view-connection" class="view" style="display:none;">
+                    <div class="glass-panel" style="max-width: 600px;">
+                        <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <h2 style="font-size: 1.25rem; font-weight: 500;">S3 Connection Config</h2>
+                            <p class="text-secondary" style="margin-top:0.5rem; font-size:0.9rem;">
+                                These are the configurations currently loaded from the GoS3 server backend.
+                                The Web Console automatically uses this endpoint and access key to manage S3 resources.
+                            </p>
+                        </div>
+                        <div style="padding: 1.5rem;">
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label class="text-secondary" style="display:block; margin-bottom:0.5rem; font-size:0.85rem;">S3 API Endpoint URL</label>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <input type="text" id="conn-endpoint" class="input" readonly style="flex:1; background:rgba(0,0,0,0.2); font-family:monospace; color:var(--text-primary);">
+                                    <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('conn-endpoint').value);showToast('Copied','success')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label class="text-secondary" style="display:block; margin-bottom:0.5rem; font-size:0.85rem;">S3 Region</label>
+                                <input type="text" id="conn-region" class="input" readonly value="us-east-1" style="width:100%; background:rgba(0,0,0,0.2); font-family:monospace; color:var(--text-primary);">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label class="text-secondary" style="display:block; margin-bottom:0.5rem; font-size:0.85rem;">Access Key (Client ID)</label>
+                                <div style="display:flex; gap:0.5rem;">
+                                    <input type="text" id="conn-access" class="input" readonly style="flex:1; background:rgba(0,0,0,0.2); font-family:monospace; color:var(--text-primary);">
+                                    <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('conn-access').value);showToast('Copied','success')">Copy</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary" style="display:block; margin-bottom:0.5rem; font-size:0.85rem;">Secret Key</label>
+                                <input type="password" id="conn-secret" class="input" readonly value="******** (Managed by Backend)" style="width:100%; background:rgba(0,0,0,0.2); font-family:monospace; color:var(--text-primary);">
+                                <p class="text-secondary" style="font-size:0.8rem; margin-top:0.5rem;">
+                                    The Web UI does not store the Secret Key. It is safely managed by the GoS3 server backend.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Server Info View -->
-                <div id="view-info" class="view">
+                <div id="view-info" class="view" style="display:none;">
                     <div class="grid cols-2" id="info-grid"></div>
+                </div>
+
+                <!-- Bucket Settings View -->
+                <div id="view-bucket-settings" class="view">
+                    <div class="glass-card" style="padding: 2rem;">
+                        <h2 id="settings-bucket-name" style="margin-top:0;margin-bottom:1.5rem;display:flex;align-items:center;gap:0.5rem;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" style="width:24px;height:24px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path></svg> <span>Bucket Settings</span></h2>
+                        
+                        <div style="display:flex;gap:1.5rem;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:1.5rem;">
+                            <span class="tab-link active" onclick="switchBucketSettingsTab('overview')" id="tab-link-overview" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid var(--accent-primary);color:var(--accent-primary);">Overview & Stats</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('access')" id="tab-link-access" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);">Access Policy</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('cors')" id="tab-link-cors" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);">CORS</span>
+                        </div>
+                        
+                        <div id="tab-content-overview">
+                            <div class="grid cols-2" id="bucket-stats-grid">
+                                <!-- Stats loaded here via JS -->
+                            </div>
+                        </div>
+                        
+                        <div id="tab-content-access" style="display:none;">
+                            <div style="background:rgba(255,200,50,0.1);border:1px solid rgba(255,200,50,0.3);border-radius:8px;padding:1rem;color:#ffc832;margin-bottom:1rem;">
+                                ⚠️ Public buckets allow anyone on the internet to read objects. Be careful with this setting.
+                            </div>
+                            <div style="display:flex;gap:1rem;margin-bottom:2rem;">
+                                <button class="btn btn-primary" onclick="setBucketPolicyPreset('public')">Make Public (Read-Only)</button>
+                                <button class="btn btn-ghost text-danger" onclick="setBucketPolicyPreset('private')">Make Private</button>
+                            </div>
+                            
+                            <h4 style="margin-top:0;">Bucket Policy (JSON)</h4>
+                            <textarea id="bucket-policy-json" style="width:100%;height:200px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1rem;font-family:monospace;margin-bottom:1rem;resize:vertical;"></textarea>
+                            <button class="btn btn-primary" onclick="saveBucketPolicy()">Save Policy</button>
+                        </div>
+
+                        <div id="tab-content-cors" style="display:none;">
+                            <div style="background:rgba(50,200,255,0.1);border:1px solid rgba(50,200,255,0.3);border-radius:8px;padding:1rem;color:#32c8ff;margin-bottom:1rem;">
+                                ℹ️ CORS allows web applications from other domains to interact with your bucket directly.
+                            </div>
+                            <div style="display:flex;gap:1rem;margin-bottom:2rem;">
+                                <button class="btn btn-primary" onclick="setBucketCORSPreset('allow-all')">Allow All Origins (*)</button>
+                                <button class="btn btn-ghost text-danger" onclick="setBucketCORSPreset('clear')">Clear CORS</button>
+                            </div>
+                            
+                            <h4 style="margin-top:0;">CORS Configuration (JSON)</h4>
+                            <textarea id="bucket-cors-json" style="width:100%;height:200px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1rem;font-family:monospace;margin-bottom:1rem;resize:vertical;"></textarea>
+                            <button class="btn btn-primary" onclick="saveBucketCORS()">Save CORS</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -227,7 +338,107 @@ aws --endpoint-url &lt;endpoint&gt; s3 ls</pre>
         </div>
     </div>
 
+    <!-- Share Link Modal -->
+    <div class="modal-overlay" id="share-modal">
+        <div class="glass-card modal" style="max-width:500px;">
+            <div class="modal-header"><h3>Share Object</h3><button class="btn-close" onclick="closeModal('share-modal')">&times;</button></div>
+            <div class="modal-body">
+                <p style="color:var(--text-secondary);margin-bottom:1rem;font-size:0.9rem;">Choose the correct URL format based on your bucket's privacy settings.</p>
+                
+                <div class="input-group" style="margin-bottom: 1.5rem;">
+                    <label style="display:flex; justify-content:space-between;"><span>Presigned URL (Temporary)</span> <span style="color:var(--text-muted);font-weight:normal;">Valid for 7 days</span></label>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
+                        <input type="text" id="share-url-input" readonly style="flex:1;">
+                        <button class="btn btn-primary" onclick="copyToClipboardInput('share-url-input')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="input-group" style="margin-bottom: 1.5rem;">
+                    <label style="display:flex; justify-content:space-between;"><span>Direct URL (Path Style)</span> <span style="color:var(--text-muted);font-weight:normal;">Requires Public Bucket</span></label>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
+                        <input type="text" id="share-direct-input" readonly style="flex:1;background:var(--bg-secondary);">
+                        <button class="btn btn-ghost" onclick="copyToClipboardInput('share-direct-input')">Copy</button>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label style="display:flex; justify-content:space-between;"><span>Virtual-Hosted URL</span> <span style="color:var(--text-muted);font-weight:normal;">For custom domains / CLI</span></label>
+                    <div style="display:flex;gap:0.5rem;align-items:center;">
+                        <input type="text" id="share-vhost-input" readonly style="flex:1;background:var(--bg-secondary);">
+                        <button class="btn btn-ghost" onclick="copyToClipboardInput('share-vhost-input')">Copy</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div class="modal-overlay" id="info-modal">
+        <div class="glass-card modal" style="max-width:400px;">
+            <div class="modal-header"><h3>File Info</h3><button class="btn-close" onclick="closeModal('info-modal')">&times;</button></div>
+            <div class="modal-body">
+                <div class="grid cols-1" style="gap:1rem;">
+                    <div>
+                        <label style="color:var(--text-secondary);font-size:0.8rem;">Name</label>
+                        <div id="info-name" style="word-break:break-all;font-weight:bold;"></div>
+                    </div>
+                    <div>
+                        <label style="color:var(--text-secondary);font-size:0.8rem;">Size</label>
+                        <div id="info-size"></div>
+                    </div>
+                    <div>
+                        <label style="color:var(--text-secondary);font-size:0.8rem;">Content Type</label>
+                        <div id="info-type"></div>
+                    </div>
+                    <div>
+                        <label style="color:var(--text-secondary);font-size:0.8rem;">ETag (MD5)</label>
+                        <div id="info-etag" style="font-family:monospace;font-size:0.9rem;"></div>
+                    </div>
+                    <div>
+                        <label style="color:var(--text-secondary);font-size:0.8rem;">Last Modified</label>
+                        <div id="info-date"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top:1.5rem;display:flex;justify-content:flex-end;">
+                <button class="btn btn-primary" onclick="closeModal('info-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div class="modal-overlay" id="preview-modal">
+        <div class="glass-card modal" style="max-width:80%;max-height:90vh;display:flex;flex-direction:column;">
+            <div class="modal-header">
+                <h3 id="preview-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Preview</h3>
+                <button class="btn-close" onclick="closeModal('preview-modal')">&times;</button>
+            </div>
+            <div class="modal-body" style="flex:1;overflow:hidden;display:flex;justify-content:center;align-items:center;background:var(--bg-secondary);border-radius:8px;">
+                <img id="preview-image" src="" style="max-width:100%;max-height:70vh;object-fit:contain;display:none;">
+                <div id="preview-loading" class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div class="modal-overlay" id="rename-modal">
+        <div class="glass-card modal" style="max-width:400px;">
+            <div class="modal-header"><h3>Rename Object</h3><button class="btn-close" onclick="closeModal('rename-modal')">&times;</button></div>
+            <div class="modal-body">
+                <input type="hidden" id="rename-old-key">
+                <div class="input-group">
+                    <label>New Name</label>
+                    <input type="text" id="rename-new-name" placeholder="Enter new name...">
+                </div>
+                <div class="modal-actions" style="margin-top:1.5rem;display:flex;justify-content:flex-end;">
+                    <button class="btn btn-ghost" onclick="closeModal('rename-modal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="executeRename()">Rename</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="toast-container"></div>
-    <script src="app.js"></script>
+    <script src="app.js?v=10"></script>
 </body>
 </html>

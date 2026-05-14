@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -447,6 +448,10 @@ func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// copySource is typically "/bucket/key" or "bucket/key"
+	// AWS SDKs URL-encode the copySource header.
+	if unescaped, err := url.QueryUnescape(copySource); err == nil {
+		copySource = unescaped
+	}
 	copySource = strings.TrimPrefix(copySource, "/")
 	parts := strings.SplitN(copySource, "/", 2)
 	if len(parts) != 2 {

@@ -29,7 +29,11 @@ async function api(method, path, body = null) {
         try { msg = JSON.parse(text).error || text; } catch {}
         throw new Error(msg);
     }
-    if (res.status === 204) return null;
+    if (res.status === 204 || res.status === 201) {
+        const text = await res.text();
+        if (!text) return null;
+        try { return JSON.parse(text); } catch { return text; }
+    }
     return res.json();
 }
 
@@ -118,6 +122,9 @@ function loadView(viewName) {
         breadcrumb.innerHTML = `<span>Service Accounts</span>`;
         topbarActions.innerHTML = `<button class="btn btn-primary" onclick="openModal('create-sa-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Create Access Key</button>`;
         fetchServiceAccounts();
+    } else if (viewName === 'connection') {
+        breadcrumb.innerHTML = `<span>S3 Connection</span>`;
+        loadConnectionInfo();
     } else if (viewName === 'info') {
         breadcrumb.innerHTML = `<span>Server Info</span>`;
         fetchServerInfo();
@@ -158,7 +165,14 @@ function renderBucketCards(grid, buckets) {
                     </div>
                 </div>
                 <div class="bucket-actions">
-                    <button class="btn btn-ghost" onclick="event.stopPropagation(); deleteBucket('${name}')">
+                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openBucket('${name}')" title="Manage Files">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:4px;display:inline-block;vertical-align:middle;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path></svg>
+                        Manage Files
+                    </button>
+                    <button class="btn btn-ghost" onclick="event.stopPropagation(); openBucketSettings('${name}')" title="Settings">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    </button>
+                    <button class="btn btn-ghost text-danger" onclick="event.stopPropagation(); deleteBucket('${name}')" title="Delete">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     </button>
                 </div>
@@ -193,10 +207,19 @@ function updateBreadcrumb() {
     breadcrumb.innerHTML = html;
 }
 
+let currentPage = 1;
+let objectsCache = [];
+
 window.navigatePrefix = (prefix) => {
     currentPrefix = prefix;
+    currentPage = 1;
     updateBreadcrumb();
     fetchObjects();
+};
+
+window.goToPage = (page) => {
+    currentPage = page;
+    renderObjects();
 };
 
 document.getElementById('create-bucket-form').addEventListener('submit', async (e) => {
@@ -225,30 +248,92 @@ window.deleteBucket = async (name) => {
 };
 
 // ==================== Objects ====================
-let objectsCache = [];
+
 let sortField = 'key';
 let sortAsc = true;
+
+window.toggleSort = (field) => {
+    if (sortField === field) {
+        sortAsc = !sortAsc;
+    } else {
+        sortField = field;
+        sortAsc = true;
+    }
+    updateAllSortIcons();
+    currentPage = 1;
+    renderObjects();
+};
+
+function updateAllSortIcons() {
+    const activeArrow = sortAsc ? '\u25b2' : '\u25bc';
+    const inactiveArrow = '\u21c5';
+    
+    ['key', 'size', 'date'].forEach(k => {
+        const isActive = (sortField === k);
+        
+        // Update table header icons
+        const thIcon = document.getElementById(`sort-icon-${k}`);
+        if (thIcon) {
+            thIcon.textContent = isActive ? activeArrow : inactiveArrow;
+            thIcon.style.opacity = isActive ? '1' : '0.4';
+        }
+        
+        // Update toolbar button icons + active state
+        const btnIcon = document.getElementById(`sort-btn-icon-${k}`);
+        if (btnIcon) {
+            btnIcon.textContent = isActive ? activeArrow : inactiveArrow;
+        }
+        const btn = document.getElementById(`sort-btn-${k}`);
+        if (btn) {
+            if (isActive) {
+                btn.classList.add('sort-active');
+                btn.style.borderColor = 'var(--accent-primary)';
+                btn.style.color = 'var(--accent-primary)';
+            } else {
+                btn.classList.remove('sort-active');
+                btn.style.borderColor = '';
+                btn.style.color = '';
+            }
+        }
+    });
+}
+
+window.changePageSize = () => {
+    currentPage = 1;
+    renderObjects();
+};
 
 async function fetchObjects() {
     const tbody = document.getElementById('objects-table-body');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;"><div class="loading-spinner" style="margin:1rem auto;width:24px;height:24px;"></div></td></tr>';
+    
     try {
-        const data = await api('GET', `/_admin/buckets/${currentBucket}/objects?prefix=${encodeURIComponent(currentPrefix)}&delimiter=/`);
         objectsCache = [];
-        // Add folders (common prefixes)
-        if (data.commonPrefixes) {
-            data.commonPrefixes.forEach(p => {
-                objectsCache.push({ key: p, isFolder: true, size: 0, lastModified: '' });
-            });
+        let marker = '';
+        let hasMore = true;
+        
+        while(hasMore) {
+            const url = `/_admin/buckets/${currentBucket}/objects?prefix=${encodeURIComponent(currentPrefix)}&delimiter=/&marker=${encodeURIComponent(marker)}&maxKeys=1000&_t=${Date.now()}`;
+            const data = await api('GET', url);
+            
+            if (data.commonPrefixes) {
+                data.commonPrefixes.forEach(p => {
+                    objectsCache.push({ key: p, isFolder: true, size: 0, lastModified: '' });
+                });
+            }
+            if (data.contents) {
+                data.contents.forEach(obj => {
+                    if (!obj.key.endsWith('/')) {
+                        objectsCache.push({ key: obj.key, isFolder: false, size: obj.size, lastModified: obj.lastModified });
+                    }
+                });
+            }
+            
+            hasMore = data.isTruncated;
+            marker = data.nextMarker || '';
         }
-        // Add files
-        if (data.contents) {
-            data.contents.forEach(obj => {
-                if (!obj.key.endsWith('/')) {
-                    objectsCache.push({ key: obj.key, isFolder: false, size: obj.size, lastModified: obj.lastModified });
-                }
-            });
-        }
+        
+        currentPage = 1;
         renderObjects();
     } catch {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Could not load objects. Admin API may not support this yet.</td></tr>';
@@ -274,12 +359,60 @@ function renderObjects() {
         return 0;
     });
 
-    if (filtered.length === 0) {
+    const sizeSelect = document.getElementById('page-size-select');
+    const pageSize = sizeSelect ? parseInt(sizeSelect.value) : 10;
+    const totalItems = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+    
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+    
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, totalItems);
+    const paginated = filtered.slice(startIndex, endIndex);
+
+    const paginationDiv = document.getElementById('objects-pagination');
+    if (paginationDiv) {
+        paginationDiv.style.display = totalItems > 0 ? 'flex' : 'none';
+        document.getElementById('page-info').textContent = `Total: ${totalItems}`;
+        
+        const controls = document.getElementById('pagination-controls');
+        let html = '';
+        
+        html += `<button class="btn btn-ghost" style="padding:0.2rem 0.5rem;" ${currentPage === 1 ? 'disabled' : ''} onclick="goToPage(${currentPage - 1})">&laquo; Prev</button>`;
+        
+        if (totalPages <= 7) {
+            for(let i=1; i<=totalPages; i++) {
+                html += `<button class="btn btn-ghost" style="padding:0.2rem 0.5rem; ${i === currentPage ? 'background:var(--accent-primary);color:white;' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+        } else {
+            html += `<button class="btn btn-ghost" style="padding:0.2rem 0.5rem; ${1 === currentPage ? 'background:var(--accent-primary);color:white;' : ''}" onclick="goToPage(1)">1</button>`;
+            
+            let startPage = Math.max(2, currentPage - 2);
+            let endPage = Math.min(totalPages - 1, currentPage + 2);
+            
+            if (currentPage <= 4) endPage = 5;
+            else if (currentPage >= totalPages - 3) startPage = totalPages - 4;
+            
+            if (startPage > 2) html += `<span style="padding:0.2rem 0.5rem;color:var(--text-muted);">...</span>`;
+            for(let i=startPage; i<=endPage; i++) {
+                html += `<button class="btn btn-ghost" style="padding:0.2rem 0.5rem; ${i === currentPage ? 'background:var(--accent-primary);color:white;' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+            if (endPage < totalPages - 1) html += `<span style="padding:0.2rem 0.5rem;color:var(--text-muted);">...</span>`;
+            
+            html += `<button class="btn btn-ghost" style="padding:0.2rem 0.5rem; ${totalPages === currentPage ? 'background:var(--accent-primary);color:white;' : ''}" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+        }
+        
+        html += `<button class="btn btn-ghost" style="padding:0.2rem 0.5rem;" ${currentPage === totalPages ? 'disabled' : ''} onclick="goToPage(${currentPage + 1})">Next &raquo;</button>`;
+        controls.innerHTML = html;
+    }
+
+    if (paginated.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Empty — upload files or create a folder.</td></tr>';
         return;
     }
 
-    tbody.innerHTML = filtered.map(obj => {
+    tbody.innerHTML = paginated.map(obj => {
         const displayName = obj.isFolder ? obj.key.replace(currentPrefix, '').replace(/\/$/, '') : obj.key.replace(currentPrefix, '');
         if (obj.isFolder) {
             return `<tr onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;">
@@ -287,12 +420,20 @@ function renderObjects() {
                 <td>—</td><td>—</td><td></td></tr>`;
         }
         const lastMod = obj.lastModified ? new Date(obj.lastModified).toLocaleString() : '';
+        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(obj.key);
+        const icon = isImage 
+            ? `<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>` 
+            : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
+        
         return `<tr>
-            <td><div class="file-name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg> ${displayName}</div></td>
+            <td><div class="file-name" ${isImage ? `onclick="previewObject('${obj.key}')" style="cursor:pointer;color:var(--accent-primary)"` : ''}>${icon} ${displayName}</div></td>
             <td>${formatBytes(obj.size)}</td>
             <td>${lastMod}</td>
             <td><div class="action-btns">
+                <button class="btn btn-ghost" style="padding:0.4rem;" onclick="infoObject('${obj.key}')" title="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button>
+                <button class="btn btn-ghost" style="padding:0.4rem;" onclick="shareObject('${obj.key}')" title="Share Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
                 <button class="btn btn-ghost" style="padding:0.4rem;" onclick="downloadObject('${obj.key}')" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+                <button class="btn btn-ghost" style="padding:0.4rem;" onclick="renameObject('${obj.key}')" title="Rename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
                 <button class="btn btn-ghost text-danger" style="padding:0.4rem;" onclick="deleteObject('${obj.key}')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             </div></td></tr>`;
     }).join('');
@@ -302,7 +443,10 @@ window.createFolder = async () => {
     const name = prompt('Folder name:');
     if (!name) return;
     try {
-        await api('PUT', `/_admin/buckets/${currentBucket}/objects/${currentPrefix}${name}/`);
+        const key = currentPrefix + name + '/';
+        const presignedData = await api('POST', '/_admin/presign', { method: 'PUT', bucket: currentBucket, key, expires: 3600 });
+        const res = await fetch(presignedData.url, { method: 'PUT' });
+        if (!res.ok) throw new Error('Failed to create folder');
         showToast(`Folder ${name} created`, 'success');
         fetchObjects();
     } catch (err) { showToast(err.message, 'error'); }
@@ -311,17 +455,173 @@ window.createFolder = async () => {
 window.downloadObject = async (key) => {
     try {
         const data = await api('POST', '/_admin/presign', { method: 'GET', bucket: currentBucket, key, expires: 3600 });
-        window.open(data.url, '_blank');
+        const a = document.createElement('a');
+        a.href = data.url;
+        const parts = key.split('/');
+        a.download = parts[parts.length - 1] || 'download';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     } catch (err) { showToast(err.message, 'error'); }
 };
 
 window.deleteObject = async (key) => {
     if (!confirm(`Delete ${key}?`)) return;
     try {
-        await api('DELETE', `/_admin/buckets/${currentBucket}/objects/${key}`);
+        const presignedData = await api('POST', '/_admin/presign', { method: 'DELETE', bucket: currentBucket, key, expires: 3600 });
+        const res = await fetch(presignedData.url, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete object');
         showToast('Deleted', 'success');
         fetchObjects();
     } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.shareObject = async (key) => {
+    try {
+        // Presign for 7 days (604800 seconds)
+        const data = await api('POST', '/_admin/presign', { method: 'GET', bucket: currentBucket, key, expires: 604800 });
+        
+        // Populate temporary presigned URL
+        document.getElementById('share-url-input').value = data.url;
+        
+        // Extract base endpoint from presigned URL to build direct and virtual hosted URLs
+        // (presignedData.url looks like http://localhost:9011/bucket/key?...)
+        const urlObj = new URL(data.url);
+        const host = urlObj.host; // e.g., localhost:9011 or s3.domain.com
+        const protocol = urlObj.protocol;
+        
+        // 1. Direct URL (Path Style): http://host/bucket/key
+        const directUrl = `${protocol}//${host}/${encodeURIComponent(currentBucket)}/${key.split('/').map(encodeURIComponent).join('/')}`;
+        document.getElementById('share-direct-input').value = directUrl;
+        
+        // 2. Virtual-Hosted URL: http://bucket.host/key
+        let vhost = host;
+        if (host.startsWith('localhost') || host.startsWith('127.0.0.1')) {
+            // For local development, vhost style requires editing /etc/hosts, so we just show the format
+            vhost = `${currentBucket}.localhost` + (urlObj.port ? `:${urlObj.port}` : '');
+        } else {
+            vhost = `${currentBucket}.${host}`;
+        }
+        const vhostUrl = `${protocol}//${vhost}/${key.split('/').map(encodeURIComponent).join('/')}`;
+        document.getElementById('share-vhost-input').value = vhostUrl;
+
+        openModal('share-modal');
+    } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.renameObject = async (key) => {
+    if (key.endsWith('/')) {
+        showToast('Cannot rename folders directly. Please rename individual files.', 'error');
+        return;
+    }
+    let oldName = key;
+    if (key.startsWith(currentPrefix)) {
+        oldName = key.substring(currentPrefix.length);
+    }
+    
+    document.getElementById('rename-old-key').value = key;
+    document.getElementById('rename-new-name').value = oldName;
+    openModal('rename-modal');
+};
+
+window.executeRename = async () => {
+    const key = document.getElementById('rename-old-key').value;
+    const newName = document.getElementById('rename-new-name').value;
+    
+    let oldName = key;
+    if (key.startsWith(currentPrefix)) {
+        oldName = key.substring(currentPrefix.length);
+    }
+
+    if (!newName) {
+        showToast('Rename cancelled', 'info');
+        closeModal('rename-modal');
+        return;
+    }
+    if (newName === oldName) {
+        showToast('Name was not changed', 'info');
+        closeModal('rename-modal');
+        return;
+    }
+    
+    closeModal('rename-modal');
+    
+    try {
+        const newKey = currentPrefix + newName;
+        await api('POST', '/_admin/rename', {
+            bucket: currentBucket,
+            oldKey: key,
+            newKey: newKey,
+        });
+        showToast('Renamed successfully', 'success');
+        fetchObjects();
+    } catch (err) { 
+        showToast(err.message || 'Rename failed', 'error'); 
+        console.error(err);
+    }
+};
+
+window.infoObject = async (key) => {
+    try {
+        const presign = await api('POST', '/_admin/presign', { method: 'HEAD', bucket: currentBucket, key: key, expires: 3600 });
+        const res = await fetch(presign.url, { method: 'HEAD' });
+        if (!res.ok) throw new Error('Failed to fetch object info');
+        
+        const size = res.headers.get('content-length') || '0';
+        const type = res.headers.get('content-type') || 'Unknown';
+        const etag = res.headers.get('etag') || 'N/A';
+        let lastMod = res.headers.get('last-modified') || 'N/A';
+        
+        if (lastMod !== 'N/A') {
+            lastMod = new Date(lastMod).toLocaleString();
+        }
+        
+        document.getElementById('info-name').textContent = key;
+        document.getElementById('info-size').textContent = formatBytes(parseInt(size));
+        document.getElementById('info-type').textContent = type;
+        document.getElementById('info-etag').textContent = etag;
+        document.getElementById('info-date').textContent = lastMod;
+        
+        openModal('info-modal');
+    } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.previewObject = async (key) => {
+    try {
+        const title = document.getElementById('preview-title');
+        const img = document.getElementById('preview-image');
+        const loader = document.getElementById('preview-loading');
+        
+        title.textContent = key;
+        img.style.display = 'none';
+        loader.style.display = 'block';
+        openModal('preview-modal');
+
+        // Get short-lived URL for preview
+        const data = await api('POST', '/_admin/presign', { method: 'GET', bucket: currentBucket, key, expires: 3600 });
+        
+        img.onload = () => {
+            loader.style.display = 'none';
+            img.style.display = 'block';
+        };
+        img.onerror = () => {
+            loader.style.display = 'none';
+            title.textContent = 'Preview failed';
+        };
+        img.src = data.url;
+    } catch (err) { 
+        closeModal('preview-modal');
+        showToast(err.message, 'error'); 
+    }
+};
+
+window.copyToClipboardInput = (id) => {
+    const input = document.getElementById(id);
+    if (input) {
+        input.select();
+        document.execCommand('copy');
+        showToast('Copied to clipboard!', 'success');
+    }
 };
 
 // Upload
@@ -488,8 +788,172 @@ function formatDuration(seconds) {
 }
 
 // Sort handler
-window.sortObjects = (field) => {
-    if (sortField === field) sortAsc = !sortAsc;
-    else { sortField = field; sortAsc = true; }
-    renderObjects();
+
+// ==================== Bucket Settings ====================
+window.openBucketSettings = (name) => {
+    currentBucket = name;
+    document.getElementById('settings-bucket-name').innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" style="width:24px;height:24px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path></svg> <span>${name} Settings</span>`;
+    
+    // Update breadcrumb
+    breadcrumb.innerHTML = `<span class="clickable" onclick="loadView('buckets')">Buckets</span><span class="separator">/</span><span style="color:var(--text-secondary)">${name} Settings</span>`;
+    
+    // Show view
+    views.forEach(v => v.classList.remove('active'));
+    document.getElementById('view-bucket-settings').classList.add('active');
+    
+    // Load overview tab by default
+    switchBucketSettingsTab('overview');
 };
+
+window.switchBucketSettingsTab = (tab) => {
+    document.getElementById('tab-link-overview').classList.remove('active');
+    document.getElementById('tab-link-access').classList.remove('active');
+    document.getElementById('tab-link-cors').classList.remove('active');
+    document.getElementById('tab-content-overview').style.display = 'none';
+    document.getElementById('tab-content-access').style.display = 'none';
+    document.getElementById('tab-content-cors').style.display = 'none';
+    
+    document.getElementById(`tab-link-${tab}`).classList.add('active');
+    document.getElementById(`tab-content-${tab}`).style.display = 'block';
+    
+    if (tab === 'overview') {
+        fetchBucketStats();
+    } else if (tab === 'access') {
+        fetchBucketPolicy();
+    } else if (tab === 'cors') {
+        fetchBucketCORS();
+    }
+};
+
+async function fetchBucketStats() {
+    const grid = document.getElementById('bucket-stats-grid');
+    grid.innerHTML = '<div class="loading-spinner"></div>';
+    try {
+        const stats = await api('GET', `/_admin/buckets/${currentBucket}/stats`);
+        grid.innerHTML = `
+            <div class="glass-card info-card"><span class="info-label">Total Objects</span><span class="info-value" style="color:var(--accent-primary)">${stats.objects}</span></div>
+            <div class="glass-card info-card"><span class="info-label">Storage Used</span><span class="info-value">${formatBytes(stats.bytes)}</span></div>
+        `;
+    } catch (err) {
+        showToast(err.message, 'error');
+        grid.innerHTML = '';
+    }
+}
+
+async function fetchBucketPolicy() {
+    try {
+        const res = await api('GET', `/_admin/buckets/${currentBucket}/policy`);
+        document.getElementById('bucket-policy-json').value = JSON.stringify(res, null, 2);
+    } catch (err) {
+        if (err.message.includes('not found')) {
+            document.getElementById('bucket-policy-json').value = '';
+        } else {
+            showToast('Failed to fetch policy: ' + err.message, 'error');
+        }
+    }
+}
+
+window.setBucketPolicyPreset = (type) => {
+    const policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": ["s3:GetObject"],
+                "Resource": [`arn:aws:s3:::${currentBucket}/*`]
+            }
+        ]
+    };
+    if (type === 'public') {
+        document.getElementById('bucket-policy-json').value = JSON.stringify(policy, null, 2);
+    } else {
+        document.getElementById('bucket-policy-json').value = '';
+    }
+};
+
+window.saveBucketPolicy = async () => {
+    const policyStr = document.getElementById('bucket-policy-json').value.trim();
+    try {
+        if (!policyStr) {
+            await api('DELETE', `/_admin/buckets/${currentBucket}/policy`);
+            showToast('Policy deleted (Bucket is private)', 'success');
+        } else {
+            // Validate JSON
+            const policyObj = JSON.parse(policyStr);
+            await api('PUT', `/_admin/buckets/${currentBucket}/policy`, policyObj);
+            showToast('Policy saved', 'success');
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+};
+
+async function fetchBucketCORS() {
+    try {
+        const res = await api('GET', `/_admin/buckets/${currentBucket}/cors`);
+        document.getElementById('bucket-cors-json').value = JSON.stringify(res, null, 2);
+    } catch (err) {
+        if (err.message.includes('not found') || err.message.includes('NoSuchCORSConfiguration') || err.message.includes('does not exist')) {
+            document.getElementById('bucket-cors-json').value = '';
+        } else {
+            showToast('Failed to fetch CORS: ' + err.message, 'error');
+        }
+    }
+}
+
+window.setBucketCORSPreset = (type) => {
+    const cors = {
+        "CORSRules": [
+            {
+                "AllowedHeaders": ["*"],
+                "AllowedMethods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+                "AllowedOrigins": ["*"],
+                "ExposeHeaders": ["ETag", "Content-Length", "x-amz-meta-custom-header"]
+            }
+        ]
+    };
+    if (type === 'allow-all') {
+        document.getElementById('bucket-cors-json').value = JSON.stringify(cors, null, 2);
+    } else {
+        document.getElementById('bucket-cors-json').value = '';
+    }
+};
+
+window.saveBucketCORS = async () => {
+    const corsStr = document.getElementById('bucket-cors-json').value.trim();
+    try {
+        if (!corsStr) {
+            await api('DELETE', `/_admin/buckets/${currentBucket}/cors`);
+            showToast('CORS cleared', 'success');
+        } else {
+            // Validate JSON
+            const corsObj = JSON.parse(corsStr);
+            await api('PUT', `/_admin/buckets/${currentBucket}/cors`, corsObj);
+            showToast('CORS saved', 'success');
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+};
+
+// ==================== Connection Info ====================
+async function loadConnectionInfo() {
+    const s3Host = window.location.hostname;
+    const proto = window.location.protocol;
+    // By default GoS3 S3 API runs on 9010
+    const s3Port = '9010';
+    
+    document.getElementById('conn-endpoint').value = `${proto}//${s3Host}:${s3Port}`;
+    
+    try {
+        const sas = await api('GET', '/_admin/service-accounts');
+        if (sas && sas.length > 0) {
+            document.getElementById('conn-access').value = sas[0].accessKey;
+        } else {
+            document.getElementById('conn-access').value = '(No Access Key Found)';
+        }
+    } catch (e) {
+        document.getElementById('conn-access').value = 'Error loading key';
+    }
+}

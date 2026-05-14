@@ -21,7 +21,7 @@ import (
 func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, verifier *auth.SigV4Verifier, repl *replication.Service, sessionCfg *auth.SessionConfig) *chi.Mux {
 	r := chi.NewRouter()
 
-	adminHandler := handler.NewAdminHandler(metaStore)
+	adminHandler := handler.NewAdminHandler(metaStore, backend)
 	authHandler := handler.NewAuthHandler(metaStore, sessionCfg)
 	saHandler := handler.NewServiceAccountHandler(metaStore)
 	s3Handler := handler.NewS3Handler(backend, metaStore, verifier, cfg, repl)
@@ -59,6 +59,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 
 		// Admin API
 		r.Route(cfg.Admin.PathPrefix, func(r chi.Router) {
+			r.Use(handler.JWTAuthFallbackMiddleware(sessionCfg, metaStore))
 			r.Use(handler.EnsureRoot) // Must be root
 
 			// User Management
@@ -72,8 +73,30 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 			// Presign
 			r.Post("/presign", adminHandler.GeneratePresignedURL)
 
+			// Rename Object (server-side copy + delete)
+			r.Post("/rename", adminHandler.RenameObject)
+
 			// Server Info
 			r.Get("/info", adminHandler.ServerInfo)
+
+			// Buckets Stats
+			r.Get("/buckets/{bucket}/stats", adminHandler.BucketStats)
+
+			// Web UI Buckets/Objects API
+			r.Get("/buckets", adminHandler.ListBuckets)
+			r.Put("/buckets/{bucket}", adminHandler.CreateBucket)
+			r.Delete("/buckets/{bucket}", adminHandler.DeleteBucket)
+			r.Get("/buckets/{bucket}/objects", adminHandler.ListObjects)
+
+			// Web UI Bucket Policy API
+			r.Get("/buckets/{bucket}/policy", adminHandler.GetBucketPolicy)
+			r.Put("/buckets/{bucket}/policy", adminHandler.PutBucketPolicy)
+			r.Delete("/buckets/{bucket}/policy", adminHandler.DeleteBucketPolicy)
+
+			// Web UI Bucket CORS API
+			r.Get("/buckets/{bucket}/cors", adminHandler.GetBucketCORS)
+			r.Put("/buckets/{bucket}/cors", adminHandler.PutBucketCORS)
+			r.Delete("/buckets/{bucket}/cors", adminHandler.DeleteBucketCORS)
 		})
 
 		// S3 API Routes

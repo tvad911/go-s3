@@ -719,9 +719,30 @@ input:focus {
     gap: 0.5rem;
 }
 
+.sort-btns .btn-sm {
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.sort-btns .btn-sm.sort-active {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: rgba(0, 200, 200, 0.08);
+}
+
 .btn-sm {
     padding: 0.4rem 0.8rem;
     font-size: 0.8rem;
+}
+
+.data-table thead th[onclick] {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s ease;
+}
+
+.data-table thead th[onclick]:hover {
+    color: var(--accent-primary);
 }
 
 /* Responsive sidebar footer */

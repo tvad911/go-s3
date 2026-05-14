@@ -58,7 +58,17 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.store.GetUserByUsername(r.Context(), req.Username)
 	if err != nil {
-		slog.Warn("login failed: user not found", "username", req.Username)
+		// Fallback: check if the username provided is actually an Access Key
+		sa, saErr := h.store.GetServiceAccountByAccessKey(r.Context(), req.Username)
+		if saErr == nil {
+			if sa.SecretKey == req.Password {
+				user, err = h.store.GetUserByUsername(r.Context(), sa.ParentUser)
+				if err == nil {
+					goto TokenGeneration
+				}
+			}
+		}
+		slog.Warn("login failed: user/access_key not found or invalid", "username", req.Username)
 		http.Error(w, `{"error":"invalid username or password"}`, http.StatusUnauthorized)
 		return
 	}
@@ -74,6 +84,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"invalid username or password"}`, http.StatusUnauthorized)
 		return
 	}
+
+TokenGeneration:
 
 	// Generate JWT token
 	token, err := auth.GenerateToken(h.sessionCfg, user.Username, user.IsRoot)
@@ -175,4 +187,25 @@ func JWTAuthMiddleware(sessionCfg *auth.SessionConfig, store metadata.Store) fun
 // SetUserContext sets the user in context. Reusable by both JWT and SigV4 middleware.
 func SetUserContext(ctx context.Context, user *auth.User) context.Context {
 	return context.WithValue(ctx, auth.UserContextKey, user)
+}
+
+// JWTAuthFallbackMiddleware checks if the request has a valid JWT cookie.
+// If it does, it overwrites the user in the context. This allows routes protected
+// by SigV4 to fallback to JWT if the user is using the Web Console.
+func JWTAuthFallbackMiddleware(sessionCfg *auth.SessionConfig, store metadata.Store) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cookie, err := r.Cookie(sessionCfg.CookieName)
+			if err == nil && cookie.Value != "" {
+				if claims, err := auth.ValidateToken(sessionCfg, cookie.Value); err == nil {
+					if user, err := store.GetUserByUsername(r.Context(), claims.Username); err == nil && !user.Disabled {
+						ctx := SetUserContext(r.Context(), user)
+						next.ServeHTTP(w, r.WithContext(ctx))
+						return
+					}
+				}
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

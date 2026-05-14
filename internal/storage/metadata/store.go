@@ -40,6 +40,7 @@ type Store interface {
 	DeleteBucket(name string) error
 	GetBucket(name string) (*storage.BucketInfo, error)
 	ListBuckets() ([]storage.BucketInfo, error)
+	GetBucketStats(name string) (objects int64, bytes int64, err error)
 
 	// Object operations
 	PutObject(bucket, key string, meta storage.ObjectMeta) error

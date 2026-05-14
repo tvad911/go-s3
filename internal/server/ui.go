@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"gos3/internal/config"
@@ -37,9 +38,24 @@ func SetupUIRouter(cfg *config.Config) *chi.Mux {
 		return r
 	}
 
-	// Serve the static files
+	// Serve static files or fallback to API proxy
 	fileServer := http.FileServer(http.FS(subFS))
-	r.Handle("/*", fileServer)
+	r.Handle("/*", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		if path == "" {
+			path = "."
+		}
+		
+		// If file exists in static dir, serve it
+		_, err := fs.Stat(subFS, path)
+		if err == nil {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+		
+		// Otherwise, proxy to main API (e.g. for Presigned URLs and S3 operations)
+		proxy.ServeHTTP(w, r)
+	}))
 
 	return r
 }

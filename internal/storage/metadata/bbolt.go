@@ -818,7 +818,7 @@ func (s *bboltStore) GetBucketCORS(ctx context.Context, bucket string) (*s3.CORS
 		b := tx.Bucket(bucketCORS)
 		v := b.Get([]byte(bucket))
 		if v == nil {
-			return s3.ErrNoSuchBucket // Wait, usually NoSuchCORSConfiguration, we'll map later
+			return errors.New("NoSuchCORSConfiguration")
 		}
 		return json.Unmarshal(v, &cors)
 	})
@@ -1022,4 +1022,29 @@ func (s *bboltStore) DisableServiceAccount(ctx context.Context, id string, disab
 		}
 		return b.Put(foundKey, data)
 	})
+}
+
+// GetBucketStats returns the total number of objects and bytes for a bucket.
+func (db *bboltStore) GetBucketStats(name string) (int64, int64, error) {
+	var objects, bytes int64
+	err := db.db.View(func(tx *bbolt.Tx) error {
+		bucketKey := []byte("objects:" + name)
+		b := tx.Bucket(bucketKey)
+		if b == nil {
+			return nil // empty bucket
+		}
+		
+		return b.ForEach(func(k, v []byte) error {
+			// Object keys might include versions, let's just count total non-delete-marker bytes
+			var meta storage.ObjectMeta
+			if err := json.Unmarshal(v, &meta); err == nil {
+				if !meta.IsDeleteMarker {
+					objects++
+					bytes += meta.Size
+				}
+			}
+			return nil
+		})
+	})
+	return objects, bytes, err
 }
