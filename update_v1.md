@@ -267,7 +267,7 @@ Click icon Settings trên Bucket card → Trang chi tiết với các tab:
 - [x] Multi-select + Bulk delete/download
 - [x] Upload folder (recursive via webkitdirectory)
 - [x] Download file lớn qua Presigned URL (thay vì blob)
-- [ ] Preview video/audio
+- [x] Preview video/audio
 - [x] CORS editor UI
 - [x] Lifecycle editor UI
 - [x] Website hosting config UI
