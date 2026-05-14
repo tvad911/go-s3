@@ -60,7 +60,7 @@ func New(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, 
 	if cfg.Admin.UIEnabled {
 		uiSrv := &http.Server{
 			Addr:    fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Admin.UIPort),
-			Handler: SetupUIRouter(),
+			Handler: SetupUIRouter(cfg),
 		}
 		s.uiServer = uiSrv
 	}
