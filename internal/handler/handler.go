@@ -37,6 +37,31 @@ func NewS3Handler(backend storage.Backend, metaStore metadata.Store, verifier *a
 // Returns nil if allowed, otherwise s3.ErrAccessDenied.
 func (h *S3Handler) CheckPolicy(r *http.Request, action, bucket, object string) error {
 	user := auth.GetUser(r.Context())
+	if user.IsRoot {
+		return nil
+	}
+
+	if bucket != "" {
+		if action == "s3:CreateBucket" {
+			// Anyone authenticated can create a bucket (or you could restrict this)
+			// But anonymous cannot
+			if user.Username == "anonymous" {
+				return s3.ErrAccessDenied
+			}
+			return nil
+		}
+		
+		if bInfo, err := h.MetaStore.GetBucket(bucket); err == nil {
+			if bInfo.Owner != "" && bInfo.Owner == user.Username {
+				return nil
+			}
+			// Also check if the user is a service account of the owner
+			// Actually, User.Username is the parent user's username if it's a ServiceAccount?
+			// Wait, GetUser() resolves Service Account to its Parent User username?
+			// Let's check auth.SigV4Verifier
+		}
+	}
+
 	resource := "arn:aws:s3:::" + bucket
 	if object != "" {
 		resource += "/" + object

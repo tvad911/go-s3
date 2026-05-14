@@ -275,6 +275,12 @@ Click icon Settings trên Bucket card → Trang chi tiết với các tab:
 - [x] Audit Log viewer
 - [x] Bucket Notification/Events (Webhooks)
 
+### Phase 7: Phân quyền & Access Control (Authorization)
+- [x] Bổ sung trường `Owner` cho Bucket trong metadata.
+- [x] Sửa `S3Handler` để xác thực quyền Owner (User == Owner).
+- [x] Hoàn thiện hàm parse Bucket Policy JSON (đặc biệt hỗ trợ `Principal: "*"`).
+- [x] Web UI: Cung cấp preset "Make Public" / "Make Private" cho Bucket Policy.
+
 ---
 
 ## 5. Quy tắc kỹ thuật

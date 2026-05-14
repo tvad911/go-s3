@@ -325,6 +325,11 @@ func (h *S3Handler) PutBucketPolicy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
 
+	if err := h.CheckPolicy(r, "s3:PutBucketPolicy", bucket, ""); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	var policy auth.Policy
 	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&policy); err != nil {
 		WriteError(w, r, err) // map to ErrMalformedPolicy
@@ -343,6 +348,11 @@ func (h *S3Handler) GetBucketPolicy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
 
+	if err := h.CheckPolicy(r, "s3:GetBucketPolicy", bucket, ""); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	policy, err := h.MetaStore.GetBucketPolicy(ctx, bucket)
 	if err != nil {
 		WriteError(w, r, err) // Should map to s3.ErrNoSuchBucketPolicy
@@ -358,6 +368,11 @@ func (h *S3Handler) GetBucketPolicy(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) DeleteBucketPolicy(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
+
+	if err := h.CheckPolicy(r, "s3:DeleteBucketPolicy", bucket, ""); err != nil {
+		WriteError(w, r, err)
+		return
+	}
 
 	if err := h.MetaStore.DeleteBucketPolicy(ctx, bucket); err != nil {
 		WriteError(w, r, err)
