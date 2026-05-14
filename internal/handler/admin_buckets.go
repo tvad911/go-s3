@@ -320,3 +320,61 @@ func (h *AdminHandler) DeleteBucketLifecycle(w http.ResponseWriter, r *http.Requ
 	h.recordAudit(r, "DeleteBucketLifecycle", bucket, "")
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// GetBucketWebsite for Admin UI
+func (h *AdminHandler) GetBucketWebsite(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:GetBucketWebsite"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+	website, err := h.MetaStore.GetBucketWebsite(r.Context(), bucket)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(website)
+}
+
+// PutBucketWebsite for Admin UI
+func (h *AdminHandler) PutBucketWebsite(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:PutBucketWebsite"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+
+	var website s3.WebsiteConfiguration
+	if err := json.NewDecoder(r.Body).Decode(&website); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.MetaStore.PutBucketWebsite(r.Context(), bucket, &website); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.recordAudit(r, "PutBucketWebsite", bucket, "")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// DeleteBucketWebsite for Admin UI
+func (h *AdminHandler) DeleteBucketWebsite(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:DeleteBucketWebsite"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+	if err := h.MetaStore.DeleteBucketWebsite(r.Context(), bucket); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.recordAudit(r, "DeleteBucketWebsite", bucket, "")
+	w.WriteHeader(http.StatusNoContent)
+}

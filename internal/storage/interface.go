@@ -243,6 +243,10 @@ type Backend interface {
 	PutBucketLifecycle(ctx context.Context, bucket string, lifecycle *s3.LifecycleConfiguration) error
 	DeleteBucketLifecycle(ctx context.Context, bucket string) error
 
+	GetBucketWebsite(ctx context.Context, bucket string) (*s3.WebsiteConfiguration, error)
+	PutBucketWebsite(ctx context.Context, bucket string, website *s3.WebsiteConfiguration) error
+	DeleteBucketWebsite(ctx context.Context, bucket string) error
+
 	// Object operations
 	PutObject(ctx context.Context, bucket, key string, r io.Reader, size int64, meta ObjectMeta) (*PutResult, error)
 	GetObject(ctx context.Context, bucket, key string, opts GetOptions) (*Object, error)

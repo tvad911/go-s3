@@ -905,7 +905,7 @@ window.openBucketSettings = (name) => {
 };
 
 window.switchBucketSettingsTab = (tab) => {
-    ['overview', 'access', 'cors', 'lifecycle'].forEach(t => {
+    ['overview', 'access', 'cors', 'lifecycle', 'website'].forEach(t => {
         const link = document.getElementById(`tab-link-${t}`);
         const content = document.getElementById(`tab-content-${t}`);
         if(link) link.classList.remove('active');
@@ -925,6 +925,8 @@ window.switchBucketSettingsTab = (tab) => {
         fetchBucketCORS();
     } else if (tab === 'lifecycle') {
         fetchBucketLifecycle();
+    } else if (tab === 'website') {
+        fetchBucketWebsite();
     }
 };
 
@@ -1140,7 +1142,63 @@ window.saveBucketLifecycle = async () => {
     }
 };
 
+
+async function fetchBucketWebsite() {
+    try {
+        const res = await api('GET', `/_admin/buckets/${currentBucket}/website`);
+        document.getElementById('bucket-website-json').value = JSON.stringify(res, null, 2);
+    } catch (err) {
+        if (err.message.includes('not found')) {
+            document.getElementById('bucket-website-json').value = '';
+        } else {
+            showToast('Failed to fetch website config: ' + err.message, 'error');
+        }
+    }
+}
+
+window.setBucketWebsitePreset = (type) => {
+    const website = {
+        "IndexDocument": {
+            "Suffix": "index.html"
+        },
+        "ErrorDocument": {
+            "Key": "error.html"
+        }
+    };
+    const textarea = document.getElementById('bucket-website-json');
+    if (type === 'default') {
+        textarea.value = JSON.stringify(website, null, 2);
+    } else {
+        textarea.value = '';
+    }
+    validateJSONConfig(textarea, 'bucket-website-error');
+};
+
+window.saveBucketWebsite = async () => {
+    const textarea = document.getElementById('bucket-website-json');
+    const wsStr = textarea.value.trim();
+    
+    if (wsStr && !validateJSONConfig(textarea, 'bucket-website-error')) {
+        showToast('Please fix JSON errors before saving', 'error');
+        return;
+    }
+
+    try {
+        if (!wsStr) {
+            await api('DELETE', `/_admin/buckets/${currentBucket}/website`);
+            showToast('Website config cleared', 'success');
+        } else {
+            const wsObj = JSON.parse(wsStr);
+            await api('PUT', `/_admin/buckets/${currentBucket}/website`, wsObj);
+            showToast('Website config saved', 'success');
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+};
+
 // ==================== Connection Info ====================
+
 
 async function loadConnectionInfo() {
     const s3Host = window.location.hostname;

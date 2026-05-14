@@ -136,6 +136,18 @@ func (b *Backend) DeleteBucketLifecycle(ctx context.Context, bucket string) erro
 	return b.meta.DeleteBucketLifecycle(ctx, bucket)
 }
 
+func (b *Backend) GetBucketWebsite(ctx context.Context, bucket string) (*s3.WebsiteConfiguration, error) {
+	return b.meta.GetBucketWebsite(ctx, bucket)
+}
+
+func (b *Backend) PutBucketWebsite(ctx context.Context, bucket string, website *s3.WebsiteConfiguration) error {
+	return b.meta.PutBucketWebsite(ctx, bucket, website)
+}
+
+func (b *Backend) DeleteBucketWebsite(ctx context.Context, bucket string) error {
+	return b.meta.DeleteBucketWebsite(ctx, bucket)
+}
+
 func (b *Backend) ListBuckets(ctx context.Context) ([]storage.BucketInfo, error) {
 	return b.meta.ListBuckets()
 }

@@ -296,6 +296,7 @@
                             <span class="tab-link" onclick="switchBucketSettingsTab('access')" id="tab-link-access" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);">Access Policy</span>
                             <span class="tab-link" onclick="switchBucketSettingsTab('cors')" id="tab-link-cors" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);">CORS</span>
                             <span class="tab-link" onclick="switchBucketSettingsTab('lifecycle')" id="tab-link-lifecycle" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);">Lifecycle</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('website')" id="tab-link-website" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);">Website Hosting</span>
                         </div>
                         
                         <div id="tab-content-overview">
@@ -347,6 +348,21 @@
                             <textarea id="bucket-lifecycle-json" oninput="validateJSONConfig(this, 'bucket-lifecycle-error')" style="width:100%;height:200px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1rem;font-family:monospace;margin-bottom:1rem;resize:vertical;"></textarea>
                             <div id="bucket-lifecycle-error" class="text-danger" style="display:none; font-size:0.875rem; margin-top:-0.5rem; margin-bottom:1rem;"></div>
                             <button class="btn btn-primary" onclick="saveBucketLifecycle()">Save Lifecycle</button>
+                        </div>
+
+                        <div id="tab-content-website" style="display:none;">
+                            <div style="background:rgba(255,100,255,0.1);border:1px solid rgba(255,100,255,0.3);border-radius:8px;padding:1rem;color:#ff64ff;margin-bottom:1rem;">
+                                ℹ️ Static Website Hosting enables your bucket to serve web pages (e.g., index.html).
+                            </div>
+                            <div style="display:flex;gap:1rem;margin-bottom:2rem;">
+                                <button class="btn btn-primary" onclick="setBucketWebsitePreset('default')">Enable Hosting (index.html)</button>
+                                <button class="btn btn-ghost text-danger" onclick="setBucketWebsitePreset('clear')">Disable Hosting</button>
+                            </div>
+                            
+                            <h4 style="margin-top:0;">Website Configuration (JSON)</h4>
+                            <textarea id="bucket-website-json" oninput="validateJSONConfig(this, 'bucket-website-error')" style="width:100%;height:200px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1rem;font-family:monospace;margin-bottom:1rem;resize:vertical;"></textarea>
+                            <div id="bucket-website-error" class="text-danger" style="display:none; font-size:0.875rem; margin-top:-0.5rem; margin-bottom:1rem;"></div>
+                            <button class="btn btn-primary" onclick="saveBucketWebsite()">Save Website Config</button>
                         </div>
                     </div>
                 </div>
