@@ -262,3 +262,61 @@ func (h *AdminHandler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
 	h.recordAudit(r, "DeleteObjects", bucket, fmt.Sprintf("Deleted %d objects", len(keys)))
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// GetBucketLifecycle for Admin UI
+func (h *AdminHandler) GetBucketLifecycle(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:GetBucketLifecycle"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+	lc, err := h.MetaStore.GetBucketLifecycle(r.Context(), bucket)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(lc)
+}
+
+// PutBucketLifecycle for Admin UI
+func (h *AdminHandler) PutBucketLifecycle(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:PutBucketLifecycle"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+
+	var lc s3.LifecycleConfiguration
+	if err := json.NewDecoder(r.Body).Decode(&lc); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.MetaStore.PutBucketLifecycle(r.Context(), bucket, &lc); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.recordAudit(r, "PutBucketLifecycle", bucket, "")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// DeleteBucketLifecycle for Admin UI
+func (h *AdminHandler) DeleteBucketLifecycle(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:DeleteBucketLifecycle"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+	if err := h.MetaStore.DeleteBucketLifecycle(r.Context(), bucket); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.recordAudit(r, "DeleteBucketLifecycle", bucket, "")
+	w.WriteHeader(http.StatusNoContent)
+}

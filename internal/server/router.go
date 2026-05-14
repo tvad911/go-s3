@@ -101,6 +101,11 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 			r.Put("/buckets/{bucket}/cors", adminHandler.PutBucketCORS)
 			r.Delete("/buckets/{bucket}/cors", adminHandler.DeleteBucketCORS)
 
+			// Web UI Bucket Lifecycle API
+			r.Get("/buckets/{bucket}/lifecycle", adminHandler.GetBucketLifecycle)
+			r.Put("/buckets/{bucket}/lifecycle", adminHandler.PutBucketLifecycle)
+			r.Delete("/buckets/{bucket}/lifecycle", adminHandler.DeleteBucketLifecycle)
+
 			// Web UI IAM Policy API
 			r.Get("/policies", adminHandler.ListIAMPolicies)
 			r.Get("/policies/{name}", adminHandler.GetIAMPolicy)

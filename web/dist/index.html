@@ -295,6 +295,7 @@
                             <span class="tab-link active" onclick="switchBucketSettingsTab('overview')" id="tab-link-overview" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid var(--accent-primary);color:var(--accent-primary);">Overview & Stats</span>
                             <span class="tab-link" onclick="switchBucketSettingsTab('access')" id="tab-link-access" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);">Access Policy</span>
                             <span class="tab-link" onclick="switchBucketSettingsTab('cors')" id="tab-link-cors" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);">CORS</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('lifecycle')" id="tab-link-lifecycle" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);">Lifecycle</span>
                         </div>
                         
                         <div id="tab-content-overview">
@@ -331,6 +332,21 @@
                             <textarea id="bucket-cors-json" oninput="validateJSONConfig(this, 'bucket-cors-error')" style="width:100%;height:200px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1rem;font-family:monospace;margin-bottom:1rem;resize:vertical;"></textarea>
                             <div id="bucket-cors-error" class="text-danger" style="display:none; font-size:0.875rem; margin-top:-0.5rem; margin-bottom:1rem;"></div>
                             <button class="btn btn-primary" onclick="saveBucketCORS()">Save CORS</button>
+                        </div>
+
+                        <div id="tab-content-lifecycle" style="display:none;">
+                            <div style="background:rgba(100,255,100,0.1);border:1px solid rgba(100,255,100,0.3);border-radius:8px;padding:1rem;color:#64ff64;margin-bottom:1rem;">
+                                ℹ️ Lifecycle rules can automatically delete objects after a certain number of days to save storage space.
+                            </div>
+                            <div style="display:flex;gap:1rem;margin-bottom:2rem;">
+                                <button class="btn btn-primary" onclick="setBucketLifecyclePreset('expire-30d')">Expire 30 Days</button>
+                                <button class="btn btn-ghost text-danger" onclick="setBucketLifecyclePreset('clear')">Clear Lifecycle</button>
+                            </div>
+                            
+                            <h4 style="margin-top:0;">Lifecycle Configuration (JSON)</h4>
+                            <textarea id="bucket-lifecycle-json" oninput="validateJSONConfig(this, 'bucket-lifecycle-error')" style="width:100%;height:200px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1rem;font-family:monospace;margin-bottom:1rem;resize:vertical;"></textarea>
+                            <div id="bucket-lifecycle-error" class="text-danger" style="display:none; font-size:0.875rem; margin-top:-0.5rem; margin-bottom:1rem;"></div>
+                            <button class="btn btn-primary" onclick="saveBucketLifecycle()">Save Lifecycle</button>
                         </div>
                     </div>
                 </div>

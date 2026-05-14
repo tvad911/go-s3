@@ -269,7 +269,7 @@ Click icon Settings trên Bucket card → Trang chi tiết với các tab:
 - [x] Download file lớn qua Presigned URL (thay vì blob)
 - [ ] Preview video/audio
 - [x] CORS editor UI
-- [ ] Lifecycle editor UI
+- [x] Lifecycle editor UI
 - [ ] Website hosting config UI
 - [ ] Custom Domain mapping (Backend middleware + UI)
 - [x] Audit Log viewer
