@@ -21,10 +21,11 @@ import (
 func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, verifier *auth.SigV4Verifier, repl *replication.Service, sessionCfg *auth.SessionConfig) *chi.Mux {
 	r := chi.NewRouter()
 
-	adminHandler := handler.NewAdminHandler(metaStore, backend)
+	engine := auth.NewEngine(metaStore, metaStore)
+	adminHandler := handler.NewAdminHandler(metaStore, backend, engine)
 	authHandler := handler.NewAuthHandler(metaStore, sessionCfg)
 	saHandler := handler.NewServiceAccountHandler(metaStore)
-	s3Handler := handler.NewS3Handler(backend, metaStore, verifier, cfg, repl)
+	s3Handler := handler.NewS3Handler(backend, metaStore, verifier, cfg, repl, engine)
 
 	r.Use(middleware.RealIP)
 	r.Use(middleware.RequestID)
@@ -98,6 +99,12 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 			r.Get("/buckets/{bucket}/cors", adminHandler.GetBucketCORS)
 			r.Put("/buckets/{bucket}/cors", adminHandler.PutBucketCORS)
 			r.Delete("/buckets/{bucket}/cors", adminHandler.DeleteBucketCORS)
+
+			// Web UI IAM Policy API
+			r.Get("/policies", adminHandler.ListIAMPolicies)
+			r.Get("/policies/{name}", adminHandler.GetIAMPolicy)
+			r.Put("/policies/{name}", adminHandler.PutIAMPolicy)
+			r.Delete("/policies/{name}", adminHandler.DeleteIAMPolicy)
 		})
 
 		// S3 API Routes

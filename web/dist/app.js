@@ -131,6 +131,9 @@ function loadView(viewName) {
     } else if (viewName === 'audit-logs') {
         breadcrumb.innerHTML = `<span>Audit Logs</span>`;
         loadAuditLogs();
+    } else if (viewName === 'policies') {
+        breadcrumb.innerHTML = `<span>IAM Policies</span>`;
+        fetchPolicies();
     }
 }
 
@@ -1077,6 +1080,91 @@ function viewAuditLogDetails(id) {
     if (!log) return;
     
     const pre = document.getElementById('audit-log-details-content');
-    pre.textContent = JSON.stringify(log, null, 2);
+    if(pre) pre.textContent = JSON.stringify(log, null, 2);
     openModal('view-log-modal');
 }
+
+// ==================== IAM Policies ====================
+async function fetchPolicies() {
+    const tbody = document.getElementById('policies-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="2" style="text-align:center;">Loading...</td></tr>';
+    try {
+        const policies = await api('GET', '/_admin/policies');
+        renderPolicies(policies || []);
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="2" style="text-align:center; color:#ef4444;">Error: ${escapeHTML(err.message)}</td></tr>`;
+        showToast('Failed to load policies', 'error');
+    }
+}
+
+function renderPolicies(policies) {
+    const tbody = document.getElementById('policies-table-body');
+    if (!tbody) return;
+
+    if (!policies || policies.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="2" style="text-align:center; color:var(--text-muted);">No policies found</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = policies.map((policy) => `
+        <tr>
+            <td style="font-weight:500; color:var(--text-primary); cursor:pointer;" onclick="editPolicy('${escapeHTML(policy)}')">${escapeHTML(policy)}</td>
+            <td>
+                <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.8rem;" onclick="editPolicy('${escapeHTML(policy)}')">Edit</button>
+                <button class="btn btn-ghost text-danger" style="padding:0.25rem 0.5rem; font-size:0.8rem;" onclick="deletePolicy('${escapeHTML(policy)}')">Delete</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function showCreatePolicyModal() {
+    document.getElementById('policy-modal-title').textContent = 'Create Policy';
+    document.getElementById('policy-name').value = '';
+    document.getElementById('policy-name').readOnly = false;
+    document.getElementById('policy-document').value = '';
+    document.getElementById('policy-error').style.display = 'none';
+    openModal('policy-modal');
+}
+
+async function editPolicy(name) {
+    try {
+        const policy = await api('GET', \`/_admin/policies/\${name}\`);
+        document.getElementById('policy-modal-title').textContent = 'Edit Policy';
+        document.getElementById('policy-name').value = name;
+        document.getElementById('policy-name').readOnly = true;
+        document.getElementById('policy-document').value = JSON.stringify(policy, null, 2);
+        document.getElementById('policy-error').style.display = 'none';
+        openModal('policy-modal');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+async function deletePolicy(name) {
+    if (!confirm(\`Are you sure you want to delete policy "\${name}"?\`)) return;
+    try {
+        await api('DELETE', \`/_admin/policies/\${name}\`);
+        showToast('Policy deleted successfully', 'success');
+        fetchPolicies();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+document.getElementById('policy-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('policy-name').value.trim();
+    const docStr = document.getElementById('policy-document').value.trim();
+
+    try {
+        const policy = JSON.parse(docStr);
+        await api('PUT', \`/_admin/policies/\${name}\`, policy);
+        closeModal('policy-modal');
+        showToast('Policy saved successfully', 'success');
+        fetchPolicies();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+});

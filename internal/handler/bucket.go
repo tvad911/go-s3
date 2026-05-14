@@ -19,6 +19,11 @@ func (h *S3Handler) CreateBucket(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
 
+	if err := h.CheckPolicy(r, "s3:CreateBucket", bucket, ""); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	if err := s3.ValidateBucketName(bucket); err != nil {
 		WriteError(w, r, err)
 		return
@@ -48,6 +53,11 @@ func (h *S3Handler) DeleteBucket(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
 
+	if err := h.CheckPolicy(r, "s3:DeleteBucket", bucket, ""); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	if err := h.Backend.DeleteBucket(ctx, bucket); err != nil {
 		WriteError(w, r, err)
 		return
@@ -59,6 +69,11 @@ func (h *S3Handler) DeleteBucket(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) HeadBucket(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
+
+	if err := h.CheckPolicy(r, "s3:ListBucket", bucket, ""); err != nil {
+		WriteError(w, r, err)
+		return
+	}
 
 	exists, err := h.Backend.BucketExists(ctx, bucket)
 	if err != nil {
@@ -75,6 +90,11 @@ func (h *S3Handler) HeadBucket(w http.ResponseWriter, r *http.Request) {
 
 func (h *S3Handler) ListBuckets(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	if err := h.CheckPolicy(r, "s3:ListAllMyBuckets", "", ""); err != nil {
+		WriteError(w, r, err)
+		return
+	}
 
 	buckets, err := h.Backend.ListBuckets(ctx)
 	if err != nil {
@@ -105,6 +125,11 @@ func (h *S3Handler) ListBuckets(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) ListObjects(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
+
+	if err := h.CheckPolicy(r, "s3:ListBucket", bucket, ""); err != nil {
+		WriteError(w, r, err)
+		return
+	}
 
 	q := r.URL.Query()
 

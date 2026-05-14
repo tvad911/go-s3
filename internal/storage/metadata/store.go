@@ -76,6 +76,7 @@ type Store interface {
 	// User management
 	auth.UserStore
 	auth.PolicyStore
+	auth.IAMPolicyStore
 	auth.ServiceAccountStore
 	AuditStore
 }

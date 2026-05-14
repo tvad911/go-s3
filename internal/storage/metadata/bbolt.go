@@ -28,6 +28,7 @@ var (
 	bucketWebsite         = []byte("website")
 	bucketServiceAccounts = []byte("service_accounts")
 	bucketAuditLogs       = []byte("audit_logs")
+	bucketIAMPolicies     = []byte("iam_policies")
 )
 
 type bboltStore struct {
@@ -68,6 +69,9 @@ func NewBboltStore(path string) (Store, error) {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(bucketAuditLogs); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketIAMPolicies); err != nil {
 			return err
 		}
 		return nil
@@ -812,6 +816,57 @@ func (s *bboltStore) DeleteBucketPolicy(ctx context.Context, bucket string) erro
 		}
 		return b.Delete([]byte(bucket))
 	})
+}
+
+// IAMPolicyStore implementation
+
+func (s *bboltStore) GetIAMPolicy(ctx context.Context, name string) (*auth.Policy, error) {
+	var policy auth.Policy
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketIAMPolicies)
+		v := b.Get([]byte(name))
+		if v == nil {
+			return auth.ErrPolicyNotFound
+		}
+		return json.Unmarshal(v, &policy)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &policy, nil
+}
+
+func (s *bboltStore) PutIAMPolicy(ctx context.Context, name string, policy *auth.Policy) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketIAMPolicies)
+		data, err := json.Marshal(policy)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(name), data)
+	})
+}
+
+func (s *bboltStore) DeleteIAMPolicy(ctx context.Context, name string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketIAMPolicies)
+		if b.Get([]byte(name)) == nil {
+			return auth.ErrPolicyNotFound
+		}
+		return b.Delete([]byte(name))
+	})
+}
+
+func (s *bboltStore) ListIAMPolicies(ctx context.Context) ([]string, error) {
+	var names []string
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketIAMPolicies)
+		return b.ForEach(func(k, v []byte) error {
+			names = append(names, string(k))
+			return nil
+		})
+	})
+	return names, err
 }
 
 // CORS implementations

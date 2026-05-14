@@ -12,6 +12,11 @@ import (
 
 // ListBuckets for Admin UI (returns JSON instead of XML)
 func (h *AdminHandler) ListBuckets(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:ListBuckets"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	buckets, err := h.MetaStore.ListBuckets()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -33,6 +38,11 @@ func (h *AdminHandler) ListBuckets(w http.ResponseWriter, r *http.Request) {
 
 // CreateBucket for Admin UI
 func (h *AdminHandler) CreateBucket(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:CreateBucket"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	bucket := chi.URLParam(r, "bucket")
 	// For web console, owner is empty or root
 	err := h.MetaStore.CreateBucket(bucket, "us-east-1", "", "", false)
@@ -46,6 +56,11 @@ func (h *AdminHandler) CreateBucket(w http.ResponseWriter, r *http.Request) {
 
 // DeleteBucket for Admin UI
 func (h *AdminHandler) DeleteBucket(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:DeleteBucket"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	bucket := chi.URLParam(r, "bucket")
 	err := h.MetaStore.DeleteBucket(bucket)
 	if err != nil {
@@ -58,6 +73,11 @@ func (h *AdminHandler) DeleteBucket(w http.ResponseWriter, r *http.Request) {
 
 // ListObjects for Admin UI (JSON format of ListObjectsV2)
 func (h *AdminHandler) ListObjects(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:ListObjects"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	bucket := chi.URLParam(r, "bucket")
 	prefix := r.URL.Query().Get("prefix")
 	delimiter := r.URL.Query().Get("delimiter")
@@ -98,6 +118,11 @@ func (h *AdminHandler) ListObjects(w http.ResponseWriter, r *http.Request) {
 
 // GetBucketPolicy for Admin UI
 func (h *AdminHandler) GetBucketPolicy(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:GetBucketPolicy"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	bucket := chi.URLParam(r, "bucket")
 	policy, err := h.MetaStore.GetBucketPolicy(r.Context(), bucket)
 	if err != nil {
@@ -111,6 +136,11 @@ func (h *AdminHandler) GetBucketPolicy(w http.ResponseWriter, r *http.Request) {
 
 // PutBucketPolicy for Admin UI
 func (h *AdminHandler) PutBucketPolicy(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:PutBucketPolicy"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	bucket := chi.URLParam(r, "bucket")
 	
 	var policy auth.Policy
@@ -130,6 +160,11 @@ func (h *AdminHandler) PutBucketPolicy(w http.ResponseWriter, r *http.Request) {
 
 // DeleteBucketPolicy for Admin UI
 func (h *AdminHandler) DeleteBucketPolicy(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:DeleteBucketPolicy"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	bucket := chi.URLParam(r, "bucket")
 	if err := h.MetaStore.DeleteBucketPolicy(r.Context(), bucket); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -141,6 +176,11 @@ func (h *AdminHandler) DeleteBucketPolicy(w http.ResponseWriter, r *http.Request
 
 // GetBucketCORS for Admin UI
 func (h *AdminHandler) GetBucketCORS(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:GetBucketCORS"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	bucket := chi.URLParam(r, "bucket")
 	cors, err := h.MetaStore.GetBucketCORS(r.Context(), bucket)
 	if err != nil {
@@ -154,6 +194,11 @@ func (h *AdminHandler) GetBucketCORS(w http.ResponseWriter, r *http.Request) {
 
 // PutBucketCORS for Admin UI
 func (h *AdminHandler) PutBucketCORS(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:PutBucketCORS"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	bucket := chi.URLParam(r, "bucket")
 	
 	var cors s3.CORSConfiguration
@@ -173,6 +218,11 @@ func (h *AdminHandler) PutBucketCORS(w http.ResponseWriter, r *http.Request) {
 
 // DeleteBucketCORS for Admin UI
 func (h *AdminHandler) DeleteBucketCORS(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:DeleteBucketCORS"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	bucket := chi.URLParam(r, "bucket")
 	if err := h.MetaStore.DeleteBucketCORS(r.Context(), bucket); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

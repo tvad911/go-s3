@@ -21,12 +21,13 @@ import (
 var startTime = time.Now()
 
 type AdminHandler struct {
-	MetaStore metadata.Store
-	Backend   storage.Backend
+	MetaStore    metadata.Store
+	Backend      storage.Backend
+	PolicyEngine *auth.Engine
 }
 
-func NewAdminHandler(store metadata.Store, backend storage.Backend) *AdminHandler {
-	return &AdminHandler{MetaStore: store, Backend: backend}
+func NewAdminHandler(store metadata.Store, backend storage.Backend, engine *auth.Engine) *AdminHandler {
+	return &AdminHandler{MetaStore: store, Backend: backend, PolicyEngine: engine}
 }
 
 // EnsureRoot checks if the user in context is an admin/root
@@ -65,6 +66,11 @@ func (h *AdminHandler) recordAudit(r *http.Request, action, target, details stri
 }
 
 func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:ListUsers"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	users, err := h.MetaStore.ListUsers(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -82,6 +88,11 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:CreateUser"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	var user auth.User
 	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&user); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -98,6 +109,11 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:GetUser"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	username := chi.URLParam(r, "username")
 	user, err := h.MetaStore.GetUserByUsername(r.Context(), username)
 	if err != nil {
@@ -110,6 +126,11 @@ func (h *AdminHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:UpdateUser"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	username := chi.URLParam(r, "username")
 	var user auth.User
 	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&user); err != nil {
@@ -128,6 +149,11 @@ func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:DeleteUser"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	username := chi.URLParam(r, "username")
 	if err := h.MetaStore.DeleteUser(r.Context(), username); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -208,6 +234,11 @@ func (h *AdminHandler) GeneratePresignedURL(w http.ResponseWriter, r *http.Reque
 
 // ServerInfo returns general server info and storage stats
 func (h *AdminHandler) ServerInfo(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:ServerInfo"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	var totalObjects, totalBytes int64
 	
 	metrics.ObjectsTotal.Range(func(key, value any) bool {
@@ -254,6 +285,11 @@ func (h *AdminHandler) BucketStats(w http.ResponseWriter, r *http.Request) {
 // RenameObject handles renaming (copy + delete) an object entirely server-side.
 // This avoids presigned URL complications with encoding, Host headers, and SigV4.
 func (h *AdminHandler) RenameObject(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:RenameObject"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	var req struct {
 		Bucket string `json:"bucket"`
 		OldKey string `json:"oldKey"`
@@ -313,6 +349,11 @@ func (h *AdminHandler) RenameObject(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AdminHandler) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:ListAuditLogs"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	logs, err := h.MetaStore.ListAuditLogs(r.Context(), 100) // limit to 100 recent logs
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

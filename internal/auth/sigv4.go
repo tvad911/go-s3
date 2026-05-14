@@ -137,14 +137,23 @@ func (v *SigV4Verifier) lookupByAccessKey(ctx context.Context, accessKey string)
 				return nil, "", ErrAuthHeaderMissing
 			}
 			// Resolve the parent user
-			user, err := v.UserStore.GetUserByUsername(ctx, sa.ParentUser)
+			parentUser, err := v.UserStore.GetUserByUsername(ctx, sa.ParentUser)
 			if err != nil {
 				return nil, "", err
 			}
-			if user.Disabled {
+			if parentUser.Disabled {
 				return nil, "", ErrAuthHeaderMissing
 			}
-			return user, sa.SecretKey, nil
+
+			// Create a copy of the user to avoid mutating the original
+			user := *parentUser
+			// Merge SA policies with parent user policies
+			if len(sa.Policies) > 0 {
+				user.Policies = append([]string(nil), parentUser.Policies...)
+				user.Policies = append(user.Policies, sa.Policies...)
+			}
+
+			return &user, sa.SecretKey, nil
 		}
 	}
 	// Fallback to legacy user table (backward compatibility for root_access_key)

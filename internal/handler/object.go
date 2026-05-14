@@ -26,6 +26,11 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 	key := chi.URLParam(r, "key")
 
+	if err := h.CheckPolicy(r, "s3:PutObject", bucket, key); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	if len(key) > 1024 {
 		WriteError(w, r, s3.ErrKeyTooLongError)
 		return
@@ -130,6 +135,11 @@ func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
 	key := chi.URLParam(r, "key")
+
+	if err := h.CheckPolicy(r, "s3:GetObject", bucket, key); err != nil {
+		WriteError(w, r, err)
+		return
+	}
 
 	opts := storage.GetOptions{
 		VersionID: r.URL.Query().Get("versionId"),
@@ -283,6 +293,11 @@ func (h *S3Handler) HeadObject(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 	key := chi.URLParam(r, "key")
 
+	if err := h.CheckPolicy(r, "s3:GetObject", bucket, key); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	opts := storage.GetOptions{
 		VersionID: r.URL.Query().Get("versionId"),
 	}
@@ -351,6 +366,11 @@ func (h *S3Handler) DeleteObject(w http.ResponseWriter, r *http.Request) {
 	bucket := chi.URLParam(r, "bucket")
 	key := chi.URLParam(r, "key")
 
+	if err := h.CheckPolicy(r, "s3:DeleteObject", bucket, key); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
 	versionId := r.URL.Query().Get("versionId")
 
 	if err := h.Backend.DeleteObject(ctx, bucket, key, versionId); err != nil {
@@ -378,6 +398,11 @@ func (h *S3Handler) DeleteObject(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
+
+	if err := h.CheckPolicy(r, "s3:DeleteObject", bucket, "*"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
 
 	var req s3.Delete
 	if err := xml.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&req); err != nil {
@@ -440,6 +465,11 @@ func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
 	key := chi.URLParam(r, "key")
+
+	if err := h.CheckPolicy(r, "s3:PutObject", bucket, key); err != nil {
+		WriteError(w, r, err)
+		return
+	}
 
 	copySource := r.Header.Get("x-amz-copy-source")
 	if copySource == "" {
