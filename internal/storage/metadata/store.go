@@ -47,6 +47,11 @@ type Store interface {
 	PutBucketWebsite(ctx context.Context, bucket string, website *s3.WebsiteConfiguration) error
 	DeleteBucketWebsite(ctx context.Context, bucket string) error
 
+	PutCustomDomain(ctx context.Context, domain string, bucket string) error
+	GetCustomDomain(ctx context.Context, domain string) (string, error)
+	DeleteCustomDomain(ctx context.Context, domain string) error
+	GetBucketCustomDomains(ctx context.Context, bucket string) ([]string, error)
+
 	// General
 	Close() error
 

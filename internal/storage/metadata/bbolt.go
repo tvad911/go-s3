@@ -29,6 +29,7 @@ var (
 	bucketServiceAccounts = []byte("service_accounts")
 	bucketAuditLogs       = []byte("audit_logs")
 	bucketIAMPolicies     = []byte("iam_policies")
+	bucketCustomDomains   = []byte("custom_domains")
 )
 
 type bboltStore struct {
@@ -72,6 +73,9 @@ func NewBboltStore(path string) (Store, error) {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(bucketIAMPolicies); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketCustomDomains); err != nil {
 			return err
 		}
 		return nil
@@ -973,6 +977,52 @@ func (s *bboltStore) DeleteBucketWebsite(ctx context.Context, bucket string) err
 	return s.db.Update(func(tx *bbolt.Tx) error {
 		return tx.Bucket(bucketWebsite).Delete([]byte(bucket))
 	})
+}
+
+// Custom Domain operations
+
+func (s *bboltStore) PutCustomDomain(ctx context.Context, domain string, bucket string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketCustomDomains)
+		return b.Put([]byte(domain), []byte(bucket))
+	})
+}
+
+func (s *bboltStore) GetCustomDomain(ctx context.Context, domain string) (string, error) {
+	var bucket string
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketCustomDomains)
+		data := b.Get([]byte(domain))
+		if data == nil {
+			return errors.New("custom domain not found")
+		}
+		bucket = string(data)
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	return bucket, nil
+}
+
+func (s *bboltStore) DeleteCustomDomain(ctx context.Context, domain string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		return tx.Bucket(bucketCustomDomains).Delete([]byte(domain))
+	})
+}
+
+func (s *bboltStore) GetBucketCustomDomains(ctx context.Context, bucket string) ([]string, error) {
+	var domains []string
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketCustomDomains)
+		return b.ForEach(func(k, v []byte) error {
+			if string(v) == bucket {
+				domains = append(domains, string(k))
+			}
+			return nil
+		})
+	})
+	return domains, err
 }
 
 // ServiceAccountStore implementation

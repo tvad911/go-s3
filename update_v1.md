@@ -271,7 +271,7 @@ Click icon Settings trên Bucket card → Trang chi tiết với các tab:
 - [x] CORS editor UI
 - [x] Lifecycle editor UI
 - [x] Website hosting config UI
-- [ ] Custom Domain mapping (Backend middleware + UI)
+- [x] Custom Domain mapping (Backend middleware + UI)
 - [x] Audit Log viewer
 - [ ] Bucket Notification/Events
 

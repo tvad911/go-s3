@@ -378,3 +378,73 @@ func (h *AdminHandler) DeleteBucketWebsite(w http.ResponseWriter, r *http.Reques
 	h.recordAudit(r, "DeleteBucketWebsite", bucket, "")
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// GetBucketCustomDomains for Admin UI
+func (h *AdminHandler) GetBucketCustomDomains(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:GetBucketWebsite"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+	domains, err := h.MetaStore.GetBucketCustomDomains(r.Context(), bucket)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if domains == nil {
+		domains = []string{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(domains)
+}
+
+// PutBucketCustomDomain for Admin UI
+func (h *AdminHandler) PutBucketCustomDomain(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:PutBucketWebsite"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+
+	var req struct {
+		Domain string `json:"domain"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if req.Domain == "" {
+		http.Error(w, "domain is required", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.MetaStore.PutCustomDomain(r.Context(), req.Domain, bucket); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.recordAudit(r, "PutCustomDomain", bucket, req.Domain)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// DeleteBucketCustomDomain for Admin UI
+func (h *AdminHandler) DeleteBucketCustomDomain(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:DeleteBucketWebsite"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+	domain := chi.URLParam(r, "domain")
+
+	if err := h.MetaStore.DeleteCustomDomain(r.Context(), domain); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.recordAudit(r, "DeleteCustomDomain", bucket, domain)
+	w.WriteHeader(http.StatusNoContent)
+}

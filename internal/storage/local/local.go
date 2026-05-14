@@ -148,6 +148,22 @@ func (b *Backend) DeleteBucketWebsite(ctx context.Context, bucket string) error 
 	return b.meta.DeleteBucketWebsite(ctx, bucket)
 }
 
+func (b *Backend) PutCustomDomain(ctx context.Context, domain string, bucket string) error {
+	return b.meta.PutCustomDomain(ctx, domain, bucket)
+}
+
+func (b *Backend) GetCustomDomain(ctx context.Context, domain string) (string, error) {
+	return b.meta.GetCustomDomain(ctx, domain)
+}
+
+func (b *Backend) DeleteCustomDomain(ctx context.Context, domain string) error {
+	return b.meta.DeleteCustomDomain(ctx, domain)
+}
+
+func (b *Backend) GetBucketCustomDomains(ctx context.Context, bucket string) ([]string, error) {
+	return b.meta.GetBucketCustomDomains(ctx, bucket)
+}
+
 func (b *Backend) ListBuckets(ctx context.Context) ([]storage.BucketInfo, error) {
 	return b.meta.ListBuckets()
 }

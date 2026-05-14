@@ -32,6 +32,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RateLimit(&cfg.RateLimit))
+	r.Use(middleware.CustomDomain(metaStore))
 	r.Use(middleware.CORS(metaStore))
 
 	// Web Console Auth API — No SigV4 required, these use username/password
@@ -110,6 +111,11 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 			r.Get("/buckets/{bucket}/website", adminHandler.GetBucketWebsite)
 			r.Put("/buckets/{bucket}/website", adminHandler.PutBucketWebsite)
 			r.Delete("/buckets/{bucket}/website", adminHandler.DeleteBucketWebsite)
+
+			// Web UI Bucket Custom Domains API
+			r.Get("/buckets/{bucket}/domains", adminHandler.GetBucketCustomDomains)
+			r.Put("/buckets/{bucket}/domains", adminHandler.PutBucketCustomDomain)
+			r.Delete("/buckets/{bucket}/domains/{domain}", adminHandler.DeleteBucketCustomDomain)
 
 			// Web UI IAM Policy API
 			r.Get("/policies", adminHandler.ListIAMPolicies)

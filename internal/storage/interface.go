@@ -247,6 +247,12 @@ type Backend interface {
 	PutBucketWebsite(ctx context.Context, bucket string, website *s3.WebsiteConfiguration) error
 	DeleteBucketWebsite(ctx context.Context, bucket string) error
 
+	// Custom Domain operations
+	PutCustomDomain(ctx context.Context, domain string, bucket string) error
+	GetCustomDomain(ctx context.Context, domain string) (string, error)
+	DeleteCustomDomain(ctx context.Context, domain string) error
+	GetBucketCustomDomains(ctx context.Context, bucket string) ([]string, error)
+
 	// Object operations
 	PutObject(ctx context.Context, bucket, key string, r io.Reader, size int64, meta ObjectMeta) (*PutResult, error)
 	GetObject(ctx context.Context, bucket, key string, opts GetOptions) (*Object, error)
