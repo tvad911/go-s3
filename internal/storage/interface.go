@@ -253,6 +253,11 @@ type Backend interface {
 	DeleteCustomDomain(ctx context.Context, domain string) error
 	GetBucketCustomDomains(ctx context.Context, bucket string) ([]string, error)
 
+	// Notification operations
+	GetBucketNotification(ctx context.Context, bucket string) (*s3.NotificationConfiguration, error)
+	PutBucketNotification(ctx context.Context, bucket string, config *s3.NotificationConfiguration) error
+	DeleteBucketNotification(ctx context.Context, bucket string) error
+
 	// Object operations
 	PutObject(ctx context.Context, bucket, key string, r io.Reader, size int64, meta ObjectMeta) (*PutResult, error)
 	GetObject(ctx context.Context, bucket, key string, opts GetOptions) (*Object, error)

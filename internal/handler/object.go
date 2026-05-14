@@ -129,6 +129,9 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 			Meta:   meta,
 		})
 	}
+
+	// Trigger webhook
+	h.fireWebhooks(ctx, "s3:ObjectCreated:Put", bucket, key, size, res.ETag)
 }
 
 func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
@@ -393,6 +396,9 @@ func (h *S3Handler) DeleteObject(w http.ResponseWriter, r *http.Request) {
 			Key:    key,
 		})
 	}
+
+	// Trigger webhook
+	h.fireWebhooks(ctx, "s3:ObjectRemoved:Delete", bucket, key, 0, "")
 }
 
 func (h *S3Handler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
@@ -458,6 +464,11 @@ func (h *S3Handler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
 				Key:    k.Key,
 			})
 		}
+	}
+
+	// Trigger webhooks
+	for _, k := range result.Deleted {
+		h.fireWebhooks(ctx, "s3:ObjectRemoved:Delete", bucket, k.Key, 0, "")
 	}
 }
 
@@ -540,6 +551,9 @@ func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(xml.Header))
 	xml.NewEncoder(w).Encode(res)
+
+	// Trigger webhook
+	h.fireWebhooks(ctx, "s3:ObjectCreated:Copy", bucket, key, 0, result.ETag)
 }
 
 // GetObjectAcl handles GET /bucket/key?acl

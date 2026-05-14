@@ -273,7 +273,7 @@ Click icon Settings trên Bucket card → Trang chi tiết với các tab:
 - [x] Website hosting config UI
 - [x] Custom Domain mapping (Backend middleware + UI)
 - [x] Audit Log viewer
-- [ ] Bucket Notification/Events
+- [x] Bucket Notification/Events (Webhooks)
 
 ---
 

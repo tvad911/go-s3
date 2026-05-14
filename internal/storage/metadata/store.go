@@ -52,6 +52,10 @@ type Store interface {
 	DeleteCustomDomain(ctx context.Context, domain string) error
 	GetBucketCustomDomains(ctx context.Context, bucket string) ([]string, error)
 
+	GetBucketNotification(ctx context.Context, bucket string) (*s3.NotificationConfiguration, error)
+	PutBucketNotification(ctx context.Context, bucket string, config *s3.NotificationConfiguration) error
+	DeleteBucketNotification(ctx context.Context, bucket string) error
+
 	// General
 	Close() error
 

@@ -298,6 +298,7 @@
                             <span class="tab-link" onclick="switchBucketSettingsTab('lifecycle')" id="tab-link-lifecycle" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);white-space:nowrap;">Lifecycle</span>
                             <span class="tab-link" onclick="switchBucketSettingsTab('website')" id="tab-link-website" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);white-space:nowrap;">Website Hosting</span>
                             <span class="tab-link" onclick="switchBucketSettingsTab('domains')" id="tab-link-domains" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);white-space:nowrap;">Custom Domains</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('webhooks')" id="tab-link-webhooks" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);white-space:nowrap;">Webhooks</span>
                         </div>
                         
                         <div id="tab-content-overview">
@@ -378,6 +379,20 @@
                             <div id="bucket-domains-list" style="display:flex;flex-direction:column;gap:0.5rem;">
                                 <!-- Domains injected here -->
                             </div>
+                        </div>
+
+                        <div id="tab-content-webhooks" style="display:none;">
+                            <div style="background:rgba(255,165,0,0.1);border:1px solid rgba(255,165,0,0.3);border-radius:8px;padding:1rem;color:#ffa500;margin-bottom:1rem;">
+                                ℹ️ Webhooks allow external services to be notified when events happen in this bucket (e.g. s3:ObjectCreated:Put).
+                            </div>
+                            <div style="display:flex;gap:1rem;margin-bottom:2rem;">
+                                <button class="btn btn-primary" onclick="addBucketWebhookTemplate()">Add Webhook Example</button>
+                            </div>
+                            
+                            <h4 style="margin-top:0;">Webhook Configuration (JSON)</h4>
+                            <textarea id="bucket-webhooks-json" oninput="validateJSONConfig(this, 'bucket-webhooks-error')" style="width:100%;height:250px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1rem;font-family:monospace;margin-bottom:1rem;resize:vertical;"></textarea>
+                            <div id="bucket-webhooks-error" class="text-danger" style="display:none; font-size:0.875rem; margin-top:-0.5rem; margin-bottom:1rem;"></div>
+                            <button class="btn btn-primary" onclick="saveBucketWebhooks()">Save Webhooks</button>
                         </div>
                     </div>
                 </div>

@@ -30,6 +30,7 @@ var (
 	bucketAuditLogs       = []byte("audit_logs")
 	bucketIAMPolicies     = []byte("iam_policies")
 	bucketCustomDomains   = []byte("custom_domains")
+	bucketNotifications   = []byte("notifications")
 )
 
 type bboltStore struct {
@@ -76,6 +77,9 @@ func NewBboltStore(path string) (Store, error) {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(bucketCustomDomains); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketNotifications); err != nil {
 			return err
 		}
 		return nil
@@ -1023,6 +1027,41 @@ func (s *bboltStore) GetBucketCustomDomains(ctx context.Context, bucket string) 
 		})
 	})
 	return domains, err
+}
+
+// Notification operations
+
+func (s *bboltStore) GetBucketNotification(ctx context.Context, bucket string) (*s3.NotificationConfiguration, error) {
+	var notification s3.NotificationConfiguration
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketNotifications)
+		data := b.Get([]byte(bucket))
+		if data == nil {
+			return errors.New("notification configuration not found")
+		}
+		return json.Unmarshal(data, &notification)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &notification, nil
+}
+
+func (s *bboltStore) PutBucketNotification(ctx context.Context, bucket string, config *s3.NotificationConfiguration) error {
+	data, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketNotifications)
+		return b.Put([]byte(bucket), data)
+	})
+}
+
+func (s *bboltStore) DeleteBucketNotification(ctx context.Context, bucket string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		return tx.Bucket(bucketNotifications).Delete([]byte(bucket))
+	})
 }
 
 // ServiceAccountStore implementation

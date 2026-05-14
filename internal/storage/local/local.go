@@ -164,6 +164,18 @@ func (b *Backend) GetBucketCustomDomains(ctx context.Context, bucket string) ([]
 	return b.meta.GetBucketCustomDomains(ctx, bucket)
 }
 
+func (b *Backend) GetBucketNotification(ctx context.Context, bucket string) (*s3.NotificationConfiguration, error) {
+	return b.meta.GetBucketNotification(ctx, bucket)
+}
+
+func (b *Backend) PutBucketNotification(ctx context.Context, bucket string, config *s3.NotificationConfiguration) error {
+	return b.meta.PutBucketNotification(ctx, bucket, config)
+}
+
+func (b *Backend) DeleteBucketNotification(ctx context.Context, bucket string) error {
+	return b.meta.DeleteBucketNotification(ctx, bucket)
+}
+
 func (b *Backend) ListBuckets(ctx context.Context) ([]storage.BucketInfo, error) {
 	return b.meta.ListBuckets()
 }

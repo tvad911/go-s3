@@ -448,3 +448,64 @@ func (h *AdminHandler) DeleteBucketCustomDomain(w http.ResponseWriter, r *http.R
 	h.recordAudit(r, "DeleteCustomDomain", bucket, domain)
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// GetBucketNotification for Admin UI
+func (h *AdminHandler) GetBucketNotification(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:GetBucketNotification"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+	notification, err := h.MetaStore.GetBucketNotification(r.Context(), bucket)
+	if err != nil {
+		// Return empty list instead of 404
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(s3.NotificationConfiguration{Webhooks: []s3.WebhookConfiguration{}})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(notification)
+}
+
+// PutBucketNotification for Admin UI
+func (h *AdminHandler) PutBucketNotification(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:PutBucketNotification"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+
+	var config s3.NotificationConfiguration
+	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.MetaStore.PutBucketNotification(r.Context(), bucket, &config); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.recordAudit(r, "PutBucketNotification", bucket, "")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// DeleteBucketNotification for Admin UI
+func (h *AdminHandler) DeleteBucketNotification(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:DeleteBucketNotification"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+
+	if err := h.MetaStore.DeleteBucketNotification(r.Context(), bucket); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h.recordAudit(r, "DeleteBucketNotification", bucket, "")
+	w.WriteHeader(http.StatusNoContent)
+}

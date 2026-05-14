@@ -178,6 +178,9 @@ func (h *S3Handler) CompleteMultipartUpload(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(xml.Header))
 	xml.NewEncoder(w).Encode(res)
+
+	// Trigger webhook
+	h.fireWebhooks(ctx, "s3:ObjectCreated:CompleteMultipartUpload", bucket, key, 0, result.ETag)
 }
 
 func (h *S3Handler) AbortMultipartUpload(w http.ResponseWriter, r *http.Request) {

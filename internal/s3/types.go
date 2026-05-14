@@ -303,3 +303,15 @@ type IndexDocument struct {
 type ErrorDocument struct {
 	Key string `xml:"Key"`
 }
+
+// WebhookConfiguration represents a generic webhook for bucket events.
+type WebhookConfiguration struct {
+	Events []string `json:"events"` // e.g. "s3:ObjectCreated:*", "s3:ObjectRemoved:*"
+	URL    string   `json:"url"`
+	Secret string   `json:"secret,omitempty"` // for HMAC or Auth header
+}
+
+// NotificationConfiguration holds the list of webhooks for a bucket.
+type NotificationConfiguration struct {
+	Webhooks []WebhookConfiguration `json:"webhooks"`
+}
