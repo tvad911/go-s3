@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 	"time"
@@ -1246,4 +1247,11 @@ func (b *bboltStore) ListAuditLogs(ctx context.Context, limit int) ([]AuditLog, 
 		return nil
 	})
 	return logs, err
+}
+
+func (s *bboltStore) BackupTo(w io.Writer) error {
+	return s.db.View(func(tx *bbolt.Tx) error {
+		_, err := tx.WriteTo(w)
+		return err
+	})
 }

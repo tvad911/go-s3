@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"errors"
+	"io"
 	"time"
 
 	"gos3/internal/auth"
@@ -55,6 +56,9 @@ type Store interface {
 	GetBucketNotification(ctx context.Context, bucket string) (*s3.NotificationConfiguration, error)
 	PutBucketNotification(ctx context.Context, bucket string, config *s3.NotificationConfiguration) error
 	DeleteBucketNotification(ctx context.Context, bucket string) error
+
+	// Backup
+	BackupTo(w io.Writer) error
 
 	// General
 	Close() error

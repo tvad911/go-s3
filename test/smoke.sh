@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-ENDPOINT="http://localhost:9099"
+ENDPOINT="http://localhost:9010"
 BUCKET="test-bucket-$(date +%s)"
 FILE="test-file.txt"
 DOWNLOADED_FILE="downloaded-file.txt"

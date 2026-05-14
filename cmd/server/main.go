@@ -34,6 +34,29 @@ func main() {
 	// Reconfigure logger based on config
 	setupLogger(cfg.Log)
 
+	if len(flag.Args()) > 0 {
+		cmd := flag.Args()[0]
+		switch cmd {
+		case "export":
+			if len(flag.Args()) < 2 {
+				slog.Error("export requires an output file path (e.g. gos3 export backup.tar.gz)")
+				os.Exit(1)
+			}
+			runExport(cfg, flag.Args()[1])
+			return
+		case "import":
+			if len(flag.Args()) < 2 {
+				slog.Error("import requires an input file path (e.g. gos3 import backup.tar.gz)")
+				os.Exit(1)
+			}
+			runImport(cfg, flag.Args()[1])
+			return
+		case "verify":
+			runVerify(cfg)
+			return
+		}
+	}
+
 	slog.Info("starting gos3 server", "version", version)
 	slog.Info("replication config loaded", "targets", len(cfg.Replication.Targets))
 

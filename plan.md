@@ -894,9 +894,9 @@ WantedBy=multi-user.target
 
 ### 6.6 — Data Backup & Integrity
 
-- [ ] `gos3 verify` — scan tất cả objects, kiểm tra ETag vs actual content
-- [ ] `gos3 export --output backup.tar.gz` — export toàn bộ data
-- [ ] `gos3 import --input backup.tar.gz` — import data
+- [x] `gos3 verify` — scan tất cả objects, kiểm tra ETag vs actual content
+- [x] `gos3 export --output backup.tar.gz` — export toàn bộ data
+- [x] `gos3 import --input backup.tar.gz` — import data
 - [ ] Bbolt DB: tự động backup mỗi N giờ (snapshot)
 
 ---
