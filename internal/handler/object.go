@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 
 	"gos3/internal/auth"
+	"gos3/internal/replication"
 	"gos3/internal/s3"
 	"gos3/internal/storage"
 	"gos3/internal/storage/local"
@@ -112,6 +113,16 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+
+	if h.Replication != nil {
+		h.Replication.Enqueue(replication.Event{
+			Type:   replication.EventPut,
+			Bucket: bucket,
+			Key:    key,
+			Size:   size,
+			Meta:   meta,
+		})
+	}
 }
 
 func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
@@ -353,6 +364,14 @@ func (h *S3Handler) DeleteObject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+
+	if h.Replication != nil {
+		h.Replication.Enqueue(replication.Event{
+			Type:   replication.EventDelete,
+			Bucket: bucket,
+			Key:    key,
+		})
+	}
 }
 
 func (h *S3Handler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
@@ -404,6 +423,16 @@ func (h *S3Handler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(xml.Header))
 	xml.NewEncoder(w).Encode(res)
+
+	if h.Replication != nil {
+		for _, k := range result.Deleted {
+			h.Replication.Enqueue(replication.Event{
+				Type:   replication.EventDelete,
+				Bucket: bucket,
+				Key:    k.Key,
+			})
+		}
+	}
 }
 
 func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {

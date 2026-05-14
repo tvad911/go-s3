@@ -58,4 +58,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("admin.path_prefix", "/_admin")
 	v.SetDefault("admin.ui_enabled", true)
 	v.SetDefault("admin.ui_port", 9001)
+
+	// Phase 7.2 Replication
+	v.SetDefault("replication.enabled", false)
+	v.SetDefault("replication.max_queue_size", 10000)
+	v.SetDefault("replication.workers", 4)
 }

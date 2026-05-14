@@ -14,6 +14,7 @@ import (
 
 	"gos3/internal/auth"
 	"gos3/internal/config"
+	"gos3/internal/replication"
 	"gos3/internal/storage"
 	"gos3/internal/storage/metadata"
 )
@@ -26,13 +27,19 @@ type Server struct {
 	config      *config.Config
 	backend     storage.Backend
 	verifier    *auth.SigV4Verifier
+	repl        *replication.Service
 }
 
 // New creates a new GoS3 Server instance.
 func New(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, verifier *auth.SigV4Verifier) *Server {
+	repl, err := replication.NewService(cfg, backend)
+	if err != nil {
+		slog.Error("failed to init replication service", "error", err)
+	}
+
 	srv := &http.Server{
 		Addr:              fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
-		Handler:           SetupRouter(cfg, backend, metaStore, verifier),
+		Handler:           SetupRouter(cfg, backend, metaStore, verifier, repl),
 		ReadTimeout:       cfg.Server.ReadTimeout,
 		WriteTimeout:      cfg.Server.WriteTimeout, // 0 = unlimited for streaming
 		IdleTimeout:       cfg.Server.IdleTimeout,
@@ -45,6 +52,7 @@ func New(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, 
 		config:     cfg,
 		backend:    backend,
 		verifier:   verifier,
+		repl:       repl,
 	}
 
 	if cfg.Admin.UIEnabled {
@@ -111,6 +119,10 @@ func (s *Server) Start() error {
 	workerCtx, workerCancel := context.WithCancel(context.Background())
 	defer workerCancel()
 	go s.startLifecycleWorker(workerCtx)
+
+	if s.repl != nil {
+		s.repl.Start(workerCtx)
+	}
 
 	// Wait for interrupt signal to gracefully shutdown the server
 	quit := make(chan os.Signal, 1)

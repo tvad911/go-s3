@@ -64,6 +64,6 @@ var cpCmd = &cobra.Command{
 }
 
 func init() {
-	cpCmd.Flags().BoolVarP(&cpRecursive, "recursive", "r", false, "Recursive copy (not fully implemented yet)")
+	cpCmd.Flags().BoolVarP(&cpRecursive, "recursive", "R", false, "Recursive copy (not fully implemented yet)")
 	rootCmd.AddCommand(cpCmd)
 }

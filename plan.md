@@ -916,11 +916,11 @@ WantedBy=multi-user.target
 
 ### 7.2 — Replication
 
-- [ ] Async replication sang server GoS3 khác
-- [ ] Config: `replication.targets[].endpoint`
-- [ ] Queue-based: sau mỗi PUT/DELETE, enqueue task
-- [ ] Worker goroutine xử lý replication
-- [ ] Retry với exponential backoff
+- [x] Async replication sang server GoS3 khác
+- [x] Config: `replication.targets[].endpoint`
+- [x] Queue-based: sau mỗi PUT/DELETE, enqueue task
+- [x] Worker goroutine xử lý replication
+- [x] Retry với exponential backoff
 
 ### 7.3 — Storage Backend mở rộng
 

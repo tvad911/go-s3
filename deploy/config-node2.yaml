@@ -1,5 +1,5 @@
 server:
-  port: 9010
+  port: 9020
   tls_cert: ""
   tls_key: ""
   log_level: "info"
@@ -7,9 +7,9 @@ server:
 
 storage:
   type: "local"
-  data_dir: "./data"
-  temp_dir: "./data/tmp"
-  meta_db: "./data/meta.db"
+  data_dir: "./data2"
+  temp_dir: "./data2/tmp"
+  meta_db: "./data2/meta.db"
   max_object_size: 5497558138880
 
 auth:
@@ -26,13 +26,4 @@ ratelimit:
   per_user_burst: 200
 
 admin:
-  ui_port: 9011
-
-replication:
-  enabled: true
-  targets:
-    - endpoint: "http://localhost:9020"
-      access_key: "minioadmin"
-      secret_key: "minioadmin"
-      region: "us-east-1"
-
+  ui_port: 9021

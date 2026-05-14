@@ -16,8 +16,9 @@ type Config struct {
 	CORS      CORSConfig      `mapstructure:"cors"`
 	Log       LogConfig       `mapstructure:"log"`
 	RateLimit RateLimitConfig `mapstructure:"rate_limit"`
-	Metrics   MetricsConfig   `mapstructure:"metrics"`
-	Admin     AdminConfig     `mapstructure:"admin"`
+	Metrics     MetricsConfig     `mapstructure:"metrics"`
+	Admin       AdminConfig       `mapstructure:"admin"`
+	Replication ReplicationConfig `mapstructure:"replication"`
 }
 
 type ServerConfig struct {
@@ -92,6 +93,20 @@ type AdminConfig struct {
 	PathPrefix string `mapstructure:"path_prefix"`
 	UIEnabled  bool   `mapstructure:"ui_enabled"`
 	UIPort     int    `mapstructure:"ui_port"`
+}
+
+type ReplicationConfig struct {
+	Enabled      bool                `mapstructure:"enabled"`
+	Targets      []ReplicationTarget `mapstructure:"targets"`
+	MaxQueueSize int                 `mapstructure:"max_queue_size"`
+	Workers      int                 `mapstructure:"workers"`
+}
+
+type ReplicationTarget struct {
+	Endpoint  string `mapstructure:"endpoint"`
+	AccessKey string `mapstructure:"access_key"`
+	SecretKey string `mapstructure:"secret_key"`
+	Region    string `mapstructure:"region"`
 }
 
 // Load loads the configuration from file and environment variables.

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"os"
 	"time"
@@ -16,11 +17,15 @@ import (
 var version = "dev"
 
 func main() {
+	var configFile string
+	flag.StringVar(&configFile, "config", "deploy/config.example.yaml", "path to config file")
+	flag.Parse()
+
 	// Initialize default logger temporarily before config is loaded
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
 
 	// Load configuration
-	cfg, err := config.Load("deploy/config.example.yaml") // Will be overridden by CLI args later
+	cfg, err := config.Load(configFile)
 	if err != nil {
 		slog.Error("failed to load configuration", "error", err)
 		os.Exit(1)
@@ -30,6 +35,7 @@ func main() {
 	setupLogger(cfg.Log)
 
 	slog.Info("starting gos3 server", "version", version)
+	slog.Info("replication config loaded", "targets", len(cfg.Replication.Targets))
 
 	// Ensure data directory exists before initializing stores
 	if err := os.MkdirAll(cfg.Storage.DataDir, 0755); err != nil {

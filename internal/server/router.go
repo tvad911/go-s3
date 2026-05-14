@@ -11,17 +11,18 @@ import (
 	"gos3/internal/handler"
 	"gos3/internal/metrics"
 	"gos3/internal/middleware"
+	"gos3/internal/replication"
 	"gos3/internal/storage"
 	"gos3/internal/storage/metadata"
 	"gos3/web"
 )
 
 // SetupRouter initializes and returns the main HTTP router for the server.
-func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, verifier *auth.SigV4Verifier) *chi.Mux {
+func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata.Store, verifier *auth.SigV4Verifier, repl *replication.Service) *chi.Mux {
 	r := chi.NewRouter()
 
 	adminHandler := handler.NewAdminHandler(metaStore)
-	s3Handler := handler.NewS3Handler(backend, metaStore, verifier, cfg)
+	s3Handler := handler.NewS3Handler(backend, metaStore, verifier, cfg, repl)
 
 	r.Use(middleware.RealIP)
 	r.Use(middleware.RequestID)
