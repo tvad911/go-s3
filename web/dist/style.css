@@ -893,6 +893,10 @@ pre {
         justify-content: flex-start;
     }
     
+    .create-user-form {
+        flex-direction: column;
+    }
+    
     /* File Manager Specific Mobile Styles */
     #objects-table-body tr {
         display: grid;
