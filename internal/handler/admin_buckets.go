@@ -1,10 +1,14 @@
 package handler
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"gos3/internal/auth"
@@ -264,6 +268,79 @@ func (h *AdminHandler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
 
 	h.recordAudit(r, "DeleteObjects", bucket, fmt.Sprintf("Deleted %d objects", len(keys)))
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// DownloadFolder Admin API to download a folder as ZIP
+func (h *AdminHandler) DownloadFolder(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:DownloadFolder"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+	prefix := r.URL.Query().Get("prefix")
+
+	if prefix == "" {
+		http.Error(w, "prefix is required", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/zip")
+	fileName := strings.TrimSuffix(prefix, "/")
+	if fileName == "" {
+		fileName = bucket
+	} else {
+		parts := strings.Split(fileName, "/")
+		fileName = parts[len(parts)-1]
+	}
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.zip\"", fileName))
+
+	zw := zip.NewWriter(w)
+	defer zw.Close()
+
+	ctx := r.Context()
+	marker := ""
+	for {
+		objects, _, nextMarker, err := h.MetaStore.ListObjects(bucket, prefix, "", marker, 1000)
+		if err != nil {
+			slog.Error("failed to list objects for zip", "error", err)
+			return
+		}
+
+		for _, obj := range objects {
+			if obj.Key == prefix {
+				continue
+			}
+
+			zipPath := strings.TrimPrefix(obj.Key, prefix)
+			f, err := zw.Create(zipPath)
+			if err != nil {
+				slog.Error("failed to create zip file entry", "error", err)
+				return
+			}
+
+			objData, err := h.Backend.GetObject(ctx, bucket, obj.Key, storage.GetOptions{})
+			if err != nil {
+				slog.Error("failed to get object for zip", "error", err)
+				return
+			}
+
+			if objData != nil && objData.Content != nil {
+				_, err = io.Copy(f, objData.Content)
+				objData.Content.Close()
+				if err != nil {
+					slog.Error("failed to copy object to zip", "error", err)
+					return
+				}
+			}
+		}
+
+		if nextMarker == "" {
+			break
+		}
+		marker = nextMarker
+	}
+	h.recordAudit(r, "DownloadFolder", bucket, "Prefix: "+prefix)
 }
 
 // GetBucketLifecycle for Admin UI

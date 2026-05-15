@@ -259,7 +259,11 @@ document.getElementById('create-bucket-form').addEventListener('submit', async (
 });
 
 window.deleteBucket = async (name) => {
-    if (!confirm(`Delete bucket ${name}?`)) return;
+    const confirmation = prompt(`To confirm deletion of bucket '${name}', please type its name:`);
+    if (confirmation !== name) {
+        if (confirmation !== null) showToast('Bucket name does not match. Deletion cancelled.', 'error');
+        return;
+    }
     try {
         await api('DELETE', `/_admin/buckets/${name}`);
         showToast(`Bucket ${name} deleted`, 'success');
@@ -461,7 +465,13 @@ function renderObjects() {
             return `<tr>
                 <td style="text-align:center;"><input type="checkbox" onclick="toggleObjectSelection(event, '${obj.key}')" ${selectedObjects.has(obj.key) ? 'checked' : ''}></td>
                 <td onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;"><div class="file-name"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path></svg> ${displayName}/</div></td>
-                <td onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;">—</td><td onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;">—</td><td></td></tr>`;
+                <td onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;">—</td>
+                <td onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;">—</td>
+                <td><div class="action-btns">
+                    <button class="btn btn-ghost" style="padding:0.4rem;" onclick="infoFolder('${obj.key}')" title="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button>
+                    <button class="btn btn-ghost" style="padding:0.4rem;" onclick="downloadFolder('${obj.key}')" title="Download Folder (Zip)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+                    <button class="btn btn-ghost text-danger" style="padding:0.4rem;" onclick="deleteObject('${obj.key}', true)" title="Delete Folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                </div></td></tr>`;
         }
         const lastMod = obj.lastModified ? new Date(obj.lastModified).toLocaleString() : '';
         const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(obj.key);
@@ -497,13 +507,92 @@ window.downloadObject = async (key) => {
     } catch (err) { showToast(err.message, 'error'); }
 };
 
-window.deleteObject = async (key) => {
-    if (!confirm(`Delete ${key}?`)) return;
+window.downloadFolder = async (key) => {
     try {
-        const presignedData = await api('POST', '/_admin/presign', { method: 'DELETE', bucket: currentBucket, key, expires: 3600 });
-        const res = await fetch(presignedData.url, { method: 'DELETE' });
-        if (!res.ok) throw new Error('Failed to delete object');
-        showToast('Deleted', 'success');
+        showToast('Preparing folder download...', 'info');
+        const url = `/_admin/buckets/${currentBucket}/download-folder?prefix=${encodeURIComponent(key)}`;
+        const a = document.createElement('a');
+        a.href = url;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.infoFolder = async (key) => {
+    try {
+        let totalSize = 0;
+        let fileCount = 0;
+        let lastMod = null;
+        let marker = '';
+        let hasMore = true;
+        
+        while(hasMore) {
+            const url = `/_admin/buckets/${currentBucket}/objects?prefix=${encodeURIComponent(key)}&marker=${encodeURIComponent(marker)}&maxKeys=1000`;
+            const data = await api('GET', url);
+            if (data.contents) {
+                data.contents.forEach(obj => {
+                    if (obj.key !== key) {
+                        totalSize += obj.size;
+                        fileCount++;
+                        const objDate = new Date(obj.lastModified);
+                        if (!lastMod || objDate > lastMod) lastMod = objDate;
+                    }
+                });
+            }
+            hasMore = data.isTruncated;
+            marker = data.nextMarker || '';
+        }
+        
+        document.getElementById('info-name').textContent = key;
+        document.getElementById('info-size').textContent = `${formatBytes(totalSize)} (${fileCount} files)`;
+        document.getElementById('info-type').textContent = 'Folder';
+        document.getElementById('info-etag').textContent = 'N/A';
+        document.getElementById('info-date').textContent = lastMod ? lastMod.toLocaleString() : 'N/A';
+        
+        openModal('info-modal');
+    } catch (err) { showToast(err.message, 'error'); }
+};
+
+window.deleteObject = async (key, isFolder = false) => {
+    const itemName = isFolder ? key.replace(/\/$/, '') : key;
+    const itemType = isFolder ? 'folder' : 'file';
+    const shortName = itemName.split('/').pop();
+    
+    const confirmation = prompt(`To confirm deletion of ${itemType} '${shortName}', please type its name:`);
+    if (confirmation !== shortName) {
+        if (confirmation !== null) showToast('Name does not match. Deletion cancelled.', 'error');
+        return;
+    }
+    
+    try {
+        if (isFolder) {
+            let marker = '';
+            let hasMore = true;
+            let keysToDelete = [];
+            
+            while(hasMore) {
+                const url = `/_admin/buckets/${currentBucket}/objects?prefix=${encodeURIComponent(key)}&marker=${encodeURIComponent(marker)}&maxKeys=1000`;
+                const data = await api('GET', url);
+                if (data.contents) {
+                    data.contents.forEach(obj => keysToDelete.push(obj.key));
+                }
+                hasMore = data.isTruncated;
+                marker = data.nextMarker || '';
+            }
+            if (!keysToDelete.includes(key)) keysToDelete.push(key);
+            
+            for (let i = 0; i < keysToDelete.length; i += 1000) {
+                const batch = keysToDelete.slice(i, i + 1000);
+                await api('POST', `/_admin/buckets/${currentBucket}/objects/delete`, batch);
+            }
+            showToast(`Deleted folder and ${keysToDelete.length} items inside`, 'success');
+        } else {
+            const presignedData = await api('POST', '/_admin/presign', { method: 'DELETE', bucket: currentBucket, key, expires: 3600 });
+            const res = await fetch(presignedData.url, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete object');
+            showToast('Deleted', 'success');
+        }
         fetchObjects();
     } catch (err) { showToast(err.message, 'error'); }
 };
