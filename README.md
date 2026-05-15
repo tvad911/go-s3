@@ -23,6 +23,7 @@ GoS3 includes a built-in, lightweight (vanilla JS/HTML/CSS) Web UI served on por
 - **Service Accounts**: Create and manage Access/Secret keys for applications.
 - **Object Browser**: Navigate, preview, search, upload, and generate presigned URLs for your files.
 - **Bucket Settings**: Visual interfaces for configuring Lifecycle rules, CORS, Policies, Webhooks, and Custom Domains.
+- **Server Telemetry**: Real-time hardware telemetry dashboard (CPU, RAM, Disk) and configuration metrics.
 
 ---
 
