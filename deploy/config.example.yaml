@@ -27,13 +27,15 @@ ratelimit:
   per_user_burst: 200
 
 admin:
+  ui_enabled: true
   ui_port: 9001
 
 replication:
-  enabled: true
-  targets:
-    - endpoint: "http://localhost:9020"
-      access_key: "minioadmin"
-      secret_key: "minioadmin"
-      region: "us-east-1"
+  enabled: false
+  # Uncomment and configure targets to enable cross-node replication:
+  # targets:
+  #   - endpoint: "http://node2:9000"
+  #     access_key: "minioadmin"
+  #     secret_key: "minioadmin"
+  #     region: "us-east-1"
 
