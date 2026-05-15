@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"gos3/internal/s3"
 	"gos3/internal/storage/metadata"
 )
 
@@ -47,8 +48,8 @@ func CustomDomain(metaStore metadata.Store, baseDomain string) func(next http.Ha
 
 				ctx := r.Context()
 				if isCustomDomain {
-					ctx = context.WithValue(ctx, "IsCustomDomain", true)
-					ctx = context.WithValue(ctx, "CustomDomain", host)
+					ctx = context.WithValue(ctx, s3.CtxKeyIsCustomDomain, true)
+					ctx = context.WithValue(ctx, s3.CtxKeyCustomDomain, host)
 				}
 				r = r.WithContext(ctx)
 			}

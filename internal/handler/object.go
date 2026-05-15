@@ -184,7 +184,8 @@ func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 
 	obj, err := h.Backend.GetObject(ctx, bucket, key, opts)
 	if err != nil {
-		if errors.Is(err, s3.ErrNoSuchKey) && strings.Contains(r.Header.Get("Accept"), "text/html") {
+		isWebsiteReq := strings.Contains(r.Header.Get("Accept"), "text/html") || ctx.Value(s3.CtxKeyIsCustomDomain) == true
+		if errors.Is(err, s3.ErrNoSuchKey) && isWebsiteReq {
 			website, wErr := h.MetaStore.GetBucketWebsite(ctx, bucket)
 			if wErr == nil && website != nil {
 				if strings.HasSuffix(key, "/") && website.IndexDocument.Suffix != "" {

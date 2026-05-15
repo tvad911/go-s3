@@ -133,7 +133,8 @@ func (h *S3Handler) ListObjects(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
 
-	if strings.Contains(r.Header.Get("Accept"), "text/html") {
+	isWebsiteReq := strings.Contains(r.Header.Get("Accept"), "text/html") || ctx.Value(s3.CtxKeyIsCustomDomain) == true
+	if isWebsiteReq {
 		website, err := h.MetaStore.GetBucketWebsite(ctx, bucket)
 		if err == nil && website != nil && website.IndexDocument.Suffix != "" {
 			rctx := chi.RouteContext(ctx)
