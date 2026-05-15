@@ -367,3 +367,46 @@ func (h *AdminHandler) ListAuditLogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(logs)
 }
+
+func (h *AdminHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:GetSettings"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	settings, err := h.MetaStore.ListSettings(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if settings == nil {
+		settings = map[string]string{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(settings)
+}
+
+func (h *AdminHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:UpdateSettings"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	var req map[string]string
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	for k, v := range req {
+		if err := h.MetaStore.PutSetting(r.Context(), k, v); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	h.recordAudit(r, "UpdateSettings", "global", "updated settings")
+	w.WriteHeader(http.StatusOK)
+}

@@ -216,12 +216,14 @@ Click icon Settings trên Bucket card → Trang chi tiết với các tab:
 - [x] Sửa SigV4 verifier: lookup key từ bảng `service_accounts` trước, fallback `users`
 - [x] API: `POST /api/v1/service-accounts`, `GET /api/v1/service-accounts`, `DELETE /api/v1/service-accounts/{id}`
 - [x] Auto-create Service Account cho root user khi startup (tương thích ngược với config `root_access_key/root_secret_key`)
+- [x] Tạo `SettingStore` dùng `bbolt` để lưu cấu hình.
 
 **Frontend:**
 - [x] Sửa Login form: chỉ 2 trường Username + Password
 - [x] Xóa logic `localStorage` lưu raw key
 - [x] Admin API calls dùng Cookie thay vì aws4fetch sign
 - [x] S3 API calls từ Browser: dùng Presigned URL do server generate (thay vì client-side SigV4)
+- [x] Thêm màn hình `Global Settings` (Pagination size, session expiry, CORS).
 
 ### Phase 2: Object Browser nâng cấp (P0-P1)
 **Mục tiêu:** Duyệt file theo thư mục, tìm kiếm, sắp xếp, share link.

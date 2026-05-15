@@ -135,6 +135,9 @@ function loadView(viewName) {
     } else if (viewName === 'policies') {
         breadcrumb.innerHTML = `<span>IAM Policies</span>`;
         fetchPolicies();
+    } else if (viewName === 'settings') {
+        breadcrumb.innerHTML = `<span>Global Settings</span>`;
+        loadGlobalSettings();
     }
 }
 
@@ -1561,3 +1564,30 @@ document.getElementById('policy-form')?.addEventListener('submit', async (e) => 
         showToast(err.message, 'error');
     }
 });
+
+// ==================== Global Settings ====================
+window.loadGlobalSettings = async () => {
+    try {
+        const settings = await api('GET', '/_admin/settings');
+        document.getElementById('setting-pagination').value = settings['pagination_size'] || 1000;
+        document.getElementById('setting-session-expiry').value = settings['session_expiry_hours'] || 24;
+        document.getElementById('setting-cors-allow-origin').value = settings['cors_allow_origin'] || '*';
+    } catch (err) {
+        showToast('Failed to load global settings: ' + err.message, 'error');
+    }
+};
+
+window.saveGlobalSettings = async () => {
+    const payload = {
+        'pagination_size': document.getElementById('setting-pagination').value,
+        'session_expiry_hours': document.getElementById('setting-session-expiry').value,
+        'cors_allow_origin': document.getElementById('setting-cors-allow-origin').value,
+    };
+    
+    try {
+        await api('PUT', '/_admin/settings', payload);
+        showToast('Global settings saved successfully', 'success');
+    } catch (err) {
+        showToast('Failed to save settings: ' + err.message, 'error');
+    }
+};
