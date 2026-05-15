@@ -1523,7 +1523,7 @@ function showCreatePolicyModal() {
 
 async function editPolicy(name) {
     try {
-        const policy = await api('GET', \`/_admin/policies/\${name}\`);
+        const policy = await api('GET', `/_admin/policies/${name}`);
         document.getElementById('policy-modal-title').textContent = 'Edit Policy';
         document.getElementById('policy-name').value = name;
         document.getElementById('policy-name').readOnly = true;
@@ -1536,9 +1536,9 @@ async function editPolicy(name) {
 }
 
 async function deletePolicy(name) {
-    if (!confirm(\`Are you sure you want to delete policy "\${name}"?\`)) return;
+    if (!confirm(`Are you sure you want to delete policy "${name}"?`)) return;
     try {
-        await api('DELETE', \`/_admin/policies/\${name}\`);
+        await api('DELETE', `/_admin/policies/${name}`);
         showToast('Policy deleted successfully', 'success');
         fetchPolicies();
     } catch (err) {
@@ -1553,7 +1553,7 @@ document.getElementById('policy-form')?.addEventListener('submit', async (e) => 
 
     try {
         const policy = JSON.parse(docStr);
-        await api('PUT', \`/_admin/policies/\${name}\`, policy);
+        await api('PUT', `/_admin/policies/${name}`, policy);
         closeModal('policy-modal');
         showToast('Policy saved successfully', 'success');
         fetchPolicies();

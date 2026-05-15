@@ -1,5 +1,6 @@
 server:
-  port: 9010
+  port: 9000
+  base_domain: "s3.example.com" # Virtual-hosted style domain (e.g., bucket.s3.example.com)
   tls_cert: ""
   tls_key: ""
   log_level: "info"
@@ -26,7 +27,7 @@ ratelimit:
   per_user_burst: 200
 
 admin:
-  ui_port: 9011
+  ui_port: 9001
 
 replication:
   enabled: true

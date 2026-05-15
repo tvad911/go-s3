@@ -33,6 +33,13 @@ type AuditStore interface {
 	ListAuditLogs(ctx context.Context, limit int) ([]AuditLog, error)
 }
 
+type SettingStore interface {
+	GetSetting(ctx context.Context, key string) (string, error)
+	PutSetting(ctx context.Context, key string, value string) error
+	DeleteSetting(ctx context.Context, key string) error
+	ListSettings(ctx context.Context) (map[string]string, error)
+}
+
 // Store defines the interface for the metadata database.
 type Store interface {
 	// CORSStore must be defined before use
@@ -92,4 +99,5 @@ type Store interface {
 	auth.IAMPolicyStore
 	auth.ServiceAccountStore
 	AuditStore
+	SettingStore
 }

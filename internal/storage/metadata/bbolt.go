@@ -32,6 +32,7 @@ var (
 	bucketIAMPolicies     = []byte("iam_policies")
 	bucketCustomDomains   = []byte("custom_domains")
 	bucketNotifications   = []byte("notifications")
+	bucketSettings        = []byte("settings")
 )
 
 type bboltStore struct {
@@ -81,6 +82,9 @@ func NewBboltStore(path string) (Store, error) {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(bucketNotifications); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketSettings); err != nil {
 			return err
 		}
 		return nil
@@ -1254,4 +1258,46 @@ func (s *bboltStore) BackupTo(w io.Writer) error {
 		_, err := tx.WriteTo(w)
 		return err
 	})
+}
+
+// SettingStore implementation
+
+func (s *bboltStore) GetSetting(ctx context.Context, key string) (string, error) {
+	var val string
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketSettings)
+		v := b.Get([]byte(key))
+		if v == nil {
+			return errors.New("setting not found")
+		}
+		val = string(v)
+		return nil
+	})
+	return val, err
+}
+
+func (s *bboltStore) PutSetting(ctx context.Context, key string, value string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketSettings)
+		return b.Put([]byte(key), []byte(value))
+	})
+}
+
+func (s *bboltStore) DeleteSetting(ctx context.Context, key string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketSettings)
+		return b.Delete([]byte(key))
+	})
+}
+
+func (s *bboltStore) ListSettings(ctx context.Context) (map[string]string, error) {
+	settings := make(map[string]string)
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketSettings)
+		return b.ForEach(func(k, v []byte) error {
+			settings[string(k)] = string(v)
+			return nil
+		})
+	})
+	return settings, err
 }

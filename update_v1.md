@@ -291,3 +291,24 @@ Click icon Settings trên Bucket card → Trang chi tiết với các tab:
 - **Password hashing:** `bcrypt` (stdlib `golang.org/x/crypto/bcrypt`).
 - **JWT:** Dùng `crypto/hmac` + `crypto/sha256` stdlib, KHÔNG thêm dependency JWT library.
 - **Backward compatibility:** Root user startup vẫn dùng `root_access_key`/`root_secret_key` từ config → auto-tạo ServiceAccount tương ứng.
+
+---
+
+## 6. Cập nhật Thiết kế (Từ Brainstorm)
+
+### 6.1. Lifecycle (Chuẩn AWS S3 API)
+- **Backend:** Xử lý XML cấu hình chuẩn AWS thông qua các endpoint `GET/PUT/DELETE ?lifecycle`. Worker quét DB định kỳ để xóa object quá hạn.
+- **Web UI:** Form đơn giản để nhập cấu hình (Prefix, số ngày). JavaScript tự động sinh XML và gọi API.
+
+### 6.2. Custom Domain Options
+- **Virtual-Hosted Style (Chuẩn AWS):** Hỗ trợ dạng `bucket.s3.domain.com`. Router phân giải dựa trên biến môi trường `GOS3_BASE_DOMAIN`.
+- **Cname Mapping:** Ánh xạ một custom domain bất kỳ (vd: `cdn.myweb.com`) thẳng vào một bucket cụ thể thông qua bảng `custom_domains` trong bbolt.
+
+### 6.3. IAM Mental Model (Resource-Based + Service Account)
+- **User:** Dành riêng cho Admin login WebUI.
+- **Service Account (Access Key):** Dùng cho API, không liên quan đến User login.
+- **Bucket Policy:** Phân quyền truy cập tài nguyên. VD: Cấp quyền cho Service Account X truy cập Bucket A. Giao diện trực quan, rõ ràng ai đang truy cập bucket nào.
+
+### 6.4. Global Settings (Env vs DB)
+- **Cấu hình tĩnh (ENV/YAML):** Port, đường dẫn Data, Admin gốc, Base Domain, TLS certs. Thay đổi cần khởi động lại.
+- **Cấu hình động (Database/WebUI):** Rate Limit, Max Object Size, Pagination size mặc định, Global CORS. Đổi trực tiếp trên UI có tác dụng ngay.

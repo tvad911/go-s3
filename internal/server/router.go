@@ -32,7 +32,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RateLimit(&cfg.RateLimit))
-	r.Use(middleware.CustomDomain(metaStore))
+	r.Use(middleware.CustomDomain(metaStore, cfg.Server.BaseDomain))
 	r.Use(middleware.CORS(metaStore))
 
 	// Web Console Auth API — No SigV4 required, these use username/password
