@@ -766,3 +766,90 @@ pre {
     --bg-secondary: rgba(30, 30, 45, 0.6);
 }
 
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    #dashboard-screen.active {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        height: 100vh;
+        background: var(--bg-base);
+        transition: left 0.3s ease;
+        z-index: 100;
+        border-right: 1px solid var(--border-color);
+        box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+    }
+    
+    .sidebar.open {
+        left: 0;
+    }
+    
+    #mobile-menu-btn {
+        display: block !important;
+    }
+
+    .topbar {
+        padding: 0 1rem;
+        height: 60px;
+        gap: 1rem;
+        overflow-x: auto;
+    }
+    
+    .topbar-actions .btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+    
+    .topbar-actions .btn svg {
+        display: none;
+    }
+
+    .view-container {
+        padding: 1rem;
+    }
+    
+    .grid, .cols-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    .object-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-input-wrapper {
+        width: 100%;
+    }
+    
+    .search-input {
+        max-width: 100%;
+    }
+    
+    .header-actions {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 1rem;
+    }
+    
+    .modal {
+        width: 95%;
+        padding: 1.5rem;
+    }
+
+    #bucket-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tab-link {
+        font-size: 0.9rem;
+    }
+
+    .info-card {
+        padding: 1rem;
+    }
+}

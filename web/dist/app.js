@@ -100,12 +100,36 @@ btnLogout.addEventListener('click', async () => {
     showLogin();
 });
 
+// Mobile Sidebar Toggle
+const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+const mobileSidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+const sidebar = document.querySelector('.sidebar');
+
+if (mobileMenuBtn) {
+    mobileMenuBtn.addEventListener('click', () => {
+        sidebar.classList.add('open');
+        mobileSidebarOverlay.style.display = 'block';
+    });
+}
+
+if (mobileSidebarOverlay) {
+    mobileSidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        mobileSidebarOverlay.style.display = 'none';
+    });
+}
+
 // Navigation
 navLinks.forEach(link => {
     link.addEventListener('click', () => {
         const view = link.dataset.view;
         navLinks.forEach(l => l.classList.remove('active'));
         link.classList.add('active');
+        
+        // Close mobile sidebar if open
+        sidebar.classList.remove('open');
+        if (mobileSidebarOverlay) mobileSidebarOverlay.style.display = 'none';
+        
         loadView(view);
     });
 });
