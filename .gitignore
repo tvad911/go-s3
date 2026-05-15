@@ -26,3 +26,7 @@ hello.txt
 repl.txt
 downloaded.txt
 ver.txt
+
+# AI agent config (local only)
+.agent/
+.agents/

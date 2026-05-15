@@ -119,12 +119,12 @@ The project uses GitHub Actions for continuous integration. The pipeline automat
 - Unit and integration tests (`go test -race`)
 - Docker build checks
 
-To run the internal test suite locally:
+To run tests locally:
 ```bash
-python3 .agent/scripts/checklist.py .
+make test
 ```
 
 ---
 
 ## 📄 License
-MIT License
+Apache License 2.0

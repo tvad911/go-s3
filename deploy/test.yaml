@@ -1,0 +1,13 @@
+server:
+  port: 9020
+  admin_port: 9021
+  data_dir: "./data3"
+  domain: "localhost"
+auth:
+  root_user: "admin"
+  root_password: "password123"
+  root_access_key: "admin"
+  root_secret_key: "adminpassword123"
+log:
+  level: "debug"
+  format: "text"

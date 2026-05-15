@@ -121,7 +121,7 @@ Dự án này sử dụng GitHub Actions cho CI/CD tự động. Pipeline sẽ t
 
 Để tự chạy quy trình kiểm thử này ở dưới máy của bạn:
 ```bash
-python3 .agent/scripts/checklist.py .
+make test
 ```
 
 ---
