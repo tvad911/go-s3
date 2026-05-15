@@ -1,36 +1,36 @@
-# Hướng Dẫn Sử Dụng GoS3 Chi Tiết (User Guide)
+# GoS3 Comprehensive User Guide
 
-Tài liệu này cung cấp hướng dẫn toàn diện từ cơ bản đến nâng cao để khai thác tối đa sức mạnh của **GoS3** – Hệ thống lưu trữ tương thích S3 tích hợp sẵn Web Console.
-
----
-
-## 1. Truy cập Web Console
-
-Giao diện quản trị của GoS3 mặc định được chạy trên cổng `9001` (S3 API chạy trên cổng `9000`).
-
-1. Mở trình duyệt và truy cập: `http://<IP-server>:9001`
-2. **Đăng nhập lần đầu:**
-   - **Tài khoản:** `minioadmin` (hoặc giá trị `GOS3_AUTH_ROOT_ACCESS_KEY`)
-   - **Mật khẩu:** `minioadmin` (hoặc giá trị `GOS3_AUTH_ROOT_SECRET_KEY`)
-   *(Lưu ý: Bạn nên thay đổi thông tin này trong file cấu hình/docker-compose khi deploy ra môi trường thực tế).*
-
-Sau khi đăng nhập, bạn sẽ được chuyển tới **Dashboard**, nơi hiển thị tổng quan về dung lượng hệ thống, số lượng Buckets, số lượng tài khoản (Users), và Uptime của server.
+This document provides a comprehensive guide from basic to advanced features to help you leverage the full power of **GoS3** – an S3-compatible object storage system with a built-in Web Console.
 
 ---
 
-## 2. Quản lý Danh Tính và Phân Quyền (IAM & Security)
+## 1. Accessing the Web Console
 
-Để tăng cường bảo mật, không bao giờ dùng tài khoản Root (`minioadmin`) cho các ứng dụng (App) hoặc cấp cho người dùng khác. Hãy tạo các User và Service Account.
+By default, the GoS3 Web Console is served on port `9001` (the S3 API runs on port `9000`).
 
-### A. Quản lý Users (Người dùng)
-- Chuyển sang mục **Users** ở Menu trái.
-- Bấm **Create User** để tạo tài khoản mới. Các user này có thể dùng để đăng nhập vào Web Console.
-- Nhập tên đăng nhập và Mật khẩu. Bạn cũng có thể chọn cấp các quyền (Policy) có sẵn cho User này.
+1. Open your browser and navigate to: `http://<server-ip>:9001`
+2. **First Login:**
+   - **Username:** `minioadmin` (or the value of `GOS3_AUTH_ROOT_ACCESS_KEY`)
+   - **Password:** `minioadmin` (or the value of `GOS3_AUTH_ROOT_SECRET_KEY`)
+   *(Note: You should change these default credentials in the `docker-compose.yml` file before deploying to production).*
 
-### B. IAM Policies (Quyền truy cập)
-- Chuyển sang mục **Policies**.
-- GoS3 sử dụng định dạng JSON Policy chuẩn AWS IAM.
-- Ví dụ Policy cấp quyền chỉ-đọc (Read-Only) cho một bucket cụ thể:
+Once logged in, you will be directed to the **Dashboard**, which provides a high-level overview of system storage, number of buckets, active users, and server uptime.
+
+---
+
+## 2. Identity and Access Management (IAM & Security)
+
+To enhance security, never use the Root account (`minioadmin`) directly within applications or share it with others. Instead, use Users and Service Accounts.
+
+### A. Managing Users
+- Navigate to the **Users** tab on the left sidebar.
+- Click **Create User** to add a new account. These users can log into the Web Console.
+- Enter a username and password. You can also assign pre-defined IAM Policies to this user.
+
+### B. IAM Policies
+- Navigate to the **Policies** tab.
+- GoS3 uses standard AWS IAM JSON formatting for policies.
+- Example Policy granting Read-Only access to a specific bucket:
   ```json
   {
     "Version": "2012-10-17",
@@ -48,43 +48,43 @@ Sau khi đăng nhập, bạn sẽ được chuyển tới **Dashboard**, nơi hi
   ```
 
 ### C. Service Accounts (Access/Secret Keys)
-- Chuyển sang mục **Service Accounts**.
-- Service Account được dùng để cấp phát Access Key và Secret Key cho các SDK, Ứng dụng, hoặc CLI.
-- Khi tạo, hệ thống sẽ tự động sinh ngẫu nhiên `AccessKey` và `SecretKey`. **Lưu ý: Bấm biểu tượng con mắt để xem Secret Key và copy lại vì nó sẽ không hiện lại sau đó.**
-- Bạn có thể đính kèm Policy giới hạn quyền cho từng Service Account (vd: App A chỉ được ghi vào Bucket A).
+- Navigate to the **Service Accounts** tab.
+- Service Accounts are used to generate Access Keys and Secret Keys for applications, SDKs, or CLI tools.
+- Upon creation, the system randomly generates the keys. **Important: Click the eye icon to view and copy the Secret Key, as it cannot be viewed again once you leave the page.**
+- You can attach specific IAM Policies to each Service Account to restrict its permissions.
 
 ---
 
-## 3. Quản lý Dữ Liệu (Object Browser)
+## 3. Data Management (Object Browser)
 
-- Truy cập **Buckets** từ Menu. Bấm **Create Bucket** để tạo không gian lưu trữ mới (tên bucket phải viết thường, không có khoảng trắng, giống AWS S3).
-- Bấm vào tên Bucket, bạn sẽ được đưa tới giao diện **Object Browser**:
-  - **Upload:** Kéo thả file hoặc bấm nút Upload để tải dữ liệu lên. Hỗ trợ tải file lớn (streaming & chunked).
-  - **Tạo thư mục:** Bấm "Create Folder". GoS3 hỗ trợ hệ thống folder logic (Dựa vào dấu `/` prefix).
-  - **Share (Presigned URL):** Bấm biểu tượng 🔗 trên một file, chọn thời gian hết hạn (vd: 1 Giờ) để tạo một đường link tải xuống an toàn có thể gửi cho người khác, kể cả khi bucket đó là bucket bảo mật (Private).
-  - **Xoá nhiều file:** Tích chọn nhiều file và bấm Delete phía trên cùng.
+- Go to the **Buckets** menu. Click **Create Bucket** to create a new storage space (bucket names must be lowercase without spaces, matching AWS S3 standards).
+- Click on a bucket name to open the **Object Browser**:
+  - **Upload:** Drag and drop files or click the Upload button. Supports large streaming uploads and chunked transfers.
+  - **Create Folders:** Click "Create Folder". GoS3 supports logical folder structures based on `/` prefixes.
+  - **Share (Presigned URLs):** Click the 🔗 icon next to a file, select an expiration time (e.g., 1 Hour), and generate a secure, temporary download link—even if the bucket is Private.
+  - **Bulk Deletion:** Select multiple files and click Delete at the top.
 
 ---
 
-## 4. Các tính năng Nâng Cao (Bucket Settings)
+## 4. Advanced Features (Bucket Settings)
 
-Trong màn hình Object Browser, hãy chọn tab **Settings** của Bucket để truy cập các tính năng nâng cao:
+Inside the Object Browser, switch to the **Settings** tab of the bucket to access advanced configurations:
 
 ### 1. Static Website Hosting & Custom Domains
-Chức năng này biến Bucket của bạn thành một Web Server để host web tĩnh (HTML/CSS/JS) hoặc làm CDN ảnh.
-- **Bật Website Hosting:** 
-  - Kéo thanh gạt sang "Enabled".
-  - Nhập **Index Document** (thường là `index.html`).
-- **Thêm Custom Domain (Tên miền riêng):**
-  - Nhập tên miền của bạn (Vd: `cdn.mycompany.com`).
-  - *Cấu hình bên ngoài:* Trỏ bản ghi DNS CNAME của `cdn.mycompany.com` về địa chỉ server GoS3 của bạn. 
-  - Sau khi gắn, người dùng gõ `http://cdn.mycompany.com` trên trình duyệt thì GoS3 sẽ tự động trả về nội dung tĩnh `index.html` của bucket này.
+This feature turns your bucket into a Web Server to host static HTML/CSS/JS websites or serve as a CDN.
+- **Enable Website Hosting:** 
+  - Toggle the switch to "Enabled".
+  - Specify the **Index Document** (usually `index.html`).
+- **Add a Custom Domain:**
+  - Enter your desired domain (e.g., `cdn.mycompany.com`).
+  - *External DNS Configuration:* Point the DNS CNAME or A Record of your domain to the GoS3 server.
+  - Now, navigating to `http://cdn.mycompany.com` will automatically serve the static `index.html` file from the root of this bucket.
 
-### 2. Lifecycle Management (Quản lý Vòng đời)
-Dùng để tự động dọn rác, xoá file lưu tạm (log, tmp) sau 1 khoảng thời gian để tiết kiệm dung lượng.
-- Vào tab **Lifecycle**. 
-- Bạn có thể cấu hình XML để: Tự động xoá file sau N ngày (Expiration), hoặc tự dọn dẹp các tiến trình Upload bị lỗi (AbortIncompleteMultipartUpload).
-- *Ví dụ: Xoá thư mục `logs/` sau 30 ngày:*
+### 2. Lifecycle Management
+Use this to automate data cleanup, such as deleting old logs or incomplete multi-part uploads to save storage space.
+- Navigate to the **Lifecycle** tab.
+- You can configure XML rules to automatically expire/delete objects after N days.
+- *Example: Delete files in the `logs/` directory after 30 days:*
   ```xml
   <LifecycleConfiguration>
       <Rule>
@@ -97,40 +97,40 @@ Dùng để tự động dọn rác, xoá file lưu tạm (log, tmp) sau 1 kho�
   ```
 
 ### 3. Webhooks & Notifications
-Gọi API đến hệ thống khác (Slack, Discord, Backend của bạn) mỗi khi có sự kiện (như Upload file mới).
-- Vào tab **Webhooks**.
-- Đăng ký một URL (Vd: `https://api.myweb.com/webhook/s3`).
-- Chọn Event (Vd: `s3:ObjectCreated:*`).
-- Mỗi khi có ảnh/file tải lên, GoS3 sẽ POST một gói tin JSON báo hiệu cho URL bạn cấu hình.
+Trigger external APIs (e.g., Slack, Discord, your custom backend) whenever a storage event occurs.
+- Navigate to the **Webhooks** tab.
+- Register an endpoint URL (e.g., `https://api.myweb.com/webhook/s3`).
+- Select the target Event (e.g., `s3:ObjectCreated:*`).
+- GoS3 will send an HTTP POST request with a JSON payload to the configured URL every time the event is triggered.
 
 ### 4. CORS (Cross-Origin Resource Sharing)
-Bắt buộc nếu bạn muốn trình duyệt của người dùng (từ `yourdomain.com`) upload thẳng file lên GoS3 qua Javascript mà không bị lỗi block.
-- Vào tab **CORS**, cấp phép các thông số như `AllowedOrigins` (thành `*` hoặc domain của bạn) và `AllowedMethods` (GET, PUT, POST).
+Required if you want browsers running on `yourdomain.com` to upload files directly to GoS3 via JavaScript without being blocked.
+- Navigate to the **CORS** tab to allow origins (e.g., `*` or specific domains) and HTTP methods (GET, PUT, POST).
 
 ---
 
-## 5. Kết nối Hệ thống bằng AWS CLI & SDK
+## 5. Integrating via AWS CLI & SDKs
 
-GoS3 tương thích 100% với chuẩn S3 của AWS. Bạn có thể dùng bất cứ thư viện nào hỗ trợ S3 để kết nối (bỏ qua bước này nếu bạn chỉ dùng Web UI).
+GoS3 is 100% compatible with the AWS S3 standard. You can use any existing S3 libraries.
 
-### A. Dùng AWS CLI
-Cài đặt `aws-cli`, sau đó cấu hình:
+### A. Using AWS CLI
+Install `aws-cli`, then configure it:
 ```bash
 aws configure --profile gos3
-# AWS Access Key ID: <Nhập Access Key của Service Account>
-# AWS Secret Access Key: <Nhập Secret Key của Service Account>
+# AWS Access Key ID: <Enter Service Account Access Key>
+# AWS Secret Access Key: <Enter Service Account Secret Key>
 # Default region name: us-east-1
 ```
-Gọi lệnh:
+Commands:
 ```bash
-# Upload 1 file
+# Upload a file
 aws --profile gos3 --endpoint-url http://localhost:9000 s3 cp image.jpg s3://my-bucket/
 
-# Xoá bucket
+# Delete a bucket forcefully
 aws --profile gos3 --endpoint-url http://localhost:9000 s3 rb s3://my-bucket --force
 ```
 
-### B. Dùng NodeJS (AWS SDK v3)
+### B. Using NodeJS (AWS SDK v3)
 ```javascript
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const fs = require("fs");
@@ -139,10 +139,10 @@ const s3 = new S3Client({
   endpoint: "http://localhost:9000",
   region: "us-east-1",
   credentials: {
-    accessKeyId: "ACCESS_KEY_CUA_BAN",
-    secretAccessKey: "SECRET_KEY_CUA_BAN"
+    accessKeyId: "YOUR_ACCESS_KEY",
+    secretAccessKey: "YOUR_SECRET_KEY"
   },
-  forcePathStyle: true // BẮT BUỘC bật dòng này khi dùng server tự host
+  forcePathStyle: true // CRITICAL: Must be true when using self-hosted S3 endpoints
 });
 
 async function upload() {
@@ -152,19 +152,19 @@ async function upload() {
     Key: "uploads/image.png",
     Body: fileStream,
   }));
-  console.log("Upload thành công!");
+  console.log("Upload successful!");
 }
 upload();
 ```
 
 ---
 
-## 6. Audit Logs (Nhật ký Hệ thống)
+## 6. Audit Logs
 
-Để kiểm tra ai đã làm gì (Audit) trên hệ thống:
-- Từ Web Console, bấm vào **Audit Logs** trên Menu.
-- Bạn sẽ thấy toàn bộ lịch sử: ai (User nào, Access Key nào), làm gì (vd: `s3:PutObject`, `admin:CreateUser`), vào lúc nào, và IP kết nối là gì.
-- Tính năng này vô cùng hữu ích để debug hoặc theo dõi bảo mật.
+To trace administrative and S3 API actions:
+- From the Web Console, click on **Audit Logs** in the sidebar.
+- You will see a chronological history of who (User, Access Key), did what (e.g., `s3:PutObject`, `admin:CreateUser`), at what time, from which IP address.
+- This feature is vital for security monitoring and debugging integration issues.
 
 ---
-*Chúc bạn có trải nghiệm lưu trữ mượt mà và an toàn với GoS3!*
+*Happy storing!*
