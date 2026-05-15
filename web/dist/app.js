@@ -24,6 +24,13 @@ async function api(method, path, body = null) {
         opts.headers = { 'Content-Type': 'application/json' };
     }
     const res = await fetch(path, opts);
+    if (res.status === 401) {
+        // Session expired or access key revoked — redirect to login
+        currentUser = null;
+        showLogin();
+        showToast('Session expired. Please log in again.', 'error');
+        throw new Error('Session expired');
+    }
     if (!res.ok) {
         const text = await res.text();
         let msg = text;
@@ -274,7 +281,8 @@ document.getElementById('create-folder-form')?.addEventListener('submit', async 
         closeModal('create-folder-modal');
         document.getElementById('create-folder-form').reset();
         showToast(`Folder ${name} created`, 'success');
-        fetchObjects();
+        // Navigate into the newly created folder
+        navigatePrefix(key);
     } catch (err) { showToast(err.message, 'error'); }
 });
 
@@ -314,7 +322,7 @@ function updateAllSortIcons() {
         // Update toolbar button icons + active state
         const btnIcon = document.getElementById(`sort-btn-icon-${k}`);
         if (btnIcon) {
-            btnIcon.textContent = isActive ? activeArrow : inactiveArrow;
+            btnIcon.innerHTML = isActive ? activeArrow : inactiveArrow;
         }
         const btn = document.getElementById(`sort-btn-${k}`);
         if (btn) {
