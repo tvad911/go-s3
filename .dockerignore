@@ -1,0 +1,16 @@
+.git
+.gitignore
+.golangci.yml
+Makefile
+certs/
+data/
+docs/
+*.log
+*.exe
+gos3
+gos3c
+venv/
+cookie.txt
+cookies.txt
+.agent/
+.agents/

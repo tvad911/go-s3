@@ -13,6 +13,9 @@ services:
     environment:
       GOS3_AUTH_ROOT_ACCESS_KEY: minioadmin
       GOS3_AUTH_ROOT_SECRET_KEY: minioadmin
+      GOS3_STORAGE_DATA_DIR: /data
+      GOS3_STORAGE_TEMP_DIR: /data/tmp
+      GOS3_STORAGE_META_DB: /data/meta.db
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:9000/_health"]
