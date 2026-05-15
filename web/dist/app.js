@@ -489,11 +489,11 @@ function renderObjects() {
         if (obj.isFolder) {
             const safeKey = obj.key.replace(/'/g, "\\'");
             return `<tr>
-                <td style="text-align:center;"><input type="checkbox" onclick="toggleObjectSelection(event, '${safeKey}')" ${selectedObjects.has(obj.key) ? 'checked' : ''}></td>
-                <td onclick="navigatePrefix('${safeKey}')" style="cursor:pointer;"><div class="file-name"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path></svg> ${displayName}/</div></td>
-                <td onclick="navigatePrefix('${safeKey}')" style="cursor:pointer;">—</td>
-                <td onclick="navigatePrefix('${safeKey}')" style="cursor:pointer;">—</td>
-                <td><div class="action-btns">
+                <td style="text-align:center;" data-label=""><input type="checkbox" onclick="toggleObjectSelection(event, '${safeKey}')" ${selectedObjects.has(obj.key) ? 'checked' : ''}></td>
+                <td onclick="navigatePrefix('${safeKey}')" style="cursor:pointer;" data-label="Name"><div class="file-name"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path></svg> ${displayName}/</div></td>
+                <td onclick="navigatePrefix('${safeKey}')" style="cursor:pointer;" data-label="Size">—</td>
+                <td onclick="navigatePrefix('${safeKey}')" style="cursor:pointer;" data-label="Last Modified">—</td>
+                <td data-label="Actions"><div class="action-btns">
                     <button class="btn btn-ghost" style="padding:0.4rem;" onclick="infoFolder('${safeKey}')" title="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button>
                     <button class="btn btn-ghost" style="padding:0.4rem;" onclick="downloadFolder('${safeKey}')" title="Download Folder (Zip)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
                     <button class="btn btn-ghost text-danger" style="padding:0.4rem;" onclick="deleteObject('${safeKey}', true)" title="Delete Folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
@@ -507,11 +507,11 @@ function renderObjects() {
         
         const safeKey = obj.key.replace(/'/g, "\\'");
         return `<tr>
-            <td style="text-align:center;"><input type="checkbox" onclick="toggleObjectSelection(event, '${safeKey}')" ${selectedObjects.has(obj.key) ? 'checked' : ''}></td>
-            <td><div class="file-name" ${isImage ? `onclick="previewObject('${safeKey}')" style="cursor:pointer;color:var(--accent-primary)"` : ''}>${icon} ${displayName}</div></td>
-            <td>${formatBytes(obj.size)}</td>
-            <td>${lastMod}</td>
-            <td><div class="action-btns">
+            <td style="text-align:center;" data-label=""><input type="checkbox" onclick="toggleObjectSelection(event, '${safeKey}')" ${selectedObjects.has(obj.key) ? 'checked' : ''}></td>
+            <td data-label="Name"><div class="file-name" ${isImage ? `onclick="previewObject('${safeKey}')" style="cursor:pointer;color:var(--accent-primary)"` : ''}>${icon} ${displayName}</div></td>
+            <td data-label="Size">${formatBytes(obj.size)}</td>
+            <td data-label="Last Modified">${lastMod}</td>
+            <td data-label="Actions"><div class="action-btns">
                 <button class="btn btn-ghost" style="padding:0.4rem;" onclick="infoObject('${safeKey}')" title="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button>
                 <button class="btn btn-ghost" style="padding:0.4rem;" onclick="shareObject('${safeKey}')" title="Share Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
                 <button class="btn btn-ghost" style="padding:0.4rem;" onclick="downloadObject('${safeKey}')" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
@@ -879,10 +879,10 @@ async function fetchServiceAccounts() {
         const accounts = await api('GET', '/api/v1/service-accounts');
         tbody.innerHTML = accounts.map(sa => `
             <tr>
-                <td><code>${sa.accessKeyId}</code></td>
-                <td>${sa.description || '—'}</td>
-                <td>${new Date(sa.createdAt).toLocaleString()}</td>
-                <td><button class="btn btn-ghost text-danger" onclick="deleteServiceAccount('${sa.id}')">Delete</button></td>
+                <td data-label="Access Key"><code>${sa.accessKeyId}</code></td>
+                <td data-label="Description">${sa.description || '—'}</td>
+                <td data-label="Created">${new Date(sa.createdAt).toLocaleString()}</td>
+                <td data-label="Actions"><button class="btn btn-ghost text-danger" onclick="deleteServiceAccount('${sa.id}')">Delete</button></td>
             </tr>`).join('');
     } catch (err) { showToast(err.message, 'error'); tbody.innerHTML = ''; }
 }
@@ -928,9 +928,9 @@ async function fetchUsers() {
         const users = await api('GET', '/_admin/users');
         tbody.innerHTML = users.map(u => `
             <tr>
-                <td><strong>${u.username}</strong>${u.isRoot ? ' <span class="text-accent" style="font-size:0.8rem;background:rgba(0,240,255,0.1);padding:2px 6px;border-radius:4px;margin-left:8px;">ROOT</span>' : ''}</td>
-                <td>${u.disabled ? '<span style="color:var(--danger)">Disabled</span>' : '<span style="color:var(--success)">Active</span>'}</td>
-                <td>${!u.isRoot ? `<button class="btn btn-ghost text-danger" onclick="deleteUser('${u.username}')">Delete</button>` : ''}</td>
+                <td data-label="Username"><strong>${u.username}</strong>${u.isRoot ? ' <span class="text-accent" style="font-size:0.8rem;background:rgba(0,240,255,0.1);padding:2px 6px;border-radius:4px;margin-left:8px;">ROOT</span>' : ''}</td>
+                <td data-label="Status">${u.disabled ? '<span style="color:var(--danger)">Disabled</span>' : '<span style="color:var(--success)">Active</span>'}</td>
+                <td data-label="Actions">${!u.isRoot ? `<button class="btn btn-ghost text-danger" onclick="deleteUser('${u.username}')">Delete</button>` : ''}</td>
             </tr>`).join('');
     } catch (err) { showToast('Admin API Error: ' + err.message, 'error'); tbody.innerHTML = ''; }
 }
@@ -964,26 +964,56 @@ async function fetchServerInfo() {
     try {
         const info = await api('GET', '/_admin/info');
         const endpoint = window.location.origin.replace(/:\d+$/, ':9010');
+        const ramPct = info.system?.ram_sys ? Math.round((info.system.ram_alloc / info.system.ram_sys) * 100) : 0;
+        const diskPct = info.storage?.disk_total ? Math.round(((info.storage.disk_total - info.storage.disk_free) / info.storage.disk_total) * 100) : 0;
+        
         grid.innerHTML = `
-            <div class="glass-card info-card"><span class="info-label">Version</span><span class="info-value" style="color:var(--accent-primary)">${info.version}</span></div>
-            <div class="glass-card info-card"><span class="info-label">Uptime</span><span class="info-value">${formatDuration(info.uptime_seconds)}</span></div>
-            <div class="glass-card info-card"><span class="info-label">Total Buckets</span><span class="info-value">${info.storage?.buckets || 0}</span></div>
-            <div class="glass-card info-card"><span class="info-label">IAM Users</span><span class="info-value">${info.system?.users_count || 0}</span></div>
-            <div class="glass-card info-card"><span class="info-label">Total Objects</span><span class="info-value">${info.storage?.total_objects || 0}</span></div>
-            <div class="glass-card info-card"><span class="info-label">Total Storage</span><span class="info-value">${formatBytes(info.storage?.total_bytes || 0)}</span></div>
+            <div class="glass-card info-card"><span class="info-label">Version</span><span class="info-value" style="color:var(--accent-primary)">${info.version || '-'}</span></div>
+            <div class="glass-card info-card"><span class="info-label">Uptime</span><span class="info-value">${formatDuration(info.uptime_seconds || 0)}</span></div>
             
-            <div class="glass-card info-card"><span class="info-label">CPU Cores</span><span class="info-value">${info.system?.cpu_cores || 0}</span></div>
-            <div class="glass-card info-card"><span class="info-label">Goroutines</span><span class="info-value">${info.system?.goroutines || 0}</span></div>
-            <div class="glass-card info-card"><span class="info-label">RAM Allocated</span><span class="info-value">${formatBytes(info.system?.ram_alloc || 0)}</span></div>
-            <div class="glass-card info-card"><span class="info-label">RAM Total</span><span class="info-value">${formatBytes(info.system?.ram_sys || 0)}</span></div>
+            <div class="glass-card info-card"><span class="info-label">Resources</span>
+                <div style="font-size:0.9rem; margin-top:0.5rem; display:flex; flex-direction:column; gap:0.25rem;">
+                    <div style="display:flex; justify-content:space-between;"><span>Total Buckets</span><b>${info.storage?.buckets || 0}</b></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Total Objects</span><b>${info.storage?.total_objects || 0}</b></div>
+                    <div style="display:flex; justify-content:space-between;"><span>IAM Users</span><b>${info.system?.users_count || 0}</b></div>
+                </div>
+            </div>
             
-            <div class="glass-card info-card"><span class="info-label">Disk Free</span><span class="info-value" style="color:var(--success)">${formatBytes(info.storage?.disk_free || 0)}</span></div>
-            <div class="glass-card info-card"><span class="info-label">Disk Total</span><span class="info-value">${formatBytes(info.storage?.disk_total || 0)}</span></div>
-            <div class="glass-card info-card"><span class="info-label">Max Object Size</span><span class="info-value">${formatBytes(info.config?.max_size || 0)}</span></div>
-            <div class="glass-card info-card"><span class="info-label">Port</span><span class="info-value">${info.config?.port || 9000}</span></div>
+            <div class="glass-card info-card"><span class="info-label">Hardware</span>
+                <div style="font-size:0.9rem; margin-top:0.5rem; display:flex; flex-direction:column; gap:0.25rem;">
+                    <div style="display:flex; justify-content:space-between;"><span>CPU Cores</span><b>${info.system?.cpu_cores || 0}</b></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Goroutines</span><b>${info.system?.goroutines || 0}</b></div>
+                </div>
+            </div>
             
-            <div class="glass-card info-card" style="grid-column:1/-1"><span class="info-label">Data Directory</span><span class="info-value" style="font-family:monospace;font-size:1rem;user-select:all">${info.config?.data_dir || '-'}</span></div>
-            <div class="glass-card info-card" style="grid-column:1/-1"><span class="info-label">API Endpoint</span><span class="info-value" style="font-family:monospace;font-size:1rem;user-select:all">${endpoint}</span></div>`;
+            <div class="glass-card info-card"><span class="info-label">RAM Usage</span>
+                <div style="margin-top:0.8rem; background:rgba(255,255,255,0.1); border-radius:4px; height:8px; overflow:hidden;">
+                    <div style="width:${ramPct}%; background:var(--accent-secondary); height:100%;"></div>
+                </div>
+                <div style="font-size:0.8rem; margin-top:0.4rem; display:flex; justify-content:space-between; color:var(--text-muted);">
+                    <span>${formatBytes(info.system?.ram_alloc || 0)}</span>
+                    <span>${formatBytes(info.system?.ram_sys || 0)} Total</span>
+                </div>
+            </div>
+            
+            <div class="glass-card info-card"><span class="info-label">Disk Storage</span>
+                <div style="margin-top:0.8rem; background:rgba(255,255,255,0.1); border-radius:4px; height:8px; overflow:hidden;">
+                    <div style="width:${diskPct}%; background:${diskPct > 80 ? 'var(--danger)' : 'var(--success)'}; height:100%;"></div>
+                </div>
+                <div style="font-size:0.8rem; margin-top:0.4rem; display:flex; justify-content:space-between; color:var(--text-muted);">
+                    <span>${formatBytes((info.storage?.disk_total || 0) - (info.storage?.disk_free || 0))}</span>
+                    <span>${formatBytes(info.storage?.disk_total || 0)} Total</span>
+                </div>
+            </div>
+            
+            <div class="glass-card info-card" style="grid-column:1/-1"><span class="info-label">Configuration</span>
+                <div style="font-size:0.9rem; margin-top:0.8rem; display:flex; flex-direction:column; gap:0.5rem;">
+                    <div style="display:flex; justify-content:space-between;"><span>Max Object Size</span><b>${formatBytes(info.config?.max_size || 0)}</b></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Server Port</span><b>${info.config?.port || 9000}</b></div>
+                    <div style="display:flex; justify-content:space-between; word-break:break-all;"><span>Data Dir</span><b style="font-family:monospace; margin-left:1rem;">${info.config?.data_dir || '-'}</b></div>
+                    <div style="display:flex; justify-content:space-between; word-break:break-all;"><span>API Endpoint</span><b style="font-family:monospace; margin-left:1rem;">${endpoint}</b></div>
+                </div>
+            </div>`;
     } catch (err) { showToast(err.message, 'error'); grid.innerHTML = ''; }
 }
 
@@ -1703,12 +1733,12 @@ function renderAuditLogs(logs) {
     
     tbody.innerHTML = logs.map((log) => `
         <tr>
-            <td style="white-space:nowrap; color:var(--text-secondary);">${new Date(log.timestamp).toLocaleString()}</td>
-            <td><span class="badge" style="background:rgba(255,255,255,0.1); color:white;">${escapeHTML(log.user)}</span></td>
-            <td><span style="color:#60a5fa; font-weight:500;">${escapeHTML(log.action)}</span></td>
-            <td style="font-family:monospace; color:var(--text-primary);">${escapeHTML(log.target)}</td>
-            <td style="color:var(--text-muted); font-family:monospace;">${escapeHTML(log.ip)}</td>
-            <td>
+            <td data-label="Timestamp" style="white-space:nowrap; color:var(--text-secondary);">${new Date(log.timestamp).toLocaleString()}</td>
+            <td data-label="User"><span class="badge" style="background:rgba(255,255,255,0.1); color:white;">${escapeHTML(log.user)}</span></td>
+            <td data-label="Action"><span style="color:#60a5fa; font-weight:500;">${escapeHTML(log.action)}</span></td>
+            <td data-label="Target" style="font-family:monospace; color:var(--text-primary);">${escapeHTML(log.target)}</td>
+            <td data-label="IP Address" style="color:var(--text-muted); font-family:monospace;">${escapeHTML(log.ip)}</td>
+            <td data-label="Actions">
                 <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.8rem;" onclick="viewAuditLogDetails('${escapeHTML(log.id)}')">Details</button>
             </td>
         </tr>
@@ -1764,8 +1794,8 @@ function renderPolicies(policies) {
 
     tbody.innerHTML = policies.map((policy) => `
         <tr>
-            <td style="font-weight:500; color:var(--text-primary); cursor:pointer;" onclick="editPolicy('${escapeHTML(policy)}')">${escapeHTML(policy)}</td>
-            <td>
+            <td data-label="Policy Name" style="font-weight:500; color:var(--text-primary); cursor:pointer;" onclick="editPolicy('${escapeHTML(policy)}')">${escapeHTML(policy)}</td>
+            <td data-label="Actions">
                 <button class="btn btn-ghost" style="padding:0.25rem 0.5rem; font-size:0.8rem;" onclick="editPolicy('${escapeHTML(policy)}')">Edit</button>
                 <button class="btn btn-ghost text-danger" style="padding:0.25rem 0.5rem; font-size:0.8rem;" onclick="deletePolicy('${escapeHTML(policy)}')">Delete</button>
             </td>
