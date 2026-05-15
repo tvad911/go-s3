@@ -24,7 +24,7 @@ import (
 func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "key")
+	key := getObjectKey(r)
 
 	if err := h.CheckPolicy(r, "s3:PutObject", bucket, key); err != nil {
 		WriteError(w, r, err)
@@ -137,7 +137,7 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "key")
+	key := getObjectKey(r)
 
 	if err := h.CheckPolicy(r, "s3:GetObject", bucket, key); err != nil {
 		WriteError(w, r, err)
@@ -295,7 +295,7 @@ func (h *S3Handler) GetObject(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) HeadObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "key")
+	key := getObjectKey(r)
 
 	if err := h.CheckPolicy(r, "s3:GetObject", bucket, key); err != nil {
 		WriteError(w, r, err)
@@ -368,7 +368,7 @@ func (h *S3Handler) HeadObject(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) DeleteObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "key")
+	key := getObjectKey(r)
 
 	if err := h.CheckPolicy(r, "s3:DeleteObject", bucket, key); err != nil {
 		WriteError(w, r, err)
@@ -476,7 +476,7 @@ func (h *S3Handler) DeleteObjects(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "key")
+	key := getObjectKey(r)
 
 	if err := h.CheckPolicy(r, "s3:PutObject", bucket, key); err != nil {
 		WriteError(w, r, err)
@@ -561,7 +561,7 @@ func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) GetObjectAcl(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "key")
+	key := getObjectKey(r)
 
 	opts := storage.GetOptions{
 		VersionID: r.URL.Query().Get("versionId"),

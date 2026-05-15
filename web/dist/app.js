@@ -237,6 +237,8 @@ let objectsCache = [];
 window.navigatePrefix = (prefix) => {
     currentPrefix = prefix;
     currentPage = 1;
+    const searchEl = document.getElementById('object-search');
+    if (searchEl) searchEl.value = '';
     updateBreadcrumb();
     fetchObjects();
 };
@@ -285,8 +287,7 @@ document.getElementById('create-folder-form')?.addEventListener('submit', async 
         closeModal('create-folder-modal');
         document.getElementById('create-folder-form').reset();
         showToast(`Folder ${name} created`, 'success');
-        // Navigate into the newly created folder
-        navigatePrefix(key);
+        fetchObjects();
     } catch (err) { showToast(err.message, 'error'); }
 });
 
@@ -462,15 +463,16 @@ function renderObjects() {
     tbody.innerHTML = paginated.map(obj => {
         const displayName = obj.isFolder ? obj.key.replace(currentPrefix, '').replace(/\/$/, '') : obj.key.replace(currentPrefix, '');
         if (obj.isFolder) {
+            const safeKey = obj.key.replace(/'/g, "\\'");
             return `<tr>
-                <td style="text-align:center;"><input type="checkbox" onclick="toggleObjectSelection(event, '${obj.key}')" ${selectedObjects.has(obj.key) ? 'checked' : ''}></td>
-                <td onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;"><div class="file-name"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path></svg> ${displayName}/</div></td>
-                <td onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;">—</td>
-                <td onclick="navigatePrefix('${obj.key}')" style="cursor:pointer;">—</td>
+                <td style="text-align:center;"><input type="checkbox" onclick="toggleObjectSelection(event, '${safeKey}')" ${selectedObjects.has(obj.key) ? 'checked' : ''}></td>
+                <td onclick="navigatePrefix('${safeKey}')" style="cursor:pointer;"><div class="file-name"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path></svg> ${displayName}/</div></td>
+                <td onclick="navigatePrefix('${safeKey}')" style="cursor:pointer;">—</td>
+                <td onclick="navigatePrefix('${safeKey}')" style="cursor:pointer;">—</td>
                 <td><div class="action-btns">
-                    <button class="btn btn-ghost" style="padding:0.4rem;" onclick="infoFolder('${obj.key}')" title="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button>
-                    <button class="btn btn-ghost" style="padding:0.4rem;" onclick="downloadFolder('${obj.key}')" title="Download Folder (Zip)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
-                    <button class="btn btn-ghost text-danger" style="padding:0.4rem;" onclick="deleteObject('${obj.key}', true)" title="Delete Folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                    <button class="btn btn-ghost" style="padding:0.4rem;" onclick="infoFolder('${safeKey}')" title="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button>
+                    <button class="btn btn-ghost" style="padding:0.4rem;" onclick="downloadFolder('${safeKey}')" title="Download Folder (Zip)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+                    <button class="btn btn-ghost text-danger" style="padding:0.4rem;" onclick="deleteObject('${safeKey}', true)" title="Delete Folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                 </div></td></tr>`;
         }
         const lastMod = obj.lastModified ? new Date(obj.lastModified).toLocaleString() : '';
@@ -479,17 +481,18 @@ function renderObjects() {
             ? `<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>` 
             : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`;
         
+        const safeKey = obj.key.replace(/'/g, "\\'");
         return `<tr>
-            <td style="text-align:center;"><input type="checkbox" onclick="toggleObjectSelection(event, '${obj.key}')" ${selectedObjects.has(obj.key) ? 'checked' : ''}></td>
-            <td><div class="file-name" ${isImage ? `onclick="previewObject('${obj.key}')" style="cursor:pointer;color:var(--accent-primary)"` : ''}>${icon} ${displayName}</div></td>
+            <td style="text-align:center;"><input type="checkbox" onclick="toggleObjectSelection(event, '${safeKey}')" ${selectedObjects.has(obj.key) ? 'checked' : ''}></td>
+            <td><div class="file-name" ${isImage ? `onclick="previewObject('${safeKey}')" style="cursor:pointer;color:var(--accent-primary)"` : ''}>${icon} ${displayName}</div></td>
             <td>${formatBytes(obj.size)}</td>
             <td>${lastMod}</td>
             <td><div class="action-btns">
-                <button class="btn btn-ghost" style="padding:0.4rem;" onclick="infoObject('${obj.key}')" title="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button>
-                <button class="btn btn-ghost" style="padding:0.4rem;" onclick="shareObject('${obj.key}')" title="Share Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
-                <button class="btn btn-ghost" style="padding:0.4rem;" onclick="downloadObject('${obj.key}')" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
-                <button class="btn btn-ghost" style="padding:0.4rem;" onclick="renameObject('${obj.key}')" title="Rename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
-                <button class="btn btn-ghost text-danger" style="padding:0.4rem;" onclick="deleteObject('${obj.key}')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
+                <button class="btn btn-ghost" style="padding:0.4rem;" onclick="infoObject('${safeKey}')" title="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></button>
+                <button class="btn btn-ghost" style="padding:0.4rem;" onclick="shareObject('${safeKey}')" title="Share Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>
+                <button class="btn btn-ghost" style="padding:0.4rem;" onclick="downloadObject('${safeKey}')" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></button>
+                <button class="btn btn-ghost" style="padding:0.4rem;" onclick="renameObject('${safeKey}')" title="Rename"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
+                <button class="btn btn-ghost text-danger" style="padding:0.4rem;" onclick="deleteObject('${safeKey}')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
             </div></td></tr>`;
     }).join('');
 }
@@ -940,8 +943,22 @@ async function fetchServerInfo() {
         grid.innerHTML = `
             <div class="glass-card info-card"><span class="info-label">Version</span><span class="info-value" style="color:var(--accent-primary)">${info.version}</span></div>
             <div class="glass-card info-card"><span class="info-label">Uptime</span><span class="info-value">${formatDuration(info.uptime_seconds)}</span></div>
+            <div class="glass-card info-card"><span class="info-label">Total Buckets</span><span class="info-value">${info.storage?.buckets || 0}</span></div>
+            <div class="glass-card info-card"><span class="info-label">IAM Users</span><span class="info-value">${info.system?.users_count || 0}</span></div>
             <div class="glass-card info-card"><span class="info-label">Total Objects</span><span class="info-value">${info.storage?.total_objects || 0}</span></div>
             <div class="glass-card info-card"><span class="info-label">Total Storage</span><span class="info-value">${formatBytes(info.storage?.total_bytes || 0)}</span></div>
+            
+            <div class="glass-card info-card"><span class="info-label">CPU Cores</span><span class="info-value">${info.system?.cpu_cores || 0}</span></div>
+            <div class="glass-card info-card"><span class="info-label">Goroutines</span><span class="info-value">${info.system?.goroutines || 0}</span></div>
+            <div class="glass-card info-card"><span class="info-label">RAM Allocated</span><span class="info-value">${formatBytes(info.system?.ram_alloc || 0)}</span></div>
+            <div class="glass-card info-card"><span class="info-label">RAM Total</span><span class="info-value">${formatBytes(info.system?.ram_sys || 0)}</span></div>
+            
+            <div class="glass-card info-card"><span class="info-label">Disk Free</span><span class="info-value" style="color:var(--success)">${formatBytes(info.storage?.disk_free || 0)}</span></div>
+            <div class="glass-card info-card"><span class="info-label">Disk Total</span><span class="info-value">${formatBytes(info.storage?.disk_total || 0)}</span></div>
+            <div class="glass-card info-card"><span class="info-label">Max Object Size</span><span class="info-value">${formatBytes(info.config?.max_size || 0)}</span></div>
+            <div class="glass-card info-card"><span class="info-label">Port</span><span class="info-value">${info.config?.port || 9000}</span></div>
+            
+            <div class="glass-card info-card" style="grid-column:1/-1"><span class="info-label">Data Directory</span><span class="info-value" style="font-family:monospace;font-size:1rem;user-select:all">${info.config?.data_dir || '-'}</span></div>
             <div class="glass-card info-card" style="grid-column:1/-1"><span class="info-label">API Endpoint</span><span class="info-value" style="font-family:monospace;font-size:1rem;user-select:all">${endpoint}</span></div>`;
     } catch (err) { showToast(err.message, 'error'); grid.innerHTML = ''; }
 }

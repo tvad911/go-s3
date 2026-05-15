@@ -9,9 +9,13 @@ import (
 	"sync/atomic"
 	"time"
 
+	"runtime"
+	"syscall"
+
 	"github.com/go-chi/chi/v5"
 
 	"gos3/internal/auth"
+	"gos3/internal/config"
 	"gos3/internal/metrics"
 	"gos3/internal/s3"
 	"gos3/internal/storage"
@@ -24,10 +28,11 @@ type AdminHandler struct {
 	MetaStore    metadata.Store
 	Backend      storage.Backend
 	PolicyEngine *auth.Engine
+	Config       *config.Config
 }
 
-func NewAdminHandler(store metadata.Store, backend storage.Backend, engine *auth.Engine) *AdminHandler {
-	return &AdminHandler{MetaStore: store, Backend: backend, PolicyEngine: engine}
+func NewAdminHandler(store metadata.Store, backend storage.Backend, engine *auth.Engine, cfg *config.Config) *AdminHandler {
+	return &AdminHandler{MetaStore: store, Backend: backend, PolicyEngine: engine, Config: cfg}
 }
 
 // EnsureRoot checks if the user in context is an admin/root
@@ -251,12 +256,44 @@ func (h *AdminHandler) ServerInfo(w http.ResponseWriter, r *http.Request) {
 		return true
 	})
 
+	buckets, _ := h.MetaStore.ListBuckets()
+	users, _ := h.MetaStore.ListUsers(r.Context())
+
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	var diskTotal, diskFree uint64
+	var stat syscall.Statfs_t
+	if h.Config != nil && h.Config.Storage.DataDir != "" {
+		if err := syscall.Statfs(h.Config.Storage.DataDir, &stat); err == nil {
+			diskTotal = stat.Blocks * uint64(stat.Bsize)
+			diskFree = stat.Bavail * uint64(stat.Bsize)
+		}
+	}
+
 	info := map[string]interface{}{
 		"version":        "0.1.0",
 		"uptime_seconds": int(time.Since(startTime).Seconds()),
 		"storage": map[string]interface{}{
 			"total_objects": totalObjects,
 			"total_bytes":   totalBytes,
+			"buckets":       len(buckets),
+			"disk_total":    diskTotal,
+			"disk_free":     diskFree,
+			"disk_used":     diskTotal - diskFree,
+		},
+		"system": map[string]interface{}{
+			"cpu_cores":     runtime.NumCPU(),
+			"goroutines":    runtime.NumGoroutine(),
+			"ram_alloc":     m.Alloc,
+			"ram_sys":       m.Sys,
+			"ram_heap_sys":  m.HeapSys,
+			"users_count":   len(users),
+		},
+		"config": map[string]interface{}{
+			"port":          h.Config.Server.Port,
+			"data_dir":      h.Config.Storage.DataDir,
+			"max_size":      h.Config.Storage.MaxObjectSize,
 		},
 	}
 

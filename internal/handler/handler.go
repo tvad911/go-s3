@@ -2,6 +2,9 @@ package handler
 
 import (
 	"net/http"
+	"strings"
+
+	"github.com/go-chi/chi/v5"
 
 	"gos3/internal/auth"
 	"gos3/internal/config"
@@ -31,6 +34,20 @@ func NewS3Handler(backend storage.Backend, metaStore metadata.Store, verifier *a
 		Replication:  repl,
 		PolicyEngine: engine,
 	}
+}
+
+// getObjectKey extracts the key parameter from chi.URLParam and restores the trailing slash if the original request path had it.
+// This is necessary because chi.URLParam strips trailing slashes on wildcard matches.
+func getObjectKey(r *http.Request) string {
+	key := chi.URLParam(r, "*")
+	if key == "" {
+		key = chi.URLParam(r, "key") // Fallback just in case
+	}
+	// If the original path ends with / but the extracted key doesn't, restore it.
+	if strings.HasSuffix(r.URL.Path, "/") && !strings.HasSuffix(key, "/") {
+		key += "/"
+	}
+	return key
 }
 
 // CheckPolicy evaluates the IAM Policy Engine.

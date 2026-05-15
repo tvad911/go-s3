@@ -22,7 +22,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 	r := chi.NewRouter()
 
 	engine := auth.NewEngine(metaStore, metaStore)
-	adminHandler := handler.NewAdminHandler(metaStore, backend, engine)
+	adminHandler := handler.NewAdminHandler(metaStore, backend, engine, cfg)
 	authHandler := handler.NewAuthHandler(metaStore, sessionCfg)
 	saHandler := handler.NewServiceAccountHandler(metaStore)
 	s3Handler := handler.NewS3Handler(backend, metaStore, verifier, cfg, repl, engine)
@@ -204,45 +204,43 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 			})
 
 			// Object operations
-			r.Route("/{key:.*}", func(r chi.Router) {
-				r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-					if r.URL.Query().Has("acl") {
-						s3Handler.GetObjectAcl(w, r)
-					} else if r.URL.Query().Has("uploadId") {
-						s3Handler.ListParts(w, r)
-					} else {
-						s3Handler.GetObject(w, r)
-					}
-				})
-				r.Put("/", func(w http.ResponseWriter, r *http.Request) {
-					if r.URL.Query().Has("acl") {
-						s3Handler.PutObjectAcl(w, r)
-					} else if r.URL.Query().Has("partNumber") && r.URL.Query().Has("uploadId") {
-						s3Handler.UploadPart(w, r)
-					} else if r.Header.Get("x-amz-copy-source") != "" {
-						s3Handler.CopyObject(w, r)
-					} else {
-						s3Handler.PutObject(w, r)
-					}
-				})
-				r.Delete("/", func(w http.ResponseWriter, r *http.Request) {
-					if r.URL.Query().Has("uploadId") {
-						s3Handler.AbortMultipartUpload(w, r)
-					} else {
-						s3Handler.DeleteObject(w, r)
-					}
-				})
-				r.Head("/", s3Handler.HeadObject)
-				r.Options("/", stubHandler("CORSPreflight"))
-				r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-					if r.URL.Query().Has("uploads") {
-						s3Handler.CreateMultipartUpload(w, r)
-					} else if r.URL.Query().Has("uploadId") {
-						s3Handler.CompleteMultipartUpload(w, r)
-					} else {
-						stubHandler("PostObject")(w, r)
-					}
-				})
+			r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Query().Has("acl") {
+					s3Handler.GetObjectAcl(w, r)
+				} else if r.URL.Query().Has("uploadId") {
+					s3Handler.ListParts(w, r)
+				} else {
+					s3Handler.GetObject(w, r)
+				}
+			})
+			r.Put("/*", func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Query().Has("acl") {
+					s3Handler.PutObjectAcl(w, r)
+				} else if r.URL.Query().Has("partNumber") && r.URL.Query().Has("uploadId") {
+					s3Handler.UploadPart(w, r)
+				} else if r.Header.Get("x-amz-copy-source") != "" {
+					s3Handler.CopyObject(w, r)
+				} else {
+					s3Handler.PutObject(w, r)
+				}
+			})
+			r.Delete("/*", func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Query().Has("uploadId") {
+					s3Handler.AbortMultipartUpload(w, r)
+				} else {
+					s3Handler.DeleteObject(w, r)
+				}
+			})
+			r.Head("/*", s3Handler.HeadObject)
+			r.Options("/*", stubHandler("CORSPreflight"))
+			r.Post("/*", func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Query().Has("uploads") {
+					s3Handler.CreateMultipartUpload(w, r)
+				} else if r.URL.Query().Has("uploadId") {
+					s3Handler.CompleteMultipartUpload(w, r)
+				} else {
+					stubHandler("PostObject")(w, r)
+				}
 			})
 		})
 	})

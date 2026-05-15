@@ -4,6 +4,7 @@ services:
     build: 
       context: ..
       dockerfile: deploy/Dockerfile
+    command: ["-config", "/app/config.yaml"]
     ports:
       - "9000:9000"   # S3 API
       - "9001:9001"   # Admin UI (future)

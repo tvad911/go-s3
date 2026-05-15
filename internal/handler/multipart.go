@@ -18,7 +18,7 @@ import (
 func (h *S3Handler) CreateMultipartUpload(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "key")
+	key := getObjectKey(r)
 
 	if len(key) > 1024 {
 		WriteError(w, r, s3.ErrKeyTooLongError)
@@ -85,7 +85,7 @@ func (h *S3Handler) CreateMultipartUpload(w http.ResponseWriter, r *http.Request
 func (h *S3Handler) UploadPart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "key")
+	key := getObjectKey(r)
 
 	uploadID := r.URL.Query().Get("uploadId")
 	partNum, err := strconv.Atoi(r.URL.Query().Get("partNumber"))
@@ -135,7 +135,7 @@ func (h *S3Handler) UploadPart(w http.ResponseWriter, r *http.Request) {
 func (h *S3Handler) CompleteMultipartUpload(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "key")
+	key := getObjectKey(r)
 
 	uploadID := r.URL.Query().Get("uploadId")
 
@@ -186,7 +186,7 @@ func (h *S3Handler) CompleteMultipartUpload(w http.ResponseWriter, r *http.Reque
 func (h *S3Handler) AbortMultipartUpload(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "key")
+	key := getObjectKey(r)
 
 	uploadID := r.URL.Query().Get("uploadId")
 
@@ -201,7 +201,7 @@ func (h *S3Handler) AbortMultipartUpload(w http.ResponseWriter, r *http.Request)
 func (h *S3Handler) ListParts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
-	key := chi.URLParam(r, "key")
+	key := getObjectKey(r)
 
 	uploadID := r.URL.Query().Get("uploadId")
 
