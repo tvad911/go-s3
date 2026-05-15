@@ -163,6 +163,12 @@ function renderBucketCards(grid, buckets) {
     grid.innerHTML = buckets.map(b => {
         const name = b.name || b.Name || b;
         const creationDate = b.creationDate ? new Date(b.creationDate).toLocaleString() : '';
+        const statsHtml = typeof b.objects === 'number' ? `
+            <div style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-secondary);display:flex;gap:1rem;">
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:middle;margin-right:2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> ${b.objects} objects</span>
+                <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;vertical-align:middle;margin-right:2px;"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg> ${formatBytes(b.bytes)}</span>
+            </div>
+        ` : '';
         return `
             <div class="bucket-card" onclick="openBucket('${name}')">
                 <div class="bucket-header">
@@ -172,6 +178,7 @@ function renderBucketCards(grid, buckets) {
                     <div class="bucket-info">
                         <h3>${name}</h3>
                         ${creationDate ? `<p>Created: ${creationDate}</p>` : ''}
+                        ${statsHtml}
                     </div>
                 </div>
                 <div class="bucket-actions">
@@ -195,7 +202,7 @@ window.openBucket = (name) => {
     currentPrefix = '';
     updateBreadcrumb();
     topbarActions.innerHTML = `<button class="btn btn-primary" onclick="document.getElementById('file-input').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Upload</button>
-    <button class="btn btn-ghost" onclick="createFolder()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg> New Folder</button>`;
+    <button class="btn btn-ghost" onclick="openModal('create-folder-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg> New Folder</button>`;
     views.forEach(v => v.classList.remove('active'));
     document.getElementById('view-objects').classList.add('active');
     fetchObjects();
@@ -237,13 +244,11 @@ document.getElementById('create-bucket-form').addEventListener('submit', async (
     const name = document.getElementById('new-bucket-name').value;
     try {
         await api('PUT', `/_admin/buckets/${name}`);
-        showToast(`Bucket ${name} created`, 'success');
         closeModal('create-bucket-modal');
-        document.getElementById('new-bucket-name').value = '';
+        document.getElementById('create-bucket-form').reset();
+        showToast(`Bucket ${name} created`, 'success');
         fetchBuckets();
-    } catch (err) {
-        showToast(err.message, 'error');
-    }
+    } catch (err) { showToast(err.message, 'error'); }
 });
 
 window.deleteBucket = async (name) => {
@@ -256,6 +261,22 @@ window.deleteBucket = async (name) => {
         showToast(err.message, 'error');
     }
 };
+
+document.getElementById('create-folder-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('new-folder-name').value;
+    try {
+        const key = currentPrefix + name + '/';
+        const presignedData = await api('POST', '/_admin/presign', { method: 'PUT', bucket: currentBucket, key, expires: 3600 });
+        const res = await fetch(presignedData.url, { method: 'PUT' });
+        if (!res.ok) throw new Error('Failed to create folder');
+        
+        closeModal('create-folder-modal');
+        document.getElementById('create-folder-form').reset();
+        showToast(`Folder ${name} created`, 'success');
+        fetchObjects();
+    } catch (err) { showToast(err.message, 'error'); }
+});
 
 // ==================== Objects ====================
 
@@ -275,8 +296,10 @@ window.toggleSort = (field) => {
 };
 
 function updateAllSortIcons() {
-    const activeArrow = sortAsc ? '\u25b2' : '\u25bc';
-    const inactiveArrow = '\u21c5';
+    const activeArrow = sortAsc 
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="18 15 12 9 6 15"></polyline></svg>` 
+        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+    const inactiveArrow = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="7 15 12 10 17 15"></polyline></svg>`;
     
     ['key', 'size', 'date'].forEach(k => {
         const isActive = (sortField === k);
@@ -284,7 +307,7 @@ function updateAllSortIcons() {
         // Update table header icons
         const thIcon = document.getElementById(`sort-icon-${k}`);
         if (thIcon) {
-            thIcon.textContent = isActive ? activeArrow : inactiveArrow;
+            thIcon.innerHTML = isActive ? activeArrow : inactiveArrow;
             thIcon.style.opacity = isActive ? '1' : '0.4';
         }
         
@@ -452,19 +475,6 @@ function renderObjects() {
             </div></td></tr>`;
     }).join('');
 }
-
-window.createFolder = async () => {
-    const name = prompt('Folder name:');
-    if (!name) return;
-    try {
-        const key = currentPrefix + name + '/';
-        const presignedData = await api('POST', '/_admin/presign', { method: 'PUT', bucket: currentBucket, key, expires: 3600 });
-        const res = await fetch(presignedData.url, { method: 'PUT' });
-        if (!res.ok) throw new Error('Failed to create folder');
-        showToast(`Folder ${name} created`, 'success');
-        fetchObjects();
-    } catch (err) { showToast(err.message, 'error'); }
-};
 
 window.downloadObject = async (key) => {
     try {
@@ -969,7 +979,7 @@ window.openBucketSettings = (name) => {
 };
 
 window.switchBucketSettingsTab = (tab) => {
-    ['overview', 'access', 'cors', 'lifecycle', 'website', 'domains', 'webhooks'].forEach(t => {
+    ['overview', 'access', 'versioning', 'cors', 'lifecycle', 'website', 'domains', 'webhooks'].forEach(t => {
         const link = document.getElementById(`tab-link-${t}`);
         const content = document.getElementById(`tab-content-${t}`);
         if(link) link.classList.remove('active');
@@ -985,6 +995,8 @@ window.switchBucketSettingsTab = (tab) => {
         fetchBucketStats();
     } else if (tab === 'access') {
         fetchBucketPolicy();
+    } else if (tab === 'versioning') {
+        fetchBucketVersioning();
     } else if (tab === 'cors') {
         fetchBucketCORS();
     } else if (tab === 'lifecycle') {
@@ -995,6 +1007,48 @@ window.switchBucketSettingsTab = (tab) => {
         fetchBucketCustomDomains();
     } else if (tab === 'webhooks') {
         fetchBucketWebhooks();
+    }
+};
+
+window.fetchBucketVersioning = async () => {
+    try {
+        const res = await api('GET', `/_admin/buckets/${currentBucket}/versioning`);
+        const isEnabled = res.status === "Enabled";
+        const isSuspended = res.status === "Suspended";
+        
+        document.getElementById('bucket-versioning-toggle').checked = isEnabled;
+        
+        const label = document.getElementById('versioning-status-label');
+        if (isEnabled) {
+            label.textContent = "Enabled";
+            label.style.background = "rgba(100,255,100,0.1)";
+            label.style.color = "#64ff64";
+            label.style.border = "1px solid rgba(100,255,100,0.3)";
+        } else if (isSuspended) {
+            label.textContent = "Suspended";
+            label.style.background = "rgba(255,200,50,0.1)";
+            label.style.color = "#ffc832";
+            label.style.border = "1px solid rgba(255,200,50,0.3)";
+        } else {
+            label.textContent = "Disabled";
+            label.style.background = "var(--bg-secondary)";
+            label.style.color = "var(--text-secondary)";
+            label.style.border = "1px solid var(--border-color)";
+        }
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+};
+
+window.toggleBucketVersioning = async (checkbox) => {
+    const status = checkbox.checked ? "Enabled" : "Suspended";
+    try {
+        await api('PUT', `/_admin/buckets/${currentBucket}/versioning`, { status });
+        showToast(`Bucket versioning is now ${status}`, 'success');
+        fetchBucketVersioning();
+    } catch (err) {
+        showToast(err.message, 'error');
+        checkbox.checked = !checkbox.checked; // Revert
     }
 };
 
@@ -1024,7 +1078,73 @@ async function fetchBucketPolicy() {
             showToast('Failed to fetch policy: ' + err.message, 'error');
         }
     }
+    await loadServiceAccountsForBucketPolicy();
 }
+
+async function loadServiceAccountsForBucketPolicy() {
+    const select = document.getElementById('policy-sa-select');
+    if (!select) return;
+    try {
+        const sas = await api('GET', '/_admin/service-accounts');
+        select.innerHTML = '<option value="">Select Service Account...</option>';
+        if (sas && sas.length > 0) {
+            sas.forEach(sa => {
+                const opt = document.createElement('option');
+                opt.value = sa.accessKeyId;
+                opt.textContent = `${sa.description || 'No Description'} (${sa.accessKeyId})`;
+                select.appendChild(opt);
+            });
+        }
+    } catch (err) {
+        console.error('Failed to load service accounts for policy UI', err);
+    }
+}
+
+window.addServiceAccountToPolicy = () => {
+    const accessKey = document.getElementById('policy-sa-select').value;
+    const permission = document.getElementById('policy-sa-permission').value;
+    if (!accessKey) {
+        showToast('Please select a service account', 'error');
+        return;
+    }
+
+    const textarea = document.getElementById('bucket-policy-json');
+    let policyObj = {
+        "Version": "2012-10-17",
+        "Statement": []
+    };
+
+    if (textarea.value.trim()) {
+        try {
+            policyObj = JSON.parse(textarea.value.trim());
+        } catch (e) {
+            showToast('Cannot add: Current JSON is invalid', 'error');
+            return;
+        }
+    }
+
+    if (!policyObj.Statement) policyObj.Statement = [];
+
+    const saArn = `arn:aws:iam:::serviceaccount/${accessKey}`;
+    let actions = ["s3:GetObject", "s3:ListBucket"];
+    if (permission === 'readwrite') {
+        actions = ["s3:*"];
+    }
+
+    policyObj.Statement.push({
+        "Effect": "Allow",
+        "Principal": { "AWS": saArn },
+        "Action": actions,
+        "Resource": [
+            `arn:aws:s3:::${currentBucket}`,
+            `arn:aws:s3:::${currentBucket}/*`
+        ]
+    });
+
+    textarea.value = JSON.stringify(policyObj, null, 2);
+    validateJSONConfig(textarea, 'bucket-policy-error');
+    showToast('Policy updated. Click Save Policy to apply.', 'success');
+};
 
 window.validateJSONConfig = (textarea, errorDivId) => {
     const errorDiv = document.getElementById(errorDivId);

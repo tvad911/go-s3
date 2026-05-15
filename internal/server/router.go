@@ -88,6 +88,8 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 
 			// Buckets Stats
 			r.Get("/buckets/{bucket}/stats", adminHandler.BucketStats)
+			r.Get("/buckets/{bucket}/versioning", adminHandler.GetBucketVersioning)
+			r.Put("/buckets/{bucket}/versioning", adminHandler.PutBucketVersioning)
 
 			// Web UI Buckets/Objects API
 			r.Get("/buckets", adminHandler.ListBuckets)

@@ -244,8 +244,9 @@ Click icon Settings trên Bucket card → Trang chi tiết với các tab:
 **Frontend (Backend API đã có sẵn):**
 - [x] Trang Bucket Details với tabs: Overview, Access, Versioning, CORS, Lifecycle, Website
 - [x] Access tab: Toggle Public/Private + JSON editor cho custom policy
-- [ ] Versioning tab: Toggle Enable/Suspend
-- [ ] Bucket card: hiển thị thêm số objects, dung lượng
+- [x] Versioning tab: Toggle Enable/Suspend
+- [x] Bucket card: hiển thị thêm số objects, dung lượng
+- [x] UI ghép Bucket Policy với Service Account (Grant Access directly to SA)
 
 **Backend + Frontend:**
 - [x] API expose bucket stats (`/_admin/buckets/{name}/stats`)

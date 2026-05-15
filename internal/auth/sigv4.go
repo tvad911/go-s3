@@ -147,6 +147,7 @@ func (v *SigV4Verifier) lookupByAccessKey(ctx context.Context, accessKey string)
 
 			// Create a copy of the user to avoid mutating the original
 			user := *parentUser
+			user.AccessKeyID = sa.AccessKeyID
 			// Merge SA policies with parent user policies
 			if len(sa.Policies) > 0 {
 				user.Policies = append([]string(nil), parentUser.Policies...)

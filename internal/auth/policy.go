@@ -73,17 +73,32 @@ func matchPrincipal(principal interface{}, user *User) bool {
 	if principal == nil {
 		return false
 	}
-	switch p := principal.(type) {
-	case string:
+	
+	// Helper to check if a pattern matches the user
+	matchesUser := func(p string) bool {
 		if p == "*" {
 			return true
 		}
-		// Match arn:aws:iam:::user/username
-		return strings.HasSuffix(p, "/"+user.Username)
+		// Match user ARN
+		if strings.HasSuffix(p, "/"+user.Username) {
+			return true
+		}
+		// Match Service Account ARN (we define it as arn:aws:iam:::serviceaccount/ACCESS_KEY)
+		if user.AccessKeyID != "" && strings.HasSuffix(p, "/"+user.AccessKeyID) {
+			return true
+		}
+		return false
+	}
+
+	switch p := principal.(type) {
+	case string:
+		return matchesUser(p)
 	case map[string]interface{}:
 		// e.g. {"AWS": ["*"]} or {"AWS": "arn..."}
 		if aws, ok := p["AWS"]; ok {
-			return matchListOrString(aws, "arn:aws:iam:::user/"+user.Username) || matchListOrString(aws, "*")
+			return matchListOrString(aws, "arn:aws:iam:::user/"+user.Username) || 
+				(user.AccessKeyID != "" && matchListOrString(aws, "arn:aws:iam:::serviceaccount/"+user.AccessKeyID)) ||
+				matchListOrString(aws, "*")
 		}
 	}
 	return false

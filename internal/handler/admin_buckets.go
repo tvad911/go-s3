@@ -28,9 +28,12 @@ func (h *AdminHandler) ListBuckets(w http.ResponseWriter, r *http.Request) {
 	// Convert to JSON friendly format
 	res := make([]map[string]interface{}, 0)
 	for _, b := range buckets {
+		objects, bytes, _ := h.MetaStore.GetBucketStats(b.Name)
 		res = append(res, map[string]interface{}{
 			"name":         b.Name,
 			"creationDate": b.CreationDate,
+			"objects":      objects,
+			"bytes":        bytes,
 		})
 	}
 
@@ -507,5 +510,55 @@ func (h *AdminHandler) DeleteBucketNotification(w http.ResponseWriter, r *http.R
 		return
 	}
 	h.recordAudit(r, "DeleteBucketNotification", bucket, "")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// GetBucketVersioning for Admin UI
+func (h *AdminHandler) GetBucketVersioning(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:GetBucketVersioning"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+	bInfo, err := h.MetaStore.GetBucket(bucket)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": bInfo.Versioning})
+}
+
+// PutBucketVersioning for Admin UI
+func (h *AdminHandler) PutBucketVersioning(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:PutBucketVersioning"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bucket := chi.URLParam(r, "bucket")
+	var req struct {
+		Status string `json:"status"` // "Enabled" or "Suspended"
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	bInfo, err := h.MetaStore.GetBucket(bucket)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	bInfo.Versioning = req.Status
+	if err := h.MetaStore.UpdateBucket(bInfo); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.recordAudit(r, "PutBucketVersioning", bucket, req.Status)
 	w.WriteHeader(http.StatusNoContent)
 }
