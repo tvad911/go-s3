@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
+
 	"gos3/internal/auth"
 	"gos3/internal/storage/metadata"
 )
@@ -86,9 +88,25 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 TokenGeneration:
+	sessionID := uuid.New().String()
+	session := &auth.Session{
+		ID:        sessionID,
+		Username:  user.Username,
+		IsRoot:    user.IsRoot,
+		CreatedAt: time.Now(),
+		ExpiresAt: time.Now().Add(h.sessionCfg.TokenExpiry),
+		IPAddress: r.RemoteAddr,
+		UserAgent: r.UserAgent(),
+	}
+
+	if err := h.store.CreateSession(r.Context(), session); err != nil {
+		slog.Error("failed to create session", "error", err)
+		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+		return
+	}
 
 	// Generate JWT token
-	token, err := auth.GenerateToken(h.sessionCfg, user.Username, user.IsRoot)
+	token, err := auth.GenerateToken(h.sessionCfg, sessionID, user.Username, user.IsRoot)
 	if err != nil {
 		slog.Error("failed to generate token", "error", err)
 		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
@@ -113,8 +131,14 @@ TokenGeneration:
 	})
 }
 
-// Logout clears the session cookie.
+// Logout clears the session cookie and removes the session from the DB.
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(h.sessionCfg.CookieName)
+	if err == nil && cookie.Value != "" {
+		if claims, err := auth.ValidateToken(h.sessionCfg, cookie.Value); err == nil {
+			_ = h.store.DeleteSession(r.Context(), claims.SessionID)
+		}
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     h.sessionCfg.CookieName,
 		Value:    "",
@@ -164,6 +188,12 @@ func JWTAuthMiddleware(sessionCfg *auth.SessionConfig, store metadata.Store) fun
 				return
 			}
 
+			// Validate session in DB
+			if _, err := store.GetSession(r.Context(), claims.SessionID); err != nil {
+				http.Error(w, `{"error":"session expired or revoked"}`, http.StatusUnauthorized)
+				return
+			}
+
 			// Lookup user from DB to get latest state (policies, disabled status)
 			user, err := store.GetUserByUsername(r.Context(), claims.Username)
 			if err != nil {
@@ -195,13 +225,14 @@ func SetUserContext(ctx context.Context, user *auth.User) context.Context {
 func JWTAuthFallbackMiddleware(sessionCfg *auth.SessionConfig, store metadata.Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cookie, err := r.Cookie(sessionCfg.CookieName)
-			if err == nil && cookie.Value != "" {
+			if cookie, err := r.Cookie(sessionCfg.CookieName); err == nil && cookie.Value != "" {
 				if claims, err := auth.ValidateToken(sessionCfg, cookie.Value); err == nil {
-					if user, err := store.GetUserByUsername(r.Context(), claims.Username); err == nil && !user.Disabled {
-						ctx := SetUserContext(r.Context(), user)
-						next.ServeHTTP(w, r.WithContext(ctx))
-						return
+					if _, err := store.GetSession(r.Context(), claims.SessionID); err == nil {
+						if user, err := store.GetUserByUsername(r.Context(), claims.Username); err == nil && !user.Disabled {
+							ctx := SetUserContext(r.Context(), user)
+							next.ServeHTTP(w, r.WithContext(ctx))
+							return
+						}
 					}
 				}
 			}

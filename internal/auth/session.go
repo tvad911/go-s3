@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -42,10 +43,30 @@ func DefaultSessionConfig(signingKey []byte) *SessionConfig {
 
 // Claims represents the JWT payload.
 type Claims struct {
+	SessionID string `json:"jti"`
 	Username  string `json:"sub"`
 	IsRoot    bool   `json:"root"`
 	IssuedAt  int64  `json:"iat"`
 	ExpiresAt int64  `json:"exp"`
+}
+
+// Session represents an active user session in the database.
+type Session struct {
+	ID        string    `json:"id"`
+	Username  string    `json:"username"`
+	IsRoot    bool      `json:"is_root"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
+	IPAddress string    `json:"ip_address"`
+	UserAgent string    `json:"user_agent"`
+}
+
+// SessionStore defines the interface for stateful session tracking.
+type SessionStore interface {
+	CreateSession(ctx context.Context, session *Session) error
+	GetSession(ctx context.Context, sessionID string) (*Session, error)
+	DeleteSession(ctx context.Context, sessionID string) error
+	ListSessions(ctx context.Context, username string) ([]*Session, error)
 }
 
 // jwtHeader is a fixed header for HS256.
@@ -57,9 +78,10 @@ type jwtHeader struct {
 var fixedHeader = jwtHeader{Alg: "HS256", Typ: "JWT"}
 
 // GenerateToken creates a signed JWT token string.
-func GenerateToken(cfg *SessionConfig, username string, isRoot bool) (string, error) {
+func GenerateToken(cfg *SessionConfig, sessionID, username string, isRoot bool) (string, error) {
 	now := time.Now()
 	claims := Claims{
+		SessionID: sessionID,
 		Username:  username,
 		IsRoot:    isRoot,
 		IssuedAt:  now.Unix(),

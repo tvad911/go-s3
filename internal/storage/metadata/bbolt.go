@@ -33,6 +33,7 @@ var (
 	bucketCustomDomains   = []byte("custom_domains")
 	bucketNotifications   = []byte("notifications")
 	bucketSettings        = []byte("settings")
+	bucketSessions        = []byte("sessions")
 )
 
 type bboltStore struct {
@@ -85,6 +86,9 @@ func NewBboltStore(path string) (Store, error) {
 			return err
 		}
 		if _, err := tx.CreateBucketIfNotExists(bucketSettings); err != nil {
+			return err
+		}
+		if _, err := tx.CreateBucketIfNotExists(bucketSessions); err != nil {
 			return err
 		}
 		return nil
@@ -1300,4 +1304,57 @@ func (s *bboltStore) ListSettings(ctx context.Context) (map[string]string, error
 		})
 	})
 	return settings, err
+}
+
+// SessionStore implementation
+
+func (s *bboltStore) CreateSession(ctx context.Context, session *auth.Session) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketSessions)
+		data, err := json.Marshal(session)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(session.ID), data)
+	})
+}
+
+func (s *bboltStore) GetSession(ctx context.Context, sessionID string) (*auth.Session, error) {
+	var session auth.Session
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketSessions)
+		v := b.Get([]byte(sessionID))
+		if v == nil {
+			return errors.New("session not found")
+		}
+		return json.Unmarshal(v, &session)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &session, nil
+}
+
+func (s *bboltStore) DeleteSession(ctx context.Context, sessionID string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketSessions)
+		return b.Delete([]byte(sessionID))
+	})
+}
+
+func (s *bboltStore) ListSessions(ctx context.Context, username string) ([]*auth.Session, error) {
+	var sessions []*auth.Session
+	err := s.db.View(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketSessions)
+		return b.ForEach(func(k, v []byte) error {
+			var sess auth.Session
+			if err := json.Unmarshal(v, &sess); err == nil {
+				if sess.Username == username {
+					sessions = append(sessions, &sess)
+				}
+			}
+			return nil
+		})
+	})
+	return sessions, err
 }

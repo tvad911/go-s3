@@ -98,6 +98,7 @@ type Store interface {
 	auth.PolicyStore
 	auth.IAMPolicyStore
 	auth.ServiceAccountStore
+	auth.SessionStore
 	AuditStore
 	SettingStore
 }
