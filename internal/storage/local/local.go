@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -58,6 +59,29 @@ func (b *Backend) cleanupTemp() error {
 		os.RemoveAll(filepath.Join(b.tempDir, entry.Name()))
 	}
 	return nil
+}
+
+// safePath builds and validates an object path, ensuring it stays within dataDir.
+// This is a defense-in-depth measure against path traversal via crafted object keys.
+func (b *Backend) safePath(bucket, key, versionSuffix string) (string, error) {
+	p := filepath.Join(b.dataDir, "buckets", bucket, "objects", key+versionSuffix)
+	p = filepath.Clean(p)
+	base := filepath.Clean(b.dataDir)
+	if !strings.HasPrefix(p, base+string(os.PathSeparator)) && p != base {
+		return "", fmt.Errorf("path traversal detected in key: %s", key)
+	}
+	return p, nil
+}
+
+// safeMultipartPath builds and validates a multipart temp path.
+func (b *Backend) safeMultipartPath(uploadID string) (string, error) {
+	p := filepath.Join(b.tempDir, "multipart", uploadID)
+	p = filepath.Clean(p)
+	base := filepath.Clean(b.tempDir)
+	if !strings.HasPrefix(p, base+string(os.PathSeparator)) && p != base {
+		return "", fmt.Errorf("path traversal detected in uploadID: %s", uploadID)
+	}
+	return p, nil
 }
 
 func (b *Backend) CreateBucket(ctx context.Context, bucket, region, acl string, objectLockEnabled bool) error {
@@ -219,7 +243,10 @@ func (b *Backend) PutObject(ctx context.Context, bucket, key string, r io.Reader
 		versionId = "null"
 	}
 	// Move to final destination
-	finalPath := filepath.Join(b.dataDir, "buckets", bucket, "objects", key+"@"+versionId)
+	finalPath, err := b.safePath(bucket, key, "@"+versionId)
+	if err != nil {
+		return nil, err
+	}
 	if err := os.MkdirAll(filepath.Dir(finalPath), 0755); err != nil {
 		return nil, err
 	}
@@ -262,7 +289,10 @@ func (b *Backend) GetObject(ctx context.Context, bucket, key string, opts storag
 	if versionId == "" {
 		versionId = "null"
 	}
-	finalPath := filepath.Join(b.dataDir, "buckets", bucket, "objects", key+"@"+versionId)
+	finalPath, err := b.safePath(bucket, key, "@"+versionId)
+	if err != nil {
+		return nil, err
+	}
 	file, err := os.Open(finalPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -370,7 +400,10 @@ func (b *Backend) DeleteObject(ctx context.Context, bucket, key, versionId strin
 		// For simplicity, we might leave files on disk or use glob.
 		// A proper cleanup would delete all key@* files.
 	}
-	finalPath := filepath.Join(b.dataDir, "buckets", bucket, "objects", key+"@"+versionId)
+	finalPath, pathErr := b.safePath(bucket, key, "@"+versionId)
+	if pathErr != nil {
+		return nil
+	}
 	os.Remove(finalPath)
 	return nil
 }
@@ -585,9 +618,12 @@ func (b *Backend) CompleteMultipartUpload(ctx context.Context, bucket, key, uplo
 
 	finalETag := fmt.Sprintf("%s-%d", hex.EncodeToString(comboHash.Sum(nil)), len(parts))
 
-	// Move to final destination
-	finalPath := filepath.Join(b.dataDir, "buckets", bucket, "objects", key)
-	if err := os.MkdirAll(filepath.Dir(finalPath), 0755); err != nil {
+	// Move to final destination — compute base path for MkdirAll
+	basePath, err := b.safePath(bucket, key, "")
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Dir(basePath), 0755); err != nil {
 		return nil, err
 	}
 
@@ -610,7 +646,10 @@ func (b *Backend) CompleteMultipartUpload(ctx context.Context, bucket, key, uplo
 	if versionSuffix == "" {
 		versionSuffix = "null"
 	}
-	finalPath = finalPath + "@" + versionSuffix
+	finalPath, err := b.safePath(bucket, key, "@"+versionSuffix)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := os.Rename(finalTmpPath, finalPath); err != nil {
 		return nil, fmt.Errorf("rename failed: %w", err)
@@ -623,7 +662,9 @@ func (b *Backend) CompleteMultipartUpload(ctx context.Context, bucket, key, uplo
 
 	// Cleanup
 	b.meta.DeleteMultipartUpload(bucket, key, uploadID)
-	os.RemoveAll(filepath.Join(b.tempDir, "multipart", uploadID))
+	if cleanupDir, cleanErr := b.safeMultipartPath(uploadID); cleanErr == nil {
+		os.RemoveAll(cleanupDir)
+	}
 
 	return &storage.CompleteResult{
 		ETag:      finalETag,

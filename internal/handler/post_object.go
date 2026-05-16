@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -55,8 +56,8 @@ func (h *S3Handler) PostObject(w http.ResponseWriter, r *http.Request) {
 			break // Stop parsing fields, we found the file. The rest of the stream is the file content.
 		}
 
-		// Read form field
-		value, err := io.ReadAll(part)
+		// Read form field (bounded to 1MB to prevent DoS)
+		value, err := io.ReadAll(io.LimitReader(part, 1<<20))
 		if err != nil {
 			WriteError(w, r, fmt.Errorf("read field %s: %w", name, err))
 			return
@@ -147,8 +148,15 @@ func (h *S3Handler) PostObject(w http.ResponseWriter, r *http.Request) {
 	// Handle response formatting
 	redirect := fields["success_action_redirect"]
 	if redirect != "" {
-		// Append bucket, key, etag as query params based on AWS specs
-		// Simplification for now: just redirect
+		// Validate redirect URL to prevent open redirect attacks.
+		// Only allow same-origin redirects (same scheme + host as the request).
+		if parsedURL, parseErr := url.Parse(redirect); parseErr != nil || (parsedURL.Scheme != "" && parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
+			WriteError(w, r, fmt.Errorf("invalid success_action_redirect URL"))
+			return
+		} else if parsedURL.Host != "" && parsedURL.Host != r.Host {
+			WriteError(w, r, fmt.Errorf("success_action_redirect must be same-origin"))
+			return
+		}
 		http.Redirect(w, r, redirect, http.StatusSeeOther)
 		return
 	}

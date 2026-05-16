@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -62,8 +63,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Fallback: check if the username provided is actually an Access Key
 		sa, saErr := h.store.GetServiceAccountByAccessKey(r.Context(), req.Username)
-		if saErr == nil {
-			if sa.SecretKey == req.Password {
+		if saErr == nil && !sa.Disabled && !sa.IsExpired() {
+			if subtle.ConstantTimeCompare([]byte(sa.SecretKey), []byte(req.Password)) == 1 {
 				user, err = h.store.GetUserByUsername(r.Context(), sa.ParentUser)
 				if err == nil {
 					goto TokenGeneration

@@ -126,6 +126,10 @@ func (h *AdminHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Strip sensitive fields before sending to client
+	user.SecretKey = ""
+	user.PasswordHash = ""
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
