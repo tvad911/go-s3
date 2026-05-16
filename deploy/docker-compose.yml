@@ -1,9 +1,10 @@
 services:
   gos3:
-    image: gos3:latest
-    build: 
-      context: ..
-      dockerfile: deploy/Dockerfile
+    image: tvad9111/gos3:latest
+    # Nếu muốn tự build từ mã nguồn, hãy bỏ comment các dòng dưới đây:
+    # build: 
+    #   context: ..
+    #   dockerfile: deploy/Dockerfile
     command: ["-config", "/app/config.yaml"]
     ports:
       - "9000:9000"   # S3 API

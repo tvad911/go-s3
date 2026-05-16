@@ -19,10 +19,7 @@ Tạo một thư mục mới trên máy chủ (Ví dụ: `/opt/gos3`) và tạo 
 ```yaml
 services:
   gos3:
-    image: gos3:latest # Trong thực tế, bạn có thể build từ source hoặc lấy image từ Docker Hub (nếu có)
-    build: 
-      context: .
-      dockerfile: deploy/Dockerfile
+    image: tvad9111/gos3:latest # Sử dụng official image từ Docker Hub
     ports:
       - "9000:9000"   # Port dành cho S3 API
       - "9001:9001"   # Port dành cho Web Console

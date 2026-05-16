@@ -19,10 +19,7 @@ Create a new directory on your server (e.g., `/opt/gos3`) and create a `docker-c
 ```yaml
 services:
   gos3:
-    image: gos3:latest # In production, you might build from source or pull from Docker Hub
-    build: 
-      context: .
-      dockerfile: deploy/Dockerfile
+    image: tvad9111/gos3:latest # Pulls the official image directly from Docker Hub
     ports:
       - "9000:9000"   # Port for S3 API
       - "9001:9001"   # Port for Web Console
