@@ -13,13 +13,15 @@ This document guides you on how to deploy GoS3 to your server/VPS using Docker q
 
 ## 2. Deployment with Docker Compose (Recommended)
 
-### Step 1: Create configuration file
-Create a new directory on your server (e.g., `/opt/gos3`) and create a `docker-compose.yml` file inside it:
+You have two options to deploy the system depending on your needs:
+
+### Option A: Use Pre-built Image (Fastest)
+Create a new directory (e.g., `/opt/gos3`) and create a `docker-compose.yml` file:
 
 ```yaml
 services:
   gos3:
-    image: tvad9111/gos3:latest # Pulls the official image directly from Docker Hub
+    image: tvad9111/gos3:latest # Pulls directly from Docker Hub
     ports:
       - "9000:9000"   # Port for S3 API
       - "9001:9001"   # Port for Web Console
@@ -30,26 +32,32 @@ services:
       GOS3_AUTH_ROOT_ACCESS_KEY: admin
       GOS3_AUTH_ROOT_SECRET_KEY: SuperSecretPassword123
       
-      # Directory Configurations (Inside the container)
+      # Directory Configurations
       GOS3_STORAGE_DATA_DIR: /data
       GOS3_STORAGE_TEMP_DIR: /data/tmp
       GOS3_STORAGE_META_DB: /data/meta.db
-      
-      # Optional Rate Limit configurations
-      GOS3_RATELIMIT_ENABLED: "true"
-      GOS3_RATELIMIT_RPS: 1000
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:9000/_health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
 
 volumes:
   gos3-data:
 ```
 
-### Step 2: Start the Server
+### Option B: Build from Source (For Latest Updates)
+If the Docker Image on Docker Hub is not yet updated, or if you wish to modify the code locally:
+1. Clone the repository: `git clone https://github.com/tvad911/go-s3.git`
+2. Open the file `deploy/docker-compose.yml`. You can uncomment the build block to compile it directly:
+
+```yaml
+services:
+  gos3:
+    # Use the local build context instead of the image line:
+    build: 
+      context: ..
+      dockerfile: deploy/Dockerfile
+    # ... keep the rest of the configuration
+```
+
+### Start the Server
 Run the following command in the directory containing `docker-compose.yml`:
 ```bash
 docker-compose up -d

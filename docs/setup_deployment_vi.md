@@ -13,13 +13,15 @@ Tài liệu này hướng dẫn bạn cách triển khai GoS3 lên máy chủ (S
 
 ## 2. Triển khai bằng Docker Compose (Khuyên dùng)
 
-### Bước 1: Tạo file cấu hình
-Tạo một thư mục mới trên máy chủ (Ví dụ: `/opt/gos3`) và tạo file `docker-compose.yml` bên trong thư mục đó:
+Bạn có thể lựa chọn 2 cách triển khai dưới đây tuỳ thuộc vào nhu cầu:
+
+### Lựa chọn A: Dùng bản Build sẵn (Nhanh nhất)
+Tạo thư mục mới (Ví dụ: `/opt/gos3`) và tạo file `docker-compose.yml`:
 
 ```yaml
 services:
   gos3:
-    image: tvad9111/gos3:latest # Sử dụng official image từ Docker Hub
+    image: tvad9111/gos3:latest # Kéo trực tiếp Image từ Docker Hub
     ports:
       - "9000:9000"   # Port dành cho S3 API
       - "9001:9001"   # Port dành cho Web Console
@@ -30,26 +32,32 @@ services:
       GOS3_AUTH_ROOT_ACCESS_KEY: admin
       GOS3_AUTH_ROOT_SECRET_KEY: SuperSecretPassword123
       
-      # Cấu hình thư mục lưu trữ (bên trong Container)
+      # Cấu hình thư mục lưu trữ
       GOS3_STORAGE_DATA_DIR: /data
       GOS3_STORAGE_TEMP_DIR: /data/tmp
       GOS3_STORAGE_META_DB: /data/meta.db
-      
-      # Tuỳ chọn giới hạn Rate Limit
-      GOS3_RATELIMIT_ENABLED: "true"
-      GOS3_RATELIMIT_RPS: 1000
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:9000/_health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
 
 volumes:
   gos3-data:
 ```
 
-### Bước 2: Khởi chạy Server
+### Lựa chọn B: Tự Build từ Mã Nguồn (Lấy Code mới nhất)
+Nếu bạn muốn sử dụng các tính năng mới nhất chưa được update lên Docker Hub, hoặc muốn chỉnh sửa lại mã nguồn:
+1. Tải toàn bộ source code từ Github: `git clone https://github.com/tvad911/go-s3.git`
+2. Mở file `deploy/docker-compose.yml`. Mặc định file này đã được cấu hình sẵn để tự Build từ source:
+
+```yaml
+services:
+  gos3:
+    # Bỏ dòng image đi và sử dụng cấu trúc build:
+    build: 
+      context: ..
+      dockerfile: deploy/Dockerfile
+    # ... Các cấu hình còn lại giữ nguyên
+```
+
+### Khởi chạy Server
 Chạy lệnh sau tại thư mục chứa file `docker-compose.yml`:
 ```bash
 docker-compose up -d
