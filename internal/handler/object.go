@@ -66,8 +66,9 @@ func (h *S3Handler) PutObject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for k, v := range r.Header {
-		if len(k) > 10 && strings.ToLower(k[:10]) == "x-amz-meta-" {
-			meta.UserMeta[k] = v[0]
+		lk := strings.ToLower(k)
+		if strings.HasPrefix(lk, "x-amz-meta-") {
+			meta.UserMeta[lk] = v[0]
 		}
 	}
 
@@ -530,8 +531,9 @@ func (h *S3Handler) CopyObject(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		for k, v := range r.Header {
-			if len(k) > 10 && strings.ToLower(k[:10]) == "x-amz-meta-" {
-				m.UserMeta[k] = v[0]
+			lk := strings.ToLower(k)
+			if strings.HasPrefix(lk, "x-amz-meta-") {
+				m.UserMeta[lk] = v[0]
 			}
 		}
 		meta = &m

@@ -605,10 +605,12 @@ func (b *Backend) CompleteMultipartUpload(ctx context.Context, bucket, key, uplo
 	meta.Size = totalSize
 	meta.LastModified = time.Now().UTC()
 
-	// Rename final path to include version if applicable
-	if meta.VersionID != "" && meta.VersionID != "null" {
-		finalPath = finalPath + "@" + meta.VersionID
+	// Rename final path to include version
+	versionSuffix := meta.VersionID
+	if versionSuffix == "" {
+		versionSuffix = "null"
 	}
+	finalPath = finalPath + "@" + versionSuffix
 
 	if err := os.Rename(finalTmpPath, finalPath); err != nil {
 		return nil, fmt.Errorf("rename failed: %w", err)
