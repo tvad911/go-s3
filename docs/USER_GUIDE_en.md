@@ -24,7 +24,13 @@ Once logged in, the system displays the **Dashboard** monitoring vital metrics (
 
 The documentation has been divided into detailed sections for easy reference. Please click the links below to view specific guides:
 
-### 1. [Identity & Security Management (IAM)](./iam_security_en.md)
+### 1. [Setup & Deployment (Docker)](./setup_deployment_en.md)
+Quickly initialize the system:
+- System requirements.
+- Deploy via Docker & Docker Compose.
+- Yaml file configurations and Production security notes.
+
+### 2. [Identity & Security Management (IAM)](./iam_security_en.md)
 Secure access control system:
 - Manage **Users** for the Web Console.
 - Create **Access Keys (Service Accounts)** for software integration.

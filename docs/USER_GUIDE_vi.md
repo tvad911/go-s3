@@ -24,7 +24,13 @@ Sau khi đăng nhập, hệ thống hiển thị **Dashboard** theo dõi các ch
 
 Tài liệu đã được chia nhỏ thành các mục chi tiết để bạn dễ dàng tra cứu. Vui lòng bấm vào các liên kết bên dưới để xem hướng dẫn cụ thể:
 
-### 1. [Quản lý Danh Tính & Bảo Mật (IAM & Security)](./iam_security_vi.md)
+### 1. [Cài đặt & Triển khai bằng Docker (Setup & Deployment)](./setup_deployment_vi.md)
+Khởi chạy hệ thống nhanh chóng:
+- Yêu cầu cấu hình.
+- Deploy bằng Docker & Docker Compose.
+- Cấu hình qua File Yaml và các lưu ý bảo mật trên môi trường Production.
+
+### 2. [Quản lý Danh Tính & Bảo Mật (IAM & Security)](./iam_security_vi.md)
 Hệ thống cấp quyền an toàn:
 - Quản lý **Người dùng (Users)** cho Web Console.
 - Tạo **Access Keys (Service Accounts)** cho phần mềm.
