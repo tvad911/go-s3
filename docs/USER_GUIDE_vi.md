@@ -2,6 +2,8 @@
 
 Chào mừng bạn đến với GoS3! Tài liệu này sẽ hướng dẫn bạn các bước khai thác tối đa sức mạnh của hệ thống lưu trữ S3 tương thích, được trang bị kèm Web Console quản trị trực quan.
 
+*Đọc bằng [Tiếng Việt](USER_GUIDE_vi.md) | Read in [English](USER_GUIDE_en.md)*
+
 ## Bắt Đầu Nhanh (Quick Start)
 
 Giao diện quản trị của GoS3 chạy độc lập với API S3:

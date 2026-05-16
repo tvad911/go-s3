@@ -2,6 +2,8 @@
 
 Để đảm bảo an toàn cho hệ thống, **không bao giờ sử dụng tài khoản Root (`minioadmin`) cho các ứng dụng thực tế**. Thay vào đó, hãy sử dụng tính năng quản lý danh tính (IAM) của GoS3.
 
+*Đọc bằng [Tiếng Việt](iam_security_vi.md) | Read in [English](iam_security_en.md)*
+
 ## 1. Quản lý Người dùng (Users)
 Người dùng (User) có thể sử dụng Web Console để trực tiếp quản trị dữ liệu.
 

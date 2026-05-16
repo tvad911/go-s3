@@ -2,6 +2,8 @@
 
 Tài liệu này hướng dẫn cách quản lý dữ liệu (Files/Folders) và sử dụng các tính năng nâng cao cho từng Bucket trên GoS3.
 
+*Đọc bằng [Tiếng Việt](bucket_management_vi.md) | Read in [English](bucket_management_en.md)*
+
 ---
 
 ## 1. Thao tác Cơ bản (Object Browser)

@@ -4,6 +4,8 @@ GoS3 hoàn toàn tương thích với chuẩn AWS S3. Bất cứ bộ công cụ
 
 > **Lưu ý:** Bạn cần phải tạo **Access Key** và **Secret Key** (qua tab Service Accounts trên Web Console) để sử dụng với API.
 
+*Đọc bằng [Tiếng Việt](api_integration_vi.md) | Read in [English](api_integration_en.md)*
+
 ---
 
 ## 1. Dùng công cụ AWS CLI
