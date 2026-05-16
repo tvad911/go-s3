@@ -189,16 +189,16 @@
 
 ## Verification Checklist
 
-- [ ] Login bằng username/password thành công
-- [ ] Logout clear session
-- [ ] Tạo Service Account → nhận AccessKey/SecretKey
-- [ ] AWS CLI dùng Service Account key → hoạt động bình thường
-- [ ] Old config (root_access_key) → backward compatible
-- [ ] Object Browser hiển thị folders + files
-- [ ] Create Folder hoạt động
-- [ ] Search + Sort hoạt động
-- [ ] Share link (Presigned URL) hoạt động
-- [ ] Bucket Settings: toggle Versioning, edit Policy
-- [ ] Tạo user mới với password
-- [ ] Gán policy cho user → enforce quyền
-- [ ] Dashboard hiển thị thống kê đúng
+- [x] Login bằng username/password thành công
+- [x] Logout clear session
+- [x] Tạo Service Account → nhận AccessKey/SecretKey
+- [x] AWS CLI dùng Service Account key → hoạt động bình thường
+- [x] Old config (root_access_key) → backward compatible
+- [x] Object Browser hiển thị folders + files
+- [x] Create Folder hoạt động
+- [x] Search + Sort hoạt động
+- [x] Share link (Presigned URL) hoạt động
+- [x] Bucket Settings: toggle Versioning, edit Policy
+- [x] Tạo user mới với password
+- [x] Gán policy cho user → enforce quyền
+- [x] Dashboard/Server Info hiển thị thống kê đúng
