@@ -71,6 +71,21 @@ make build
 
 ---
 
+## 📚 Documentation & User Guides
+
+GoS3 provides comprehensive documentation in both English and Vietnamese. Please refer to the detailed guides below:
+
+- **[Setup & Deployment Guide](./docs/setup_deployment_en.md)** | **[Cài đặt & Triển khai](./docs/setup_deployment_vi.md)**
+  Detailed instructions for Docker deployment, configuration via YAML, and Production security best practices.
+- **[Identity & Security Management (IAM)](./docs/iam_security_en.md)** | **[Quản lý Danh Tính & Bảo Mật](./docs/iam_security_vi.md)**
+  User management, Service Accounts (Access Keys), IAM JSON Policies, and Audit Logs.
+- **[Data & Bucket Configuration](./docs/bucket_management_en.md)** | **[Quản lý Dữ liệu & Bucket](./docs/bucket_management_vi.md)**
+  Using the Object Browser, Static Web Hosting, Custom Domains, Lifecycle, CORS, and Webhooks.
+- **[API Integration (CLI & SDK)](./docs/api_integration_en.md)** | **[Tích hợp API & Ứng dụng](./docs/api_integration_vi.md)**
+  How to connect to GoS3 using the AWS CLI and NodeJS AWS SDK v3.
+
+---
+
 ## 💻 Usage
 
 ### Accessing the Web Console
