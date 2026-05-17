@@ -51,6 +51,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 			r.Post("/service-accounts", saHandler.CreateServiceAccount)
 			r.Get("/service-accounts", saHandler.ListServiceAccounts)
 			r.Delete("/service-accounts/{id}", saHandler.DeleteServiceAccount)
+			r.Put("/service-accounts/{id}/status", saHandler.ToggleServiceAccountStatus)
 		})
 	})
 

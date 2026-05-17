@@ -65,10 +65,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
                     Access Keys
                 </li>
-                <li data-view="connection">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                    S3 Connection
-                </li>
+
                 <li data-view="info">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
                     Server Info
@@ -227,10 +224,19 @@
                 <div id="view-users" class="view">
                     <div class="glass-panel p-6 mb-6">
                         <h3 class="text-xl mb-4">Create User</h3>
-                        <form id="create-user-form" class="create-user-form flex gap-4">
-                            <input type="text" id="new-username" placeholder="Username" required class="flex-1">
-                            <input type="password" id="new-password" placeholder="Password" required class="flex-1">
-                            <button type="submit" class="btn btn-primary">Create</button>
+                        <form id="create-user-form" class="create-user-form flex" style="flex-direction: column; gap: 1rem;">
+                            <div class="flex gap-4">
+                                <input type="text" id="new-username" placeholder="Username" required class="flex-1">
+                                <input type="password" id="new-password" placeholder="Password" required class="flex-1">
+                            </div>
+                            <div class="input-group" style="margin: 0;">
+                                <label for="new-user-policies" style="font-size: 0.8rem; color: var(--text-secondary);">IAM Policies (Hold Ctrl/Cmd to select multiple)</label>
+                                <select id="new-user-policies" multiple style="background:var(--bg-secondary);color:var(--text-primary);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:0.5rem;height: 80px;">
+                                </select>
+                            </div>
+                            <div style="text-align: right;">
+                                <button type="submit" class="btn btn-primary">Create User</button>
+                            </div>
                         </form>
                     </div>
                     <div class="table-container glass-panel">
@@ -245,20 +251,12 @@
                 <div id="view-service-accounts" class="view">
                     <div class="table-container glass-panel">
                         <table class="data-table">
-                            <thead><tr><th>Access Key</th><th>Owner</th><th>Description</th><th>Created</th><th>Actions</th></tr></thead>
+                            <thead><tr><th>Access Key</th><th>Owner</th><th>Description</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
                             <tbody id="sa-table-body"></tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Connection Settings View -->
-                <div id="view-connection" class="view">
-                    <div class="glass-panel" style="max-width: 600px;">
-                        <div style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                            <h2 style="font-size: 1.25rem; font-weight: 500;">S3 Connection Config</h2>
-                            <p class="text-secondary" style="margin-top:0.5rem; font-size:0.9rem;">
-                                These are the configurations currently loaded from the GoS3 server backend.
-                                The Web Console automatically uses this endpoint and access key to manage S3 resources.
                             </p>
                         </div>
                         <div style="padding: 1.5rem;">
@@ -609,6 +607,15 @@
                             <option value="">-- For Myself --</option>
                         </select>
                     </div>
+                    <div class="input-group">
+                        <label for="sa-expires">Expires In</label>
+                        <select id="sa-expires" style="width: 100%; padding: 0.5rem; background: var(--bg-secondary); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: var(--text-primary);">
+                            <option value="">Never</option>
+                            <option value="7">7 Days</option>
+                            <option value="30">30 Days</option>
+                            <option value="365">1 Year</option>
+                        </select>
+                    </div>
                     <div class="modal-actions">
                         <button type="button" class="btn btn-ghost" onclick="closeModal('create-sa-modal')">Cancel</button>
                         <button type="submit" class="btn btn-primary">Generate Key</button>
@@ -831,6 +838,6 @@ aws --endpoint-url &lt;endpoint&gt; s3 ls</pre>
         </div>
     </div>
 
-    <script src="app.js?v=8"></script>
+    <script src="app.js?v=9"></script>
 </body>
 </html>

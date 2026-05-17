@@ -150,13 +150,11 @@ function loadView(viewName) {
     } else if (viewName === 'users') {
         breadcrumb.innerHTML = `<span>IAM Users</span>`;
         fetchUsers();
+        populateNewUserPolicies();
     } else if (viewName === 'service-accounts') {
         breadcrumb.innerHTML = `<span>Service Accounts</span>`;
         topbarActions.innerHTML = `<button class="btn btn-primary" onclick="openCreateSAModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Create Access Key</button>`;
         fetchServiceAccounts();
-    } else if (viewName === 'connection') {
-        breadcrumb.innerHTML = `<span>S3 Connection</span>`;
-        loadConnectionInfo();
     } else if (viewName === 'info') {
         breadcrumb.innerHTML = `<span>Server Info</span>`;
         fetchServerInfo();
@@ -1032,16 +1030,26 @@ async function fetchServiceAccounts() {
         const accounts = await api('GET', '/api/v1/service-accounts');
         tbody.innerHTML = accounts.map(sa => `
             <tr>
-                <td data-label="Access Key"><code>${sa.accessKeyId}</code></td>
-                <td data-label="Owner">${escapeHTML(sa.parentUser)}</td>
-                <td data-label="Description">${sa.description || '—'}</td>
-                <td data-label="Created">${new Date(sa.createdAt).toLocaleString()}</td>
+                <td data-label="Access Key" style="font-family:monospace;">${sa.id}</td>
+                <td data-label="Owner"><strong>${escapeHTML(sa.parentUser || '')}</strong></td>
+                <td data-label="Description">${escapeHTML(sa.description)}</td>
+                <td data-label="Status">${sa.disabled ? '<span style="color:var(--danger)">Disabled</span>' : '<span style="color:var(--success)">Active</span>'}</td>
+                <td data-label="Created">${formatDate(sa.createdAt)}</td>
                 <td data-label="Actions">
+                    <button class="btn btn-ghost text-primary" onclick="toggleSAStatus('${sa.id}', ${sa.disabled})">${sa.disabled ? 'Enable' : 'Disable'}</button>
                     <button class="btn btn-ghost text-danger" onclick="deleteServiceAccount('${sa.id}')">Delete</button>
                 </td>
             </tr>`).join('');
-    } catch (err) { showToast(err.message, 'error'); tbody.innerHTML = ''; }
+    } catch (err) { showToast('Error: ' + err.message, 'error'); tbody.innerHTML = ''; }
 }
+
+window.toggleSAStatus = async (id, currentDisabled) => {
+    try {
+        await api('PUT', `/api/v1/service-accounts/${id}/status`, { disabled: !currentDisabled });
+        showToast(`Access Key ${id} ${!currentDisabled ? 'disabled' : 'enabled'}`, 'success');
+        fetchServiceAccounts();
+    } catch (err) { showToast(err.message, 'error'); }
+};
 
 let globalS3Endpoint = null;
 async function getS3Endpoint() {
@@ -1090,16 +1098,21 @@ window.openCreateSAModal = async (prefillUsername = '') => {
 
 document.getElementById('create-sa-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const desc = document.getElementById('sa-description').value;
-    const targetUser = document.getElementById('sa-target-user')?.value;
+    const description = document.getElementById('sa-description').value;
+    const targetUser = document.getElementById('sa-target-user').value;
+    const expiresVal = document.getElementById('sa-expires').value;
     
-    if (!targetUser) {
-        showToast('Please select a Target User', 'error');
-        return;
+    let payload = { description };
+    if (targetUser) {
+        payload.targetUser = targetUser;
+    }
+    if (expiresVal) {
+        const date = new Date();
+        date.setDate(date.getDate() + parseInt(expiresVal));
+        payload.expiresAt = date.toISOString();
     }
 
     try {
-        const payload = { description: desc, targetUser: targetUser };
         const result = await api('POST', '/api/v1/service-accounts', payload);
         closeModal('create-sa-modal');
         document.getElementById('sa-description').value = '';
@@ -1205,15 +1218,37 @@ async function fetchUsers() {
     } catch (err) { showToast('Admin API Error: ' + err.message, 'error'); tbody.innerHTML = ''; }
 }
 
+async function populateNewUserPolicies() {
+    try {
+        const policies = await api('GET', '/_admin/policies');
+        const select = document.getElementById('new-user-policies');
+        select.innerHTML = '';
+        if (policies) {
+            policies.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p;
+                opt.textContent = p;
+                select.appendChild(opt);
+            });
+        }
+    } catch (err) {
+        console.error('Failed to load policies', err);
+    }
+}
+
 document.getElementById('create-user-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('new-username').value;
     const password = document.getElementById('new-password').value;
+    const select = document.getElementById('new-user-policies');
+    const policies = Array.from(select.selectedOptions).map(opt => opt.value);
+    
     try {
-        await api('POST', '/_admin/users', { username, password });
+        await api('POST', '/_admin/users', { username, password, policies });
         showToast(`User ${username} created`, 'success');
         document.getElementById('new-username').value = '';
         document.getElementById('new-password').value = '';
+        select.selectedIndex = -1; // clear selection
         fetchUsers();
     } catch (err) { showToast(err.message, 'error'); }
 });

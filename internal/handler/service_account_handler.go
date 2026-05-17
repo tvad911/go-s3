@@ -176,3 +176,40 @@ func (h *ServiceAccountHandler) DeleteServiceAccount(w http.ResponseWriter, r *h
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+type toggleSAStatusRequest struct {
+	Disabled bool `json:"disabled"`
+}
+
+// ToggleServiceAccountStatus updates the disabled status of a service account.
+func (h *ServiceAccountHandler) ToggleServiceAccountStatus(w http.ResponseWriter, r *http.Request) {
+	user := auth.GetUser(r.Context())
+	if user.Username == "anonymous" {
+		http.Error(w, `{"error":"not authenticated"}`, http.StatusUnauthorized)
+		return
+	}
+
+	saID := chi.URLParam(r, "id")
+	if saID == "" {
+		http.Error(w, `{"error":"service account id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	if !user.IsRoot {
+		http.Error(w, `{"error":"access denied"}`, http.StatusForbidden)
+		return
+	}
+
+	var req toggleSAStatusRequest
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.store.DisableServiceAccount(r.Context(), saID, req.Disabled); err != nil {
+		http.Error(w, `{"error":"failed to update service account status"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
