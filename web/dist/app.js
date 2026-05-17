@@ -1036,7 +1036,7 @@ async function fetchServiceAccounts() {
                 <td data-label="Description">${sa.description || '—'}</td>
                 <td data-label="Created">${new Date(sa.createdAt).toLocaleString()}</td>
                 <td data-label="Actions">
-                    <button class="btn btn-ghost text-primary" style="margin-right:0.5rem;" onclick="openIAMPolicyModal('${sa.accessKeyId}')">Edit Policy</button>
+                    <button class="btn btn-ghost text-primary" style="margin-right:0.5rem;" onclick="openAttachPolicyModal('${sa.id}', 'service-account', '${sa.accessKeyId}')">Attach Policies</button>
                     <button class="btn btn-ghost text-danger" onclick="deleteServiceAccount('${sa.id}')">Delete</button>
                 </td>
             </tr>`).join('');
@@ -1098,45 +1098,71 @@ window.copyToClipboard = (elementId) => {
 
 let currentIAMUser = '';
 
-window.openIAMPolicyModal = async (accessKey) => {
-    currentIAMUser = accessKey;
-    document.getElementById('iam-policy-user').textContent = accessKey;
-    const textarea = document.getElementById('iam-policy-json');
-    document.getElementById('iam-policy-error').style.display = 'none';
-    textarea.value = '';
+let currentAttachTargetID = '';
+let currentAttachTargetType = ''; // 'user' or 'service-account'
+
+window.openAttachPolicyModal = async (id, type, displayName) => {
+    currentAttachTargetID = id;
+    currentAttachTargetType = type;
+    document.getElementById('attach-policy-target').textContent = displayName;
+    document.getElementById('attach-policy-error').style.display = 'none';
+    
+    const tbody = document.getElementById('attach-policy-list');
+    tbody.innerHTML = '<tr><td style="text-align:center;">Loading policies...</td></tr>';
+    openModal('attach-iam-policy-modal');
     
     try {
-        const res = await api('GET', `/_admin/policies/${accessKey}`);
-        textarea.value = JSON.stringify(res, null, 2);
-    } catch (err) {
-        if (!err.message.includes('not found') && !err.message.includes('NoSuch')) {
-            showToast('Failed to load policy: ' + err.message, 'error');
+        // Fetch all policies
+        const policies = await api('GET', `/_admin/policies`);
+        
+        // Fetch current attached policies
+        let attached = [];
+        if (type === 'user') {
+            const user = await api('GET', `/_admin/users/${id}`);
+            attached = user.policies || [];
+        } else if (type === 'service-account') {
+            // Need to get SA's current policies. Since we don't have a GET /id, we list all and find it
+            const sas = await api('GET', '/api/v1/service-accounts');
+            const sa = sas.find(s => s.id === id);
+            if (sa) attached = sa.policies || [];
         }
+
+        if (!policies || policies.length === 0) {
+            tbody.innerHTML = '<tr><td style="text-align:center; color:var(--text-muted);">No IAM Policies available. Please create one first.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = policies.map(p => `
+            <tr>
+                <td>
+                    <label style="display:flex; align-items:center; cursor:pointer;">
+                        <input type="checkbox" class="policy-checkbox" value="${escapeHTML(p)}" ${attached.includes(p) ? 'checked' : ''} style="margin-right: 0.5rem;">
+                        <span style="font-weight:500;">${escapeHTML(p)}</span>
+                    </label>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (err) {
+        tbody.innerHTML = `<tr><td style="text-align:center; color:var(--danger);">Error loading policies: ${escapeHTML(err.message)}</td></tr>`;
     }
-    openModal('edit-iam-policy-modal');
 };
 
-window.saveIAMPolicy = async () => {
-    const textarea = document.getElementById('iam-policy-json');
-    const policyStr = textarea.value.trim();
-    
-    if (policyStr && !validateJSONConfig(textarea, 'iam-policy-error')) {
-        showToast('Please fix JSON errors before saving', 'error');
-        return;
-    }
+window.saveAttachedPolicies = async () => {
+    const checkboxes = document.querySelectorAll('.policy-checkbox:checked');
+    const selectedPolicies = Array.from(checkboxes).map(cb => cb.value);
 
     try {
-        if (!policyStr) {
-            await api('DELETE', `/_admin/policies/${currentIAMUser}`);
-            showToast('IAM Policy deleted', 'success');
+        if (currentAttachTargetType === 'user') {
+            await api('PUT', `/_admin/users/${currentAttachTargetID}/policies`, selectedPolicies);
         } else {
-            const policyObj = JSON.parse(policyStr);
-            await api('PUT', `/_admin/policies/${currentIAMUser}`, policyObj);
-            showToast('IAM Policy saved successfully', 'success');
+            await api('PUT', `/api/v1/service-accounts/${currentAttachTargetID}/policies`, selectedPolicies);
         }
-        closeModal('edit-iam-policy-modal');
+        showToast('Policies attached successfully', 'success');
+        closeModal('attach-iam-policy-modal');
     } catch (err) {
-        showToast(err.message, 'error');
+        document.getElementById('attach-policy-error').textContent = err.message;
+        document.getElementById('attach-policy-error').style.display = 'block';
     }
 };
 
@@ -1151,7 +1177,7 @@ async function fetchUsers() {
                 <td data-label="Username"><strong>${u.username}</strong>${u.isRoot ? ' <span class="text-accent" style="font-size:0.8rem;background:rgba(0,240,255,0.1);padding:2px 6px;border-radius:4px;margin-left:8px;">ROOT</span>' : ''}</td>
                 <td data-label="Status">${u.disabled ? '<span style="color:var(--danger)">Disabled</span>' : '<span style="color:var(--success)">Active</span>'}</td>
                 <td data-label="Actions">
-                    ${!u.isRoot ? `<button class="btn btn-ghost text-primary" style="margin-right:0.5rem;" onclick="openIAMPolicyModal('${u.username}')">Edit Policy</button>` : ''}
+                    ${!u.isRoot ? `<button class="btn btn-ghost text-primary" style="margin-right:0.5rem;" onclick="openAttachPolicyModal('${u.username}', 'user', '${u.username}')">Attach Policies</button>` : ''}
                     ${!u.isRoot ? `<button class="btn btn-ghost text-danger" onclick="deleteUser('${u.username}')">Delete</button>` : ''}
                 </td>
             </tr>`).join('');

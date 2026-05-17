@@ -152,3 +152,38 @@ func (h *ServiceAccountHandler) DeleteServiceAccount(w http.ResponseWriter, r *h
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// PutServiceAccountPolicies updates the policies array for a service account.
+func (h *ServiceAccountHandler) PutServiceAccountPolicies(w http.ResponseWriter, r *http.Request) {
+	user := auth.GetUser(r.Context())
+	if user.Username == "anonymous" {
+		http.Error(w, `{"error":"not authenticated"}`, http.StatusUnauthorized)
+		return
+	}
+
+	saID := chi.URLParam(r, "id")
+	if saID == "" {
+		http.Error(w, `{"error":"service account id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// For admin only currently. If non-root, deny.
+	if !user.IsRoot {
+		// Ideally we check if they have admin:UpdateServiceAccount permission
+		http.Error(w, `{"error":"access denied"}`, http.StatusForbidden)
+		return
+	}
+
+	var policies []string
+	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&policies); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if err := h.store.UpdateServiceAccountPolicies(r.Context(), saID, policies); err != nil {
+		http.Error(w, `{"error":"failed to update policies"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

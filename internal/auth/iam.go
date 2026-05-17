@@ -70,5 +70,6 @@ type UserStore interface {
 	ListUsers(ctx context.Context) ([]*User, error)
 	CreateUser(ctx context.Context, user *User) error
 	UpdateUser(ctx context.Context, user *User) error
+	UpdateUserPolicies(ctx context.Context, username string, policies []string) error
 	DeleteUser(ctx context.Context, username string) error
 }

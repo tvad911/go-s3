@@ -796,6 +796,26 @@ func (s *bboltStore) DeleteUser(ctx context.Context, username string) error {
 	})
 }
 
+func (s *bboltStore) UpdateUserPolicies(ctx context.Context, username string, policies []string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketUsers)
+		v := b.Get([]byte(username))
+		if v == nil {
+			return auth.ErrUserNotFound
+		}
+		var user auth.User
+		if err := json.Unmarshal(v, &user); err != nil {
+			return err
+		}
+		user.Policies = policies
+		data, err := json.Marshal(&user)
+		if err != nil {
+			return err
+		}
+		return b.Put([]byte(username), data)
+	})
+}
+
 // PolicyStore implementation
 
 func (s *bboltStore) GetBucketPolicy(ctx context.Context, bucket string) (*auth.Policy, error) {
@@ -1173,6 +1193,37 @@ func (s *bboltStore) DisableServiceAccount(ctx context.Context, id string, disab
 			return auth.ErrUserNotFound
 		}
 		found.Disabled = disabled
+		data, err := json.Marshal(found)
+		if err != nil {
+			return err
+		}
+		return b.Put(foundKey, data)
+	})
+}
+
+func (s *bboltStore) UpdateServiceAccountPolicies(ctx context.Context, id string, policies []string) error {
+	return s.db.Update(func(tx *bbolt.Tx) error {
+		b := tx.Bucket(bucketServiceAccounts)
+		var found *auth.ServiceAccount
+		var foundKey []byte
+		err := b.ForEach(func(k, v []byte) error {
+			var sa auth.ServiceAccount
+			if err := json.Unmarshal(v, &sa); err != nil {
+				return err
+			}
+			if sa.ID == id {
+				found = &sa
+				foundKey = k
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		if found == nil {
+			return auth.ErrUserNotFound
+		}
+		found.Policies = policies
 		data, err := json.Marshal(found)
 		if err != nil {
 			return err

@@ -160,6 +160,28 @@ func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func (h *AdminHandler) PutUserPolicies(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:UpdateUser"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	username := chi.URLParam(r, "username")
+	var policies []string
+	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&policies); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := h.MetaStore.UpdateUserPolicies(r.Context(), username, policies); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	h.recordAudit(r, "PutUserPolicies", username, "")
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *AdminHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if err := h.CheckAdminPolicy(r, "admin:DeleteUser"); err != nil {
 		WriteError(w, r, err)

@@ -51,6 +51,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 			r.Post("/service-accounts", saHandler.CreateServiceAccount)
 			r.Get("/service-accounts", saHandler.ListServiceAccounts)
 			r.Delete("/service-accounts/{id}", saHandler.DeleteServiceAccount)
+			r.Put("/service-accounts/{id}/policies", saHandler.PutServiceAccountPolicies)
 		})
 	})
 
@@ -69,6 +70,7 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 			r.Post("/users", adminHandler.CreateUser)
 			r.Get("/users/{username}", adminHandler.GetUser)
 			r.Put("/users/{username}", adminHandler.UpdateUser)
+			r.Put("/users/{username}/policies", adminHandler.PutUserPolicies)
 			r.Delete("/users/{username}", adminHandler.DeleteUser)
 			r.Post("/users/{username}/rotate-key", stubHandler("RotateUserKey"))
 

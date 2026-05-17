@@ -65,4 +65,7 @@ type ServiceAccountStore interface {
 
 	// DisableServiceAccount toggles the disabled state of a service account.
 	DisableServiceAccount(ctx context.Context, id string, disabled bool) error
+
+	// UpdateServiceAccountPolicies updates the list of policies attached to a service account.
+	UpdateServiceAccountPolicies(ctx context.Context, id string, policies []string) error
 }
