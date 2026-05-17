@@ -257,37 +257,6 @@
                     </div>
                 </div>
 
-                            </p>
-                        </div>
-                        <div style="padding: 1.5rem;">
-                            <div class="form-group" style="margin-bottom: 1rem;">
-                                <label class="text-secondary" style="display:block; margin-bottom:0.5rem; font-size:0.85rem;">S3 API Endpoint URL</label>
-                                <div style="display:flex; gap:0.5rem;">
-                                    <input type="text" id="conn-endpoint" class="input" readonly style="flex:1; background:rgba(0,0,0,0.2); font-family:monospace; color:var(--text-primary);">
-                                    <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('conn-endpoint').value);showToast('Copied','success')">Copy</button>
-                                </div>
-                            </div>
-                            <div class="form-group" style="margin-bottom: 1rem;">
-                                <label class="text-secondary" style="display:block; margin-bottom:0.5rem; font-size:0.85rem;">S3 Region</label>
-                                <input type="text" id="conn-region" class="input" readonly value="us-east-1" style="width:100%; background:rgba(0,0,0,0.2); font-family:monospace; color:var(--text-primary);">
-                            </div>
-                            <div class="form-group" style="margin-bottom: 1rem;">
-                                <label class="text-secondary" style="display:block; margin-bottom:0.5rem; font-size:0.85rem;">Access Key (Client ID)</label>
-                                <div style="display:flex; gap:0.5rem;">
-                                    <input type="text" id="conn-access" class="input" readonly style="flex:1; background:rgba(0,0,0,0.2); font-family:monospace; color:var(--text-primary);">
-                                    <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('conn-access').value);showToast('Copied','success')">Copy</button>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label class="text-secondary" style="display:block; margin-bottom:0.5rem; font-size:0.85rem;">Secret Key</label>
-                                <input type="password" id="conn-secret" class="input" readonly value="******** (Managed by Backend)" style="width:100%; background:rgba(0,0,0,0.2); font-family:monospace; color:var(--text-primary);">
-                                <p class="text-secondary" style="font-size:0.8rem; margin-top:0.5rem;">
-                                    The Web UI does not store the Secret Key. It is safely managed by the GoS3 server backend.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Server Info View -->
                 <div id="view-info" class="view">
@@ -838,6 +807,6 @@ aws --endpoint-url &lt;endpoint&gt; s3 ls</pre>
         </div>
     </div>
 
-    <script src="app.js?v=9"></script>
+    <script src="app.js?v=10"></script>
 </body>
 </html>
