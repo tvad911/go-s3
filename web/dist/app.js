@@ -37,12 +37,9 @@ async function api(method, path, body = null) {
         try { msg = JSON.parse(text).error || text; } catch {}
         throw new Error(msg);
     }
-    if (res.status === 204 || res.status === 201) {
-        const text = await res.text();
-        if (!text) return null;
-        try { return JSON.parse(text); } catch { return text; }
-    }
-    return res.json();
+    const text = await res.text();
+    if (!text) return null;
+    try { return JSON.parse(text); } catch { return text; }
 }
 
 // S3 API helper — uses SigV4 via admin presign, or direct fetch with cookie proxy
@@ -1103,9 +1100,12 @@ document.getElementById('create-sa-form')?.addEventListener('submit', async (e) 
     const expiresVal = document.getElementById('sa-expires').value;
     
     let payload = { description };
-    if (targetUser) {
-        payload.targetUser = targetUser;
+    if (!targetUser) {
+        showToast('Please select a Target User', 'error');
+        return;
     }
+    payload.targetUser = targetUser;
+
     if (expiresVal) {
         const date = new Date();
         date.setDate(date.getDate() + parseInt(expiresVal));
