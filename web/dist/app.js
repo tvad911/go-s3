@@ -1034,7 +1034,7 @@ async function fetchServiceAccounts() {
                 <td data-label="Owner"><strong>${escapeHTML(sa.parentUser || '')}</strong></td>
                 <td data-label="Description">${escapeHTML(sa.description)}</td>
                 <td data-label="Status">${sa.disabled ? '<span style="color:var(--danger)">Disabled</span>' : '<span style="color:var(--success)">Active</span>'}</td>
-                <td data-label="Created">${formatDate(sa.createdAt)}</td>
+                <td data-label="Created">${new Date(sa.createdAt).toLocaleString()}</td>
                 <td data-label="Actions">
                     <button class="btn btn-ghost text-primary" onclick="toggleSAStatus('${sa.id}', ${sa.disabled})">${sa.disabled ? 'Enable' : 'Disable'}</button>
                     <button class="btn btn-ghost text-danger" onclick="deleteServiceAccount('${sa.id}')">Delete</button>
