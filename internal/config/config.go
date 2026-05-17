@@ -127,6 +127,21 @@ func Load(cfgFile string) (*Config, error) {
 		if err := v.ReadInConfig(); err != nil {
 			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
+	} else {
+		// Attempt to load default config.yaml if present
+		v.SetConfigName("config")
+		v.SetConfigType("yaml")
+		v.AddConfigPath(".")
+		v.AddConfigPath("/app")
+		v.AddConfigPath("deploy") // Fallback for local development
+		
+		if err := v.ReadInConfig(); err != nil {
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				// File exists but contains syntax errors or other read issues
+				return nil, fmt.Errorf("failed to parse default config file: %w", err)
+			}
+			// It is completely fine if the default config is not found (relies on ENVs)
+		}
 	}
 
 	var cfg Config

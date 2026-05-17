@@ -18,7 +18,7 @@ var version = "dev"
 
 func main() {
 	var configFile string
-	flag.StringVar(&configFile, "config", "deploy/config.example.yaml", "path to config file")
+	flag.StringVar(&configFile, "config", "", "path to config file (optional)")
 	flag.Parse()
 
 	// Initialize default logger temporarily before config is loaded
