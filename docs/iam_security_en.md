@@ -4,13 +4,36 @@ To ensure system security, **never use the Root account (`minioadmin`) for produ
 
 *Read in [English](iam_security_en.md) | Đọc bằng [Tiếng Việt](iam_security_vi.md)*
 
-## 1. User Management
-Users can utilize the Web Console to directly manage data.
+## Permission Architecture
+
+GoS3 implements a permission model based on AWS IAM standards:
+
+```
+Root Admin (config.yaml / ENV)
+  └── Logs into Web Console (port 9001)
+        ├── Creates IAM Users
+        │     ├── Attaches IAM Policies (N policies / user)
+        │     └── Creates Access Keys (N keys / user)
+        │           └── Inherits 100% permissions from parent User
+        └── Creates IAM Policies (JSON documents)
+```
+
+**Core principles:**
+- **Root Admin** is configured in `config.yaml` or environment variables. This is the only account that can log in to the Web Console.
+- **IAM Users** are identities created by Root within the system. They **cannot** log in to the Web Console — they exist only to carry policies and own Access Keys.
+- **Access Keys** are credential pairs (`AccessKeyID` / `SecretKey`) for applications/SDKs/CLIs to communicate with the S3 API. Access Keys **inherit all** permissions from their parent IAM User and have no policies of their own.
+- **IAM Policies** are JSON documents defining permissions, reusable across multiple Users.
+
+## 1. User Management (IAM Users)
+IAM Users are the core identity entities in the system. All permissions are attached at the User level.
 
 1. Navigate to **IAM Users** on the left menu.
 2. Click **Create User**.
-3. Enter a Username and Password. You can grant basic Policies to the User immediately.
-4. This User can now use these credentials to log in to the Web Console.
+3. Enter a Username and Password.
+4. After creation, click **Attach Policies** on the User row to assign permissions.
+5. Click **Create Key** on the User row to generate an Access Key for that User.
+
+> **Note:** IAM Users cannot log in to the Web Console. Only the Root account has this privilege.
 
 ## 2. Access Management (IAM Policies)
 Policies define exactly which actions are permitted on the system. GoS3 uses the standard AWS IAM JSON Policy format.
@@ -96,14 +119,20 @@ Allows a backend application to do anything (create, list, delete), but **strict
 }
 ```
 
-## 3. Service Accounts (Access / Secret Keys)
-Service Accounts are intended for Applications, Backends, SDKs, or CLI tools connecting to GoS3 via APIs instead of the Web Console.
+## 3. Access Keys (Service Accounts)
+Access Keys are credential pairs for Applications, Backends, SDKs, or CLI tools connecting to GoS3 via APIs instead of the Web Console.
 
-1. Navigate to **Access Keys** (Service Accounts).
-2. Click **Create Access Key**.
-3. The system will randomly generate an `AccessKey` and `SecretKey`.
-4. **IMPORTANT NOTE:** Copy the `SecretKey` immediately. For security reasons, the system will not display it a second time.
-5. You can assign a Policy to this Service Account to limit its scope (e.g., Application A can only write to Bucket A).
+**How to create an Access Key:**
+
+1. **From the Users table (Fastest):** Click the **Create Key** button on the User row you want to provision.
+2. **From the Access Keys tab:** Click **Create Access Key**, select a **Target User** (required), then click Generate.
+3. The system will randomly generate an `AccessKeyID` and `SecretKey`.
+4. **IMPORTANT:** Copy the `SecretKey` immediately. For security reasons, the system will not display it a second time.
+
+**About Access Key permissions:**
+Access Keys **automatically inherit all** permissions (Policies) from their parent IAM User. You cannot (and do not need to) assign policies directly to an Access Key.
+
+Example: If User `frontend-app` has the `ReadOnlyAssets` policy, then all Access Keys created for `frontend-app` will only have read permissions. For different permissions → create a different IAM User.
 
 ## 4. Audit Logs
 To track who did what on the system and easily review security:

@@ -4,13 +4,36 @@
 
 *Đọc bằng [Tiếng Việt](iam_security_vi.md) | Read in [English](iam_security_en.md)*
 
-## 1. Quản lý Người dùng (Users)
-Người dùng (User) có thể sử dụng Web Console để trực tiếp quản trị dữ liệu.
+## Kiến trúc Phân quyền
+
+GoS3 áp dụng mô hình phân quyền theo chuẩn AWS IAM:
+
+```
+Root Admin (config.yaml / ENV)
+  └── Đăng nhập Web Console (cổng 9001)
+        ├── Tạo IAM Users
+        │     ├── Gắn IAM Policies (N policies / user)
+        │     └── Tạo Access Keys (N keys / user)
+        │           └── Kế thừa 100% quyền từ User cha
+        └── Tạo IAM Policies (JSON documents)
+```
+
+**Nguyên tắc cốt lõi:**
+- **Root Admin** được cấu hình trong `config.yaml` hoặc biến môi trường. Đây là tài khoản duy nhất có quyền đăng nhập vào Web Console.
+- **IAM Users** là các danh tính được Root tạo ra bên trong hệ thống. Chúng **không thể** đăng nhập Web Console — chỉ dùng để gán quyền và cấp Access Key.
+- **Access Keys** là cặp khóa (`AccessKeyID` / `SecretKey`) để ứng dụng/SDK/CLI giao tiếp với API S3. Access Key **kế thừa toàn bộ** quyền từ IAM User cha, không có Policy riêng.
+- **IAM Policies** là các tài liệu JSON định nghĩa quyền hạn, có thể gắn cho nhiều User.
+
+## 1. Quản lý Người dùng (IAM Users)
+IAM User là thực thể chính mang danh tính trong hệ thống. Tất cả quyền hạn được gắn ở cấp User.
 
 1. Truy cập mục **IAM Users** ở Menu bên trái.
 2. Bấm **Create User**.
-3. Nhập Tên đăng nhập và Mật khẩu. Bạn có thể cấp sẵn các quyền (Policy) cơ bản cho User ngay lúc này.
-4. User này giờ đây có thể dùng thông tin vừa tạo để đăng nhập vào Web Console.
+3. Nhập Tên đăng nhập và Mật khẩu.
+4. Sau khi tạo xong, bấm **Attach Policies** trên dòng User đó để gán quyền.
+5. Bấm **Create Key** trên dòng User để tạo Access Key cho User đó.
+
+> **Lưu ý:** IAM Users không thể đăng nhập vào trang quản trị Web Console. Chỉ tài khoản Root mới có quyền này.
 
 ## 2. Quản lý Quyền Truy Cập (IAM Policies)
 Policy xác định giới hạn những thao tác nào được phép thực hiện trên hệ thống. GoS3 sử dụng định dạng JSON Policy chuẩn AWS IAM.
@@ -96,14 +119,20 @@ Cho phép ứng dụng backend làm mọi thứ (tạo file, xoá file) nhưng *
 }
 ```
 
-## 3. Quản lý Service Accounts (Access / Secret Keys)
-Service Account là tài khoản dành cho các ứng dụng (App), Backend, SDK, hoặc CLI kết nối đến GoS3 thông qua API thay vì thông qua Web Console.
+## 3. Quản lý Access Keys (Service Accounts)
+Access Key là cặp khóa dành cho các ứng dụng (App), Backend, SDK, hoặc CLI kết nối đến GoS3 thông qua API thay vì thông qua Web Console.
 
-1. Truy cập mục **Access Keys** (Service Accounts).
-2. Bấm **Create Access Key**.
-3. Hệ thống sẽ sinh ngẫu nhiên `AccessKey` và `SecretKey`. 
+**Cách tạo Access Key:**
+
+1. **Từ bảng Users (Nhanh nhất):** Bấm nút **Create Key** trên dòng User mà bạn muốn cấp key.
+2. **Từ tab Access Keys:** Bấm **Create Access Key**, chọn **Target User** (bắt buộc), rồi bấm Generate.
+3. Hệ thống sẽ sinh ngẫu nhiên `AccessKeyID` và `SecretKey`.
 4. **LƯU Ý QUAN TRỌNG:** Copy lại `SecretKey` ngay lập tức, vì hệ thống sẽ không hiển thị lại lần 2 vì lý do bảo mật.
-5. Bạn có thể gán Policy cho Service Account này để giới hạn phạm vi truy cập (Ví dụ: Ứng dụng A chỉ được quyền ghi vào Bucket A).
+
+**Về quyền hạn của Access Key:**
+Access Key **tự động kế thừa toàn bộ** quyền (Policies) từ IAM User cha. Không cần (và không thể) gán Policy riêng cho Access Key.
+
+Ví dụ: Nếu User `frontend-app` được gắn Policy `ReadOnlyAssets`, thì tất cả Access Keys tạo ra cho `frontend-app` đều chỉ có quyền đọc. Muốn quyền khác → tạo IAM User khác.
 
 ## 4. Nhật Ký Truy Cập (Audit Logs)
 Để kiểm tra ai đã làm gì trên hệ thống, giúp dễ dàng rà soát bảo mật:
