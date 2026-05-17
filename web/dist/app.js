@@ -954,28 +954,58 @@ window.startStagingUpload = async () => {
     btnStart.textContent = 'Uploading...';
     
     if (progressContainer) progressContainer.style.display = 'block';
-    if (progressBar) progressBar.style.width = '0%';
+    if (progressBar) {
+        progressBar.style.width = '0%';
+        progressBar.style.transition = 'width 0.1s linear';
+    }
 
     let successCount = 0;
     let failCount = 0;
-    const total = uploadStagingQueue.length;
+    const totalFiles = uploadStagingQueue.length;
+    const totalBytes = uploadStagingQueue.reduce((acc, f) => acc + f.size, 0);
+    let uploadedBytes = 0;
 
-    for (let i = 0; i < total; i++) {
+    for (let i = 0; i < totalFiles; i++) {
         const file = uploadStagingQueue[i];
         try {
             const relativePath = file.webkitRelativePath || file.name;
-            if (status) status.textContent = `Uploading ${i+1}/${total}...`;
+            if (status) status.textContent = `Uploading ${i+1}/${totalFiles}...`;
             const key = `${currentPrefix}${relativePath}`;
             const data = await api('POST', '/_admin/presign', { method: 'PUT', bucket: currentBucket, key, expires: 3600 });
-            const res = await fetch(data.url, { method: 'PUT', body: file });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            
+            await new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        const currentOverallBytes = uploadedBytes + e.loaded;
+                        const pct = totalBytes > 0 ? (currentOverallBytes / totalBytes) * 100 : 100;
+                        if (progressBar) progressBar.style.width = `${pct}%`;
+                        if (status) status.textContent = `Uploading ${i+1}/${totalFiles} (${Math.round(pct)}%)...`;
+                    }
+                });
+                xhr.addEventListener('load', () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        resolve();
+                    } else {
+                        reject(new Error(`HTTP ${xhr.status}`));
+                    }
+                });
+                xhr.addEventListener('error', () => reject(new Error('Network error')));
+                xhr.addEventListener('abort', () => reject(new Error('Upload aborted')));
+                xhr.open('PUT', data.url, true);
+                xhr.send(file);
+            });
+            
+            uploadedBytes += file.size;
             successCount++;
         } catch (err) { 
             console.error(err);
             failCount++;
+            uploadedBytes += file.size; // Advance progress even on failure
         }
-        if (progressBar) progressBar.style.width = `${((i + 1) / total) * 100}%`;
     }
+
+    if (progressBar) progressBar.style.width = '100%';
 
     if (failCount === 0) {
         showToast(`Successfully uploaded ${successCount} files`, 'success');
@@ -983,7 +1013,6 @@ window.startStagingUpload = async () => {
     } else {
         showToast(`Uploaded ${successCount} files, failed ${failCount}`, 'error');
     }
-
 
     btnStart.disabled = false;
     btnStart.textContent = originalText;
