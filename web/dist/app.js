@@ -887,6 +887,26 @@ async function fetchServiceAccounts() {
     } catch (err) { showToast(err.message, 'error'); tbody.innerHTML = ''; }
 }
 
+let globalS3Endpoint = null;
+async function getS3Endpoint() {
+    if (globalS3Endpoint) return globalS3Endpoint;
+    try {
+        const info = await api('GET', '/_admin/info');
+        if (info.config && info.config.base_domain) {
+            globalS3Endpoint = (info.config.tls_enabled ? 'https://' : 'http://') + info.config.base_domain;
+            if (info.config.port !== 80 && info.config.port !== 443) {
+                globalS3Endpoint += ':' + info.config.port;
+            }
+        } else {
+            const port = info.config?.port || 9000;
+            globalS3Endpoint = window.location.protocol + '//' + window.location.hostname + ':' + port;
+        }
+    } catch (e) {
+        globalS3Endpoint = window.location.protocol + '//' + window.location.hostname + ':9000';
+    }
+    return globalS3Endpoint;
+}
+
 document.getElementById('create-sa-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const desc = document.getElementById('sa-description').value;
@@ -899,7 +919,7 @@ document.getElementById('create-sa-form')?.addEventListener('submit', async (e) 
         if (infoDiv) {
             document.getElementById('sa-created-access').textContent = result.accessKeyId;
             document.getElementById('sa-created-secret').textContent = result.secretKey;
-            document.getElementById('sa-created-endpoint').textContent = window.location.origin.replace(/:\d+$/, ':9000');
+            document.getElementById('sa-created-endpoint').textContent = await getS3Endpoint();
             openModal('sa-created-modal');
         }
         fetchServiceAccounts();
@@ -963,7 +983,7 @@ async function fetchServerInfo() {
     grid.innerHTML = '<div class="loading-spinner"></div>';
     try {
         const info = await api('GET', '/_admin/info');
-        const endpoint = window.location.origin.replace(/:\d+$/, ':9000');
+        const endpoint = await getS3Endpoint();
         const ramPct = info.system?.ram_sys ? Math.round((info.system.ram_alloc / info.system.ram_sys) * 100) : 0;
         const diskPct = info.storage?.disk_total ? Math.round(((info.storage.disk_total - info.storage.disk_free) / info.storage.disk_total) * 100) : 0;
         
@@ -1668,12 +1688,8 @@ window.saveBucketWebhooks = async () => {
 
 
 async function loadConnectionInfo() {
-    const s3Host = window.location.hostname;
-    const proto = window.location.protocol;
-    // By default GoS3 S3 API runs on 9000
-    const s3Port = '9000';
-    
-    document.getElementById('conn-endpoint').value = `${proto}//${s3Host}:${s3Port}`;
+    const endpoint = await getS3Endpoint();
+    document.getElementById('conn-endpoint').value = endpoint;
     
     try {
         const sas = await api('GET', '/api/v1/service-accounts');

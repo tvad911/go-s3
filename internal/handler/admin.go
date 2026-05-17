@@ -296,6 +296,8 @@ func (h *AdminHandler) ServerInfo(w http.ResponseWriter, r *http.Request) {
 		},
 		"config": map[string]interface{}{
 			"port":          h.Config.Server.Port,
+			"base_domain":   h.Config.Server.BaseDomain,
+			"tls_enabled":   h.Config.Server.TLS.Enabled,
 			"data_dir":      h.Config.Storage.DataDir,
 			"max_size":      h.Config.Storage.MaxObjectSize,
 		},
