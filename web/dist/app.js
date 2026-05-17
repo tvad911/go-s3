@@ -232,7 +232,7 @@ window.openBucket = (name) => {
     currentBucket = name;
     currentPrefix = '';
     updateBreadcrumb();
-    topbarActions.innerHTML = `<button class="btn btn-primary" onclick="openModal('upload-staging-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Upload</button>
+    topbarActions.innerHTML = `<button class="btn btn-primary" onclick="openStagingArea()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Upload</button>
     <button class="btn btn-ghost" onclick="openModal('create-folder-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg> New Folder</button>`;
     views.forEach(v => v.classList.remove('active'));
     document.getElementById('view-objects').classList.add('active');
@@ -841,10 +841,20 @@ const uploadZone = document.getElementById('upload-zone');
 const stagingFileInput = document.getElementById('staging-file-input');
 const stagingFolderInput = document.getElementById('staging-folder-input');
 
+window.openStagingArea = () => {
+    document.getElementById('upload-zone').style.display = 'none';
+    document.getElementById('staging-area').style.display = 'block';
+};
+
+window.closeStagingArea = () => {
+    document.getElementById('upload-zone').style.display = 'block';
+    document.getElementById('staging-area').style.display = 'none';
+};
+
 if (uploadZone) {
     uploadZone.addEventListener('click', (e) => {
         if (e.target.tagName !== 'BUTTON') {
-            openModal('upload-staging-modal');
+            openStagingArea();
         }
     });
     uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
@@ -854,7 +864,7 @@ if (uploadZone) {
         uploadZone.classList.remove('dragover'); 
         if (e.dataTransfer.files.length) {
             stageFiles(e.dataTransfer.files);
-            openModal('upload-staging-modal');
+            openStagingArea();
         }
     });
 }
@@ -876,7 +886,7 @@ if (stagingFolderInput) {
 window.triggerStagingInput = (type) => {
     if (type === 'file') stagingFileInput.click();
     if (type === 'folder') stagingFolderInput.click();
-    openModal('upload-staging-modal');
+    openStagingArea();
 };
 
 function stageFiles(files) {
@@ -884,6 +894,7 @@ function stageFiles(files) {
         uploadStagingQueue.push(files[i]);
     }
     renderStagingQueue();
+    openStagingArea(); // ensure it's open if they used hidden input
 }
 
 window.removeStagingItem = (index) => {
@@ -895,6 +906,7 @@ window.clearStagingQueue = () => {
     uploadStagingQueue = [];
     renderStagingQueue();
     document.getElementById('staging-status').textContent = '';
+    closeStagingArea();
 };
 
 function renderStagingQueue() {
@@ -967,12 +979,9 @@ window.startStagingUpload = async () => {
 
     if (failCount === 0) {
         showToast(`Successfully uploaded ${successCount} files`, 'success');
-        clearStagingQueue();
-        closeModal('upload-staging-modal');
+        clearStagingQueue(); // This will close the staging area automatically
     } else {
         showToast(`Uploaded ${successCount} files, failed ${failCount}`, 'error');
-        // We could theoretically remove the successful ones from the queue, 
-        // but for simplicity we'll just let the user see the error and clear manually if they want.
     }
 
 

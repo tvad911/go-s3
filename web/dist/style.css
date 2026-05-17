@@ -745,6 +745,23 @@ input:focus {
     color: var(--accent-primary);
 }
 
+/* Tabs */
+.tab-link {
+    cursor: pointer;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid transparent;
+    color: var(--text-muted);
+    white-space: nowrap;
+    transition: var(--transition);
+}
+.tab-link:hover {
+    color: var(--text-main);
+}
+.tab-link.active {
+    border-bottom-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
 /* Responsive sidebar footer */
 .sidebar-footer {
     display: flex;

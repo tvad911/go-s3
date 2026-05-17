@@ -122,9 +122,54 @@
                             <button class="btn btn-secondary" onclick="triggerStagingInput('file')">Upload Files</button>
                             <button class="btn btn-secondary" onclick="triggerStagingInput('folder')">Upload Folder</button>
                         </div>
-                        <input type="file" id="file-input" multiple hidden>
-                        <input type="file" id="folder-input" webkitdirectory directory multiple hidden>
                     </div>
+                    
+                    <!-- Staging Area (Embedded File Manager v2) -->
+                    <div id="staging-area" style="display: none; background: var(--bg-surface); border: 1px dashed var(--accent-primary); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem; transition: var(--transition);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 style="margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; color: var(--accent-primary);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                Upload Queue
+                            </h3>
+                            <button class="btn-close" onclick="clearStagingQueue()" title="Close Queue">&times;</button>
+                        </div>
+                        
+                        <div style="background:var(--bg-secondary); border:1px solid rgba(255,255,255,0.1); border-radius:8px; overflow-y: auto; max-height: 300px; min-height: 100px; margin-bottom: 1rem;">
+                            <table class="data-table" style="width:100%;">
+                                <thead style="position: sticky; top: 0; background: var(--bg-surface); z-index: 1;">
+                                    <tr>
+                                        <th style="width:60%;">File Path</th>
+                                        <th style="width:20%;">Size</th>
+                                        <th style="width:20%; text-align:right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staging-table-body">
+                                    <tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding: 2rem;">Queue is empty.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="modal-actions" style="margin-top: 0; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; gap: 0.5rem; flex: 1; min-width: 200px;">
+                                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('staging-file-input').click()">+ Files</button>
+                                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('staging-folder-input').click()">+ Folder</button>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end; flex: 1; min-width: 200px;">
+                                <span id="staging-status" class="text-secondary" style="font-size:0.9rem; margin-right: 0.5rem;"></span>
+                                <button class="btn btn-ghost" onclick="clearStagingQueue()">Clear</button>
+                                <button class="btn btn-primary" id="btn-start-staging-upload" onclick="startStagingUpload()">Start Upload</button>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div id="staging-progress-container" class="progress-container" style="display: none; margin-top: 1.5rem; width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                            <div id="staging-progress-bar" class="progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary)); transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden inputs -->
+                    <input type="file" id="staging-file-input" multiple hidden>
+                    <input type="file" id="staging-folder-input" webkitdirectory directory multiple hidden>
                                         <div class="object-toolbar">
                         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                             <div class="search-input-wrapper" style="position:relative;">
@@ -339,14 +384,14 @@
                         <h2 id="settings-bucket-name" style="margin-top:0;margin-bottom:1.5rem;display:flex;align-items:center;gap:0.5rem;"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" style="width:24px;height:24px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path></svg> <span>Bucket Settings</span></h2>
                         
                         <div style="display:flex;gap:1.5rem;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:1.5rem;overflow-x:auto;">
-                            <span class="tab-link active" onclick="switchBucketSettingsTab('overview')" id="tab-link-overview" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid var(--accent-primary);color:var(--accent-primary);white-space:nowrap;">Overview & Stats</span>
-                            <span class="tab-link" onclick="switchBucketSettingsTab('access')" id="tab-link-access" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);white-space:nowrap;">Access Policy</span>
-                            <span class="tab-link" onclick="switchBucketSettingsTab('versioning')" id="tab-link-versioning" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);white-space:nowrap;">Versioning</span>
-                            <span class="tab-link" onclick="switchBucketSettingsTab('cors')" id="tab-link-cors" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);white-space:nowrap;">CORS</span>
-                            <span class="tab-link" onclick="switchBucketSettingsTab('lifecycle')" id="tab-link-lifecycle" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);white-space:nowrap;">Lifecycle</span>
-                            <span class="tab-link" onclick="switchBucketSettingsTab('website')" id="tab-link-website" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);white-space:nowrap;">Website Hosting</span>
-                            <span class="tab-link" onclick="switchBucketSettingsTab('domains')" id="tab-link-domains" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);white-space:nowrap;">Custom Domains</span>
-                            <span class="tab-link" onclick="switchBucketSettingsTab('webhooks')" id="tab-link-webhooks" style="cursor:pointer;padding-bottom:0.5rem;border-bottom:2px solid transparent;color:var(--text-secondary);white-space:nowrap;">Webhooks</span>
+                            <span class="tab-link active" onclick="switchBucketSettingsTab('overview')" id="tab-link-overview">Overview & Stats</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('access')" id="tab-link-access">Access Policy</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('versioning')" id="tab-link-versioning">Versioning</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('cors')" id="tab-link-cors">CORS</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('lifecycle')" id="tab-link-lifecycle">Lifecycle</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('website')" id="tab-link-website">Website Hosting</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('domains')" id="tab-link-domains">Custom Domains</span>
+                            <span class="tab-link" onclick="switchBucketSettingsTab('webhooks')" id="tab-link-webhooks">Webhooks</span>
                         </div>
                         
                         <div id="tab-content-overview">
@@ -491,49 +536,6 @@
                         <button type="submit" class="btn btn-primary">Create</button>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Upload Staging Modal -->
-    <div class="modal-overlay" id="upload-staging-modal">
-        <div class="glass-card modal" style="max-width: 700px; width: 90%;">
-            <div class="modal-header">
-                <h3>Upload Queue (File Manager v2)</h3>
-                <button class="btn-close" onclick="closeModal('upload-staging-modal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div style="background:var(--bg-secondary); border:1px solid rgba(255,255,255,0.1); border-radius:8px; overflow-y: auto; max-height: 400px; min-height: 250px; margin-bottom: 1.5rem;">
-                    <table class="data-table" style="width:100%;">
-                        <thead style="position: sticky; top: 0; background: var(--bg-surface); z-index: 1;">
-                            <tr>
-                                <th style="width:60%;">File Path</th>
-                                <th style="width:20%;">Size</th>
-                                <th style="width:20%; text-align:right;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="staging-table-body">
-                            <tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding: 2rem;">Queue is empty. Add files or folders to begin.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div class="modal-actions" style="margin-top: 0; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; gap: 0.5rem; flex: 1; min-width: 200px;">
-                        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('staging-file-input').click()">+ Files</button>
-                        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('staging-folder-input').click()">+ Folder</button>
-                    </div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end; flex: 1; min-width: 200px;">
-                        <span id="staging-status" class="text-secondary" style="font-size:0.9rem; margin-right: 0.5rem;"></span>
-                        <button class="btn btn-ghost" onclick="clearStagingQueue()">Clear</button>
-                        <button class="btn btn-primary" id="btn-start-staging-upload" onclick="startStagingUpload()">Start Upload</button>
-                    </div>
-                </div>
-                <!-- Progress Bar -->
-                <div id="staging-progress-container" class="progress-container" style="display: none; margin-top: 1.5rem; width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
-                    <div id="staging-progress-bar" class="progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary)); transition: width 0.3s ease;"></div>
-                </div>
-                <input type="file" id="staging-file-input" multiple hidden>
-                <input type="file" id="staging-folder-input" webkitdirectory directory multiple hidden>
             </div>
         </div>
     </div>
