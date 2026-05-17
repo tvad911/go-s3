@@ -93,9 +93,20 @@ Nếu bạn có những tuỳ chỉnh phức tạp (như Replication nhiều nod
 2. Mount file `config.yaml` vào container bằng cách bỏ comment hoặc thêm dòng sau vào mục `volumes` trong `docker-compose.yml`:
 
 ```yaml
+services:
+  gos3:
+    image: tvad9111/gos3:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - gos3-data:/data
       - ./config.yaml:/app/config.yaml:ro
+    # Không cần khai báo environment vì mọi thứ đã nằm trong config.yaml
+    restart: unless-stopped
+
+volumes:
+  gos3-data:
 ```
 
 **Mẫu file `config.yaml`:**

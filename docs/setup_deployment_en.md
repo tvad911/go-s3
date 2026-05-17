@@ -93,9 +93,20 @@ Instead of using Environment Variables, you can use a `config.yaml` file for mor
 2. Mount the `config.yaml` file into the container by adding this line to the `volumes` section in your `docker-compose.yml`:
 
 ```yaml
+services:
+  gos3:
+    image: tvad9111/gos3:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - gos3-data:/data
       - ./config.yaml:/app/config.yaml:ro
+    # No environment variables needed as they are defined in config.yaml
+    restart: unless-stopped
+
+volumes:
+  gos3-data:
 ```
 
 **Sample `config.yaml` file:**
