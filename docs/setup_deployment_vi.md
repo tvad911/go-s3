@@ -73,10 +73,25 @@ Mở trình duyệt, truy cập `http://<IP-May-Chu>:9001` và đăng nhập b�
 
 ---
 
-## 3. Cấu hình chi tiết (Config yaml)
+## 3. Các Phương Pháp Cấu Hình: Biến Môi Trường (ENV) vs config.yaml
 
-Thay vì dùng Environment Variables (như `GOS3_AUTH_ROOT_ACCESS_KEY`), bạn có thể dùng file `config.yaml` để có cấu hình linh hoạt hơn.
-Mount file `config.yaml` vào container bằng cách thêm dòng sau vào mục `volumes` trong `docker-compose.yml`:
+GoS3 cung cấp 2 cách để cấu hình Server: Dùng **Biến Môi Trường (ENV)** hoặc dùng file **`config.yaml`**.
+
+### Cách 1: Dùng Biến Môi Trường ENV (Khuyên dùng cho Docker)
+Mặc định, mẫu `docker-compose.yml` ở trên hoàn toàn sử dụng biến môi trường ở phần `environment:`. Đây là cách chuẩn nhất khi chạy Docker.
+Các biến quan trọng:
+- `GOS3_AUTH_ROOT_ACCESS_KEY` & `GOS3_AUTH_ROOT_SECRET_KEY`: Đặt tài khoản/mật khẩu quản trị.
+- `GOS3_SERVER_PORT`: Đổi port mặc định của S3 API.
+- `GOS3_RATELIMIT_ENABLED`: Bật tính năng chống spam request.
+
+*Khi dùng cách này, bạn KHÔNG CẦN phải mount bất kỳ file cấu hình nào.*
+
+### Cách 2: Dùng file `config.yaml` (Cho các cấu hình nâng cao)
+Nếu bạn có những tuỳ chỉnh phức tạp (như Replication nhiều node, cấu hình TLS chuyên sâu), bạn có thể dùng file `config.yaml`.
+
+1. Tạo file `config.yaml` nằm cùng thư mục với `docker-compose.yml` (Bạn có thể lấy mẫu từ file `deploy/config.example.yaml` trong mã nguồn).
+2. Mount file `config.yaml` vào container bằng cách bỏ comment hoặc thêm dòng sau vào mục `volumes` trong `docker-compose.yml`:
+
 ```yaml
     volumes:
       - gos3-data:/data

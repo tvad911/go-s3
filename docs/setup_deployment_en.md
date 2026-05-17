@@ -73,10 +73,25 @@ Open your browser, navigate to `http://<Server-IP>:9001` and log in using the `G
 
 ---
 
-## 3. Detailed Configuration (config.yaml)
+## 3. Configuration Methods: ENV vs config.yaml
 
-Instead of using Environment Variables, you can use a `config.yaml` file for more flexible configuration.
-Mount the `config.yaml` file into the container by adding this line to the `volumes` section in `docker-compose.yml`:
+GoS3 provides two ways to configure your server: **Environment Variables (ENV)** and a **`config.yaml`** file.
+
+### Method 1: Using Environment Variables (Recommended for Docker)
+By default, the `docker-compose.yml` template above relies purely on environment variables under the `environment:` section. This is the standard cloud-native approach.
+Key variables you can set:
+- `GOS3_AUTH_ROOT_ACCESS_KEY` & `GOS3_AUTH_ROOT_SECRET_KEY`: Set your root admin credentials.
+- `GOS3_SERVER_PORT`: Change the default S3 API port (9000).
+- `GOS3_RATELIMIT_ENABLED` & `GOS3_RATELIMIT_RPS`: Control rate limiting to prevent abuse.
+
+*When using this method, you do not need to mount any configuration file.*
+
+### Method 2: Using a `config.yaml` file (For Advanced Configurations)
+Instead of using Environment Variables, you can use a `config.yaml` file for more complex configurations (like multi-node replication or detailed TLS settings).
+
+1. Create a `config.yaml` file in the same directory as your `docker-compose.yml` (You can copy the contents from `deploy/config.example.yaml` in the source code).
+2. Mount the `config.yaml` file into the container by adding this line to the `volumes` section in your `docker-compose.yml`:
+
 ```yaml
     volumes:
       - gos3-data:/data

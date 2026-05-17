@@ -11,7 +11,8 @@ services:
       - "9001:9001"   # Admin UI (future)
     volumes:
       - gos3-data:/data
-      - ./config.example.yaml:/app/config.yaml:ro
+      # Uncomment the line below if you want to use a custom config.yaml file instead of ENV vars
+      # - ./config.yaml:/app/config.yaml:ro
     environment:
       GOS3_AUTH_ROOT_ACCESS_KEY: minioadmin
       GOS3_AUTH_ROOT_SECRET_KEY: minioadmin
