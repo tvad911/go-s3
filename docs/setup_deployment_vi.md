@@ -32,6 +32,9 @@ services:
       GOS3_AUTH_ROOT_ACCESS_KEY: admin
       GOS3_AUTH_ROOT_SECRET_KEY: SuperSecretPassword123
       
+      # Cấu hình Region cho S3 (Tùy chọn, mặc định là us-east-1)
+      GOS3_AUTH_REGION: ap-southeast-1
+      
       # Cấu hình thư mục lưu trữ
       GOS3_STORAGE_DATA_DIR: /data
       GOS3_STORAGE_TEMP_DIR: /data/tmp
@@ -81,6 +84,7 @@ GoS3 cung cấp 2 cách để cấu hình Server: Dùng **Biến Môi Trường 
 Mặc định, mẫu `docker-compose.yml` ở trên hoàn toàn sử dụng biến môi trường ở phần `environment:`. Đây là cách chuẩn nhất khi chạy Docker.
 Các biến quan trọng:
 - `GOS3_AUTH_ROOT_ACCESS_KEY` & `GOS3_AUTH_ROOT_SECRET_KEY`: Đặt tài khoản/mật khẩu quản trị.
+- `GOS3_AUTH_REGION`: Cấu hình Region hiển thị khi có truy vấn (Ví dụ: `ap-southeast-1`).
 - `GOS3_SERVER_PORT`: Đổi port mặc định của S3 API.
 - `GOS3_RATELIMIT_ENABLED`: Bật tính năng chống spam request.
 
@@ -127,6 +131,7 @@ storage:
 auth:
   root_access_key: "admin"
   root_secret_key: "SuperSecretPassword123"
+  region: "ap-southeast-1"
 
 admin:
   ui_enabled: true

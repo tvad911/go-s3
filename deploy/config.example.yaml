@@ -16,7 +16,7 @@ storage:
 auth:
   root_access_key: "minioadmin"
   root_secret_key: "minioadmin"
-  allow_anonymous_read: false
+  region: "us-east-1"
 
 ratelimit:
   enabled: true

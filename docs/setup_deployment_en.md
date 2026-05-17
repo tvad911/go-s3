@@ -28,9 +28,12 @@ services:
     volumes:
       - gos3-data:/data
     environment:
-      # Set Default Root credentials (MANDATORY TO CHANGE IN PRODUCTION)
+      # Setup default Root account (MUST CHANGE IN PRODUCTION)
       GOS3_AUTH_ROOT_ACCESS_KEY: admin
       GOS3_AUTH_ROOT_SECRET_KEY: SuperSecretPassword123
+      
+      # Configure Region for S3 (Optional, defaults to us-east-1)
+      GOS3_AUTH_REGION: ap-southeast-1
       
       # Directory Configurations
       GOS3_STORAGE_DATA_DIR: /data
@@ -80,8 +83,9 @@ GoS3 provides two ways to configure your server: **Environment Variables (ENV)**
 ### Method 1: Using Environment Variables (Recommended for Docker)
 By default, the `docker-compose.yml` template above relies purely on environment variables under the `environment:` section. This is the standard cloud-native approach.
 Key variables you can set:
-- `GOS3_AUTH_ROOT_ACCESS_KEY` & `GOS3_AUTH_ROOT_SECRET_KEY`: Set your root admin credentials.
-- `GOS3_SERVER_PORT`: Change the default S3 API port (9000).
+- `GOS3_AUTH_ROOT_ACCESS_KEY` & `GOS3_AUTH_ROOT_SECRET_KEY`: Set your admin credentials.
+- `GOS3_AUTH_REGION`: Global region for S3 queries (e.g. `ap-southeast-1`).
+- `GOS3_SERVER_PORT`: Change the default S3 API port. (9000).
 - `GOS3_RATELIMIT_ENABLED` & `GOS3_RATELIMIT_RPS`: Control rate limiting to prevent abuse.
 
 *When using this method, you do not need to mount any configuration file.*
@@ -127,6 +131,7 @@ storage:
 auth:
   root_access_key: "admin"
   root_secret_key: "SuperSecretPassword123"
+  region: "ap-southeast-1"
 
 admin:
   ui_enabled: true
