@@ -1825,8 +1825,46 @@ function showCreatePolicyModal() {
     document.getElementById('policy-name').readOnly = false;
     document.getElementById('policy-document').value = '';
     document.getElementById('policy-error').style.display = 'none';
+    loadPolicyTemplateSelect();
     openModal('policy-modal');
 }
+
+let policyTemplatesCache = null;
+
+async function loadPolicyTemplateSelect() {
+    const select = document.getElementById('policy-template-select');
+    if (!select) return;
+    
+    if (policyTemplatesCache === null) {
+        try {
+            policyTemplatesCache = await api('GET', '/_admin/policy-templates');
+        } catch (e) {
+            policyTemplatesCache = [];
+            console.error('Failed to load templates', e);
+        }
+    }
+    
+    select.innerHTML = '<option value="">-- Choose a template --</option>';
+    policyTemplatesCache.forEach((tpl, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = tpl.name;
+        select.appendChild(option);
+    });
+}
+
+window.loadPolicyTemplate = () => {
+    const select = document.getElementById('policy-template-select');
+    if (!select || select.value === "") return;
+    
+    const index = parseInt(select.value, 10);
+    const template = policyTemplatesCache[index];
+    if (template) {
+        document.getElementById('policy-document').value = template.content;
+        document.getElementById('policy-error').style.display = 'none';
+        showToast('Template applied. Replace {bucket_name} if applicable!', 'info');
+    }
+};
 
 async function editPolicy(name) {
     try {
@@ -1836,6 +1874,7 @@ async function editPolicy(name) {
         document.getElementById('policy-name').readOnly = true;
         document.getElementById('policy-document').value = JSON.stringify(policy, null, 2);
         document.getElementById('policy-error').style.display = 'none';
+        loadPolicyTemplateSelect();
         openModal('policy-modal');
     } catch (err) {
         showToast(err.message, 'error');

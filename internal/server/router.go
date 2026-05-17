@@ -78,9 +78,10 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 			// Rename Object (server-side copy + delete)
 			r.Post("/rename", adminHandler.RenameObject)
 
-			// Server Info
+			// Server Info & Templates
 			r.Get("/info", adminHandler.ServerInfo)
 			r.Get("/audit-logs", adminHandler.ListAuditLogs)
+			r.Get("/policy-templates", adminHandler.ListPolicyTemplates)
 
 			// Settings
 			r.Get("/settings", adminHandler.GetSettings)

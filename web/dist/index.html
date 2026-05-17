@@ -525,6 +525,15 @@
                         <input type="text" id="policy-name" pattern="^[a-zA-Z0-9+=,.@\-_]+$" required placeholder="e.g. ReadOnlyAccess">
                         <span class="hint">Alphanumeric and +=,.@-_</span>
                     </div>
+                    <div class="input-group" id="policy-template-group">
+                        <label for="policy-template-select">Load Template (Optional)</label>
+                        <div style="display:flex;gap:0.5rem;align-items:center;">
+                            <select id="policy-template-select" class="input" style="flex:1;">
+                                <option value="">-- Choose a template --</option>
+                            </select>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="loadPolicyTemplate()">Apply</button>
+                        </div>
+                    </div>
                     <div class="input-group">
                         <label for="policy-document">Policy Document (JSON)</label>
                         <textarea id="policy-document" oninput="validateJSONConfig(this, 'policy-error')" required style="width:100%;height:300px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:1rem;font-family:monospace;resize:vertical;" placeholder='{ "Version": "2012-10-17", "Statement": [ ... ] }'></textarea>

@@ -9,6 +9,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"os"
+	"path/filepath"
+	"strings"
 	"runtime"
 	"syscall"
 
@@ -452,4 +455,104 @@ func (h *AdminHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 
 	h.recordAudit(r, "UpdateSettings", "global", "updated settings")
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *AdminHandler) ListPolicyTemplates(w http.ResponseWriter, r *http.Request) {
+	if err := h.CheckAdminPolicy(r, "admin:ServerInfo"); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	dir := filepath.Join(h.Config.Storage.DataDir, "templates", "policies")
+
+	// Create dir if not exists
+	os.MkdirAll(dir, 0755)
+
+	// Read dir
+	entries, _ := os.ReadDir(dir)
+	if len(entries) == 0 {
+		h.seedTemplates(dir)
+		entries, _ = os.ReadDir(dir)
+	}
+
+	var templates []map[string]string
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".json") {
+			content, err := os.ReadFile(filepath.Join(dir, e.Name()))
+			if err == nil {
+				// Use the file name as the template name, without the .json extension
+				name := strings.TrimSuffix(e.Name(), ".json")
+				name = strings.Title(strings.ReplaceAll(name, "_", " "))
+
+				templates = append(templates, map[string]string{
+					"name":    name,
+					"content": string(content),
+				})
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(templates)
+}
+
+func (h *AdminHandler) seedTemplates(dir string) {
+	files := map[string]string{
+		"01_full_access.json": `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:*"],
+      "Resource": ["arn:aws:s3:::*"]
+    }
+  ]
+}`,
+		"02_read_only.json": `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::{bucket_name}",
+        "arn:aws:s3:::{bucket_name}/*"
+      ]
+    }
+  ]
+}`,
+		"03_upload_only.json": `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::{bucket_name}/*"
+      ]
+    }
+  ]
+}`,
+		"04_full_management.json": `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:*"],
+      "Resource": [
+        "arn:aws:s3:::{bucket_name}",
+        "arn:aws:s3:::{bucket_name}/*"
+      ]
+    }
+  ]
+}`,
+	}
+	for name, content := range files {
+		os.WriteFile(filepath.Join(dir, name), []byte(content), 0644)
+	}
 }
