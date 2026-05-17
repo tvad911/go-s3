@@ -1072,16 +1072,22 @@ window.openCreateSAModal = async (prefillUsername = '') => {
     document.getElementById('sa-description').value = '';
     const userGrp = document.getElementById('sa-target-user-group');
     const userSelect = document.getElementById('sa-target-user');
+    const hiddenUser = document.getElementById('sa-hidden-target-user');
     
     // Check if current user is root
     try {
         const me = await api('GET', '/me');
         if (me.isRoot) {
-            userGrp.style.display = 'block';
             const users = await api('GET', '/_admin/users');
             userSelect.innerHTML = '<option value="" disabled selected>-- Select Target User --</option>' + users.map(u => `<option value="${escapeHTML(u.username)}">${escapeHTML(u.username)}</option>`).join('');
+            
             if (prefillUsername) {
-                userSelect.value = prefillUsername;
+                hiddenUser.value = prefillUsername;
+                userSelect.value = '';
+                userGrp.style.display = 'none'; // Hide if pre-selected
+            } else {
+                hiddenUser.value = '';
+                userGrp.style.display = 'block'; // Show if user needs to select
             }
         } else {
             userGrp.style.display = 'none';
@@ -1096,7 +1102,10 @@ window.openCreateSAModal = async (prefillUsername = '') => {
 document.getElementById('create-sa-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const description = document.getElementById('sa-description').value;
-    const targetUser = document.getElementById('sa-target-user').value;
+    let targetUser = document.getElementById('sa-hidden-target-user').value;
+    if (!targetUser) {
+        targetUser = document.getElementById('sa-target-user').value;
+    }
     const expiresVal = document.getElementById('sa-expires').value;
     
     let payload = { description };

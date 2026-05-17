@@ -571,6 +571,7 @@
                         <input type="text" id="sa-description" placeholder="e.g. production-backend">
                     </div>
                     <div class="input-group" id="sa-target-user-group" style="display:none;">
+                        <input type="hidden" id="sa-hidden-target-user" value="">
                         <label for="sa-target-user">Target User (Admin only)</label>
                         <select id="sa-target-user" style="width: 100%; padding: 0.5rem; background: var(--bg-secondary); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: var(--text-primary);">
                             <option value="">-- For Myself --</option>
@@ -807,6 +808,6 @@ aws --endpoint-url &lt;endpoint&gt; s3 ls</pre>
         </div>
     </div>
 
-    <script src="app.js?v=13"></script>
+    <script src="app.js?v=14"></script>
 </body>
 </html>
