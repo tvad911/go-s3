@@ -24,6 +24,7 @@ func NewServiceAccountHandler(store metadata.Store) *ServiceAccountHandler {
 }
 
 type createSARequest struct {
+	TargetUser  string     `json:"targetUser,omitempty"`
 	Description string     `json:"description"`
 	Policies    []string   `json:"policies,omitempty"`
 	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
@@ -62,11 +63,16 @@ func (h *ServiceAccountHandler) CreateServiceAccount(w http.ResponseWriter, r *h
 		return
 	}
 
+	parentUser := user.Username
+	if user.IsRoot && req.TargetUser != "" {
+		parentUser = req.TargetUser
+	}
+
 	sa := &auth.ServiceAccount{
 		ID:          uuid.NewString(),
 		AccessKeyID: accessKey,
 		SecretKey:   secretKey,
-		ParentUser:  user.Username,
+		ParentUser:  parentUser,
 		Description: req.Description,
 		Policies:    req.Policies,
 		ExpiresAt:   req.ExpiresAt,

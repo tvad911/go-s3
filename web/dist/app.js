@@ -152,7 +152,7 @@ function loadView(viewName) {
         fetchUsers();
     } else if (viewName === 'service-accounts') {
         breadcrumb.innerHTML = `<span>Service Accounts</span>`;
-        topbarActions.innerHTML = `<button class="btn btn-primary" onclick="openModal('create-sa-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Create Access Key</button>`;
+        topbarActions.innerHTML = `<button class="btn btn-primary" onclick="openCreateSAModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> Create Access Key</button>`;
         fetchServiceAccounts();
     } else if (viewName === 'connection') {
         breadcrumb.innerHTML = `<span>S3 Connection</span>`;
@@ -1063,13 +1063,42 @@ async function getS3Endpoint() {
     return globalS3Endpoint;
 }
 
+window.openCreateSAModal = async () => {
+    document.getElementById('sa-description').value = '';
+    const userGrp = document.getElementById('sa-target-user-group');
+    const userSelect = document.getElementById('sa-target-user');
+    
+    // Check if current user is root
+    try {
+        const me = await api('GET', '/me');
+        if (me.isRoot) {
+            userGrp.style.display = 'block';
+            const users = await api('GET', '/_admin/users');
+            userSelect.innerHTML = '<option value="">-- For Myself --</option>' + users.map(u => `<option value="${escapeHTML(u.username)}">${escapeHTML(u.username)}</option>`).join('');
+        } else {
+            userGrp.style.display = 'none';
+        }
+    } catch (err) {
+        userGrp.style.display = 'none';
+    }
+
+    openModal('create-sa-modal');
+};
+
 document.getElementById('create-sa-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const desc = document.getElementById('sa-description').value;
+    const targetUser = document.getElementById('sa-target-user')?.value || '';
+    
     try {
-        const result = await api('POST', '/api/v1/service-accounts', { description: desc });
+        const payload = { description: desc };
+        if (targetUser) {
+            payload.targetUser = targetUser;
+        }
+        const result = await api('POST', '/api/v1/service-accounts', payload);
         closeModal('create-sa-modal');
         document.getElementById('sa-description').value = '';
+        
         // Show the secret key (one time only)
         const infoDiv = document.getElementById('sa-created-info');
         if (infoDiv) {

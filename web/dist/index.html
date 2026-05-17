@@ -603,6 +603,12 @@
                         <label for="sa-description">Description (optional)</label>
                         <input type="text" id="sa-description" placeholder="e.g. production-backend">
                     </div>
+                    <div class="input-group" id="sa-target-user-group" style="display:none;">
+                        <label for="sa-target-user">Target User (Admin only)</label>
+                        <select id="sa-target-user" style="width: 100%; padding: 0.5rem; background: var(--bg-secondary); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: var(--text-primary);">
+                            <option value="">-- For Myself --</option>
+                        </select>
+                    </div>
                     <div class="modal-actions">
                         <button type="button" class="btn btn-ghost" onclick="closeModal('create-sa-modal')">Cancel</button>
                         <button type="submit" class="btn btn-primary">Generate Key</button>
@@ -825,6 +831,6 @@ aws --endpoint-url &lt;endpoint&gt; s3 ls</pre>
         </div>
     </div>
 
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=5"></script>
 </body>
 </html>
