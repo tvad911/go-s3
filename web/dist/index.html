@@ -517,16 +517,20 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="modal-actions" style="margin-top: 0; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; gap: 0.5rem;">
+                <div class="modal-actions" style="margin-top: 0; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; gap: 0.5rem; flex: 1; min-width: 200px;">
                         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('staging-file-input').click()">+ Files</button>
                         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('staging-folder-input').click()">+ Folder</button>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <span id="staging-status" class="text-secondary" style="font-size:0.9rem; margin-right: 1rem;"></span>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end; flex: 1; min-width: 200px;">
+                        <span id="staging-status" class="text-secondary" style="font-size:0.9rem; margin-right: 0.5rem;"></span>
                         <button class="btn btn-ghost" onclick="clearStagingQueue()">Clear</button>
                         <button class="btn btn-primary" id="btn-start-staging-upload" onclick="startStagingUpload()">Start Upload</button>
                     </div>
+                </div>
+                <!-- Progress Bar -->
+                <div id="staging-progress-container" class="progress-container" style="display: none; margin-top: 1.5rem; width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                    <div id="staging-progress-bar" class="progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-secondary), var(--accent-primary)); transition: width 0.3s ease;"></div>
                 </div>
                 <input type="file" id="staging-file-input" multiple hidden>
                 <input type="file" id="staging-folder-input" webkitdirectory directory multiple hidden>

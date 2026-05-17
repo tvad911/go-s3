@@ -934,18 +934,25 @@ window.startStagingUpload = async () => {
 
     const btnStart = document.getElementById('btn-start-staging-upload');
     const status = document.getElementById('staging-status');
+    const progressContainer = document.getElementById('staging-progress-container');
+    const progressBar = document.getElementById('staging-progress-bar');
+
     const originalText = btnStart.textContent;
     btnStart.disabled = true;
     btnStart.textContent = 'Uploading...';
+    
+    if (progressContainer) progressContainer.style.display = 'block';
+    if (progressBar) progressBar.style.width = '0%';
 
     let successCount = 0;
     let failCount = 0;
+    const total = uploadStagingQueue.length;
 
-    for (let i = 0; i < uploadStagingQueue.length; i++) {
+    for (let i = 0; i < total; i++) {
         const file = uploadStagingQueue[i];
         try {
             const relativePath = file.webkitRelativePath || file.name;
-            status.textContent = `Uploading ${i+1}/${uploadStagingQueue.length}...`;
+            if (status) status.textContent = `Uploading ${i+1}/${total}...`;
             const key = `${currentPrefix}${relativePath}`;
             const data = await api('POST', '/_admin/presign', { method: 'PUT', bucket: currentBucket, key, expires: 3600 });
             const res = await fetch(data.url, { method: 'PUT', body: file });
@@ -955,6 +962,7 @@ window.startStagingUpload = async () => {
             console.error(err);
             failCount++;
         }
+        if (progressBar) progressBar.style.width = `${((i + 1) / total) * 100}%`;
     }
 
     if (failCount === 0) {
@@ -967,8 +975,12 @@ window.startStagingUpload = async () => {
         // but for simplicity we'll just let the user see the error and clear manually if they want.
     }
 
+
     btnStart.disabled = false;
     btnStart.textContent = originalText;
+    if (progressContainer) {
+        setTimeout(() => { progressContainer.style.display = 'none'; }, 1000);
+    }
     fetchObjects();
 };
 
