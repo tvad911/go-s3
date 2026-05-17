@@ -1150,7 +1150,10 @@ async function fetchUsers() {
             <tr>
                 <td data-label="Username"><strong>${u.username}</strong>${u.isRoot ? ' <span class="text-accent" style="font-size:0.8rem;background:rgba(0,240,255,0.1);padding:2px 6px;border-radius:4px;margin-left:8px;">ROOT</span>' : ''}</td>
                 <td data-label="Status">${u.disabled ? '<span style="color:var(--danger)">Disabled</span>' : '<span style="color:var(--success)">Active</span>'}</td>
-                <td data-label="Actions">${!u.isRoot ? `<button class="btn btn-ghost text-danger" onclick="deleteUser('${u.username}')">Delete</button>` : ''}</td>
+                <td data-label="Actions">
+                    ${!u.isRoot ? `<button class="btn btn-ghost text-primary" style="margin-right:0.5rem;" onclick="openIAMPolicyModal('${u.username}')">Edit Policy</button>` : ''}
+                    ${!u.isRoot ? `<button class="btn btn-ghost text-danger" onclick="deleteUser('${u.username}')">Delete</button>` : ''}
+                </td>
             </tr>`).join('');
     } catch (err) { showToast('Admin API Error: ' + err.message, 'error'); tbody.innerHTML = ''; }
 }
