@@ -1074,7 +1074,7 @@ window.openCreateSAModal = async (prefillUsername = '') => {
         if (me.isRoot) {
             userGrp.style.display = 'block';
             const users = await api('GET', '/_admin/users');
-            userSelect.innerHTML = '<option value="">-- For Myself --</option>' + users.map(u => `<option value="${escapeHTML(u.username)}">${escapeHTML(u.username)}</option>`).join('');
+            userSelect.innerHTML = '<option value="" disabled selected>-- Select Target User --</option>' + users.map(u => `<option value="${escapeHTML(u.username)}">${escapeHTML(u.username)}</option>`).join('');
             if (prefillUsername) {
                 userSelect.value = prefillUsername;
             }
@@ -1091,13 +1091,15 @@ window.openCreateSAModal = async (prefillUsername = '') => {
 document.getElementById('create-sa-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const desc = document.getElementById('sa-description').value;
-    const targetUser = document.getElementById('sa-target-user')?.value || '';
+    const targetUser = document.getElementById('sa-target-user')?.value;
     
+    if (!targetUser) {
+        showToast('Please select a Target User', 'error');
+        return;
+    }
+
     try {
-        const payload = { description: desc };
-        if (targetUser) {
-            payload.targetUser = targetUser;
-        }
+        const payload = { description: desc, targetUser: targetUser };
         const result = await api('POST', '/api/v1/service-accounts', payload);
         closeModal('create-sa-modal');
         document.getElementById('sa-description').value = '';

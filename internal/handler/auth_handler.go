@@ -81,7 +81,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify password
 	if err := auth.CheckPassword(user.PasswordHash, req.Password); err != nil {
 		slog.Warn("login failed: invalid password", "username", req.Username)
 		http.Error(w, `{"error":"invalid username or password"}`, http.StatusUnauthorized)
@@ -89,6 +88,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 TokenGeneration:
+	// Only Root administrators are allowed to use the Web UI
+	if !user.IsRoot {
+		slog.Warn("login blocked: non-root user attempted to access web console", "username", user.Username)
+		http.Error(w, `{"error":"Access denied: Only root administrators can log in to the Web Console"}`, http.StatusForbidden)
+		return
+	}
+
 	sessionID := uuid.New().String()
 	session := &auth.Session{
 		ID:        sessionID,

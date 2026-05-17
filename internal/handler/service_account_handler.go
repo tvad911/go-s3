@@ -63,16 +63,29 @@ func (h *ServiceAccountHandler) CreateServiceAccount(w http.ResponseWriter, r *h
 		return
 	}
 
-	parentUser := user.Username
-	if user.IsRoot && req.TargetUser != "" {
-		parentUser = req.TargetUser
+	if req.TargetUser == "" {
+		http.Error(w, `{"error":"targetUser is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Verify the target user exists
+	targetUser, err := h.store.GetUserByUsername(r.Context(), req.TargetUser)
+	if err != nil {
+		http.Error(w, `{"error":"target user not found"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Only Root can create keys for other users.
+	if req.TargetUser != user.Username && !user.IsRoot {
+		http.Error(w, `{"error":"only root can create access keys for other users"}`, http.StatusForbidden)
+		return
 	}
 
 	sa := &auth.ServiceAccount{
 		ID:          uuid.NewString(),
 		AccessKeyID: accessKey,
 		SecretKey:   secretKey,
-		ParentUser:  parentUser,
+		ParentUser:  targetUser.Username,
 		Description: req.Description,
 		Policies:    req.Policies,
 		ExpiresAt:   req.ExpiresAt,
