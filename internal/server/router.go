@@ -163,6 +163,8 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 					s3Handler.ListObjectVersions(w, r)
 				} else if r.URL.Query().Has("uploads") {
 					s3Handler.ListMultipartUploads(w, r)
+				} else if r.URL.Query().Has("location") {
+					s3Handler.GetBucketLocation(w, r)
 				} else {
 					s3Handler.ListObjects(w, r)
 				}

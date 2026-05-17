@@ -66,6 +66,41 @@ func (h *S3Handler) DeleteBucket(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *S3Handler) GetBucketLocation(w http.ResponseWriter, r *http.Request) {
+	bucket := chi.URLParam(r, "bucket")
+
+	if err := h.CheckPolicy(r, "s3:GetBucketLocation", bucket, ""); err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	bInfo, err := h.MetaStore.GetBucket(bucket)
+	if err != nil {
+		WriteError(w, r, err)
+		return
+	}
+
+	type LocationConstraint struct {
+		XMLName xml.Name `xml:"http://s3.amazonaws.com/doc/2006-03-01/ LocationConstraint"`
+		Value   string   `xml:",chardata"`
+	}
+
+	loc := LocationConstraint{
+		Value: bInfo.Region,
+	}
+	
+	// AWS S3 standard: "us-east-1" is sometimes returned as empty.
+	// But it is safer to return the string "us-east-1" for compatibility with strict clients.
+	if loc.Value == "" {
+		loc.Value = "us-east-1"
+	}
+
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(xml.Header))
+	xml.NewEncoder(w).Encode(loc)
+}
+
 func (h *S3Handler) HeadBucket(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	bucket := chi.URLParam(r, "bucket")
