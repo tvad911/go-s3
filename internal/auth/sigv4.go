@@ -112,6 +112,10 @@ func (v *SigV4Verifier) verifyHeader(r *http.Request, authHeader string) (*User,
 	expectedSig := v.computeSignature(r, signedHeadersStr, payloadHash, amzDate, dateStamp, region, service, secretKey)
 
 	if subtle.ConstantTimeCompare([]byte(expectedSig), []byte(providedSig)) != 1 {
+		fmt.Printf("DEBUG SigV4 - AccessKey: %s\n", accessKey)
+		fmt.Printf("DEBUG SigV4 - Expected: %s\n", expectedSig)
+		fmt.Printf("DEBUG SigV4 - Provided: %s\n", providedSig)
+		fmt.Printf("DEBUG SigV4 - SecretKey: %s\n", secretKey)
 		return nil, ErrSignatureDoesNotMatch
 	}
 
@@ -226,6 +230,9 @@ func (v *SigV4Verifier) computeSignature(r *http.Request, signedHeadersStr, payl
 	canonicalRequest := v.buildCanonicalRequest(r, signedHeadersStr, payloadHash)
 	stringToSign := fmt.Sprintf("AWS4-HMAC-SHA256\n%s\n%s/%s/%s/aws4_request\n%s",
 		amzDate, dateStamp, region, service, hashSHA256([]byte(canonicalRequest)))
+
+	fmt.Printf("DEBUG canonicalRequest:\n%s\n", canonicalRequest)
+	fmt.Printf("DEBUG stringToSign:\n%s\n", stringToSign)
 
 	signingKey := getSignatureKey(secretKey, dateStamp, region, service)
 	return hex.EncodeToString(hmacSHA256(signingKey, stringToSign))

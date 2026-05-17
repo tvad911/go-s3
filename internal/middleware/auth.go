@@ -23,14 +23,14 @@ func Auth(verifier *auth.SigV4Verifier) func(http.Handler) http.Handler {
 			if err != nil {
 				// If no auth header is provided, we can either reject or treat as anonymous
 				if err == auth.ErrAuthHeaderMissing {
-					// Treat as anonymous for now (Bucket Policy / ACL will deny if restricted)
-					// But for safety in phase 3, we might deny all unauthenticated requests to S3 API
-					// handler.WriteError(w, r, s3.ErrAccessDenied)
-					// return
+					// Treat as anonymous for now
 					user = &auth.User{Username: "anonymous"}
+				} else if err == auth.ErrUserNotFound {
+					handler.WriteError(w, r, s3.ErrInvalidAccessKeyId)
+					return
 				} else {
 					// Authentication failed
-					handler.WriteError(w, r, s3.ErrSignatureDoesNotMatch) // Or appropriate mapping
+					handler.WriteError(w, r, s3.ErrSignatureDoesNotMatch)
 					return
 				}
 			}
