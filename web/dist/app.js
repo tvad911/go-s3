@@ -1460,7 +1460,8 @@ async function fetchBucketPolicy() {
         const res = await api('GET', `/_admin/buckets/${currentBucket}/policy`);
         document.getElementById('bucket-policy-json').value = JSON.stringify(res, null, 2);
     } catch (err) {
-        if (err.message.includes('not found') || err.message.includes('NoSuch')) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('not found') || msg.includes('does not exist') || msg.includes('does not have')) {
             document.getElementById('bucket-policy-json').value = '';
         } else {
             showToast('Failed to fetch policy: ' + err.message, 'error');
@@ -1606,7 +1607,8 @@ async function fetchBucketCORS() {
         const res = await api('GET', `/_admin/buckets/${currentBucket}/cors`);
         document.getElementById('bucket-cors-json').value = JSON.stringify(res, null, 2);
     } catch (err) {
-        if (err.message.includes('not found') || err.message.includes('NoSuch')) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('not found') || msg.includes('does not exist') || msg.includes('does not have')) {
             document.getElementById('bucket-cors-json').value = '';
         } else {
             showToast('Failed to fetch CORS: ' + err.message, 'error');
@@ -1663,7 +1665,8 @@ async function fetchBucketLifecycle() {
         const res = await api('GET', `/_admin/buckets/${currentBucket}/lifecycle`);
         document.getElementById('bucket-lifecycle-json').value = JSON.stringify(res, null, 2);
     } catch (err) {
-        if (err.message.includes('not found') || err.message.includes('NoSuch')) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('not found') || msg.includes('does not exist') || msg.includes('does not have')) {
             document.getElementById('bucket-lifecycle-json').value = '';
         } else {
             showToast('Failed to fetch lifecycle: ' + err.message, 'error');
@@ -1724,7 +1727,8 @@ async function fetchBucketWebsite() {
         const res = await api('GET', `/_admin/buckets/${currentBucket}/website`);
         document.getElementById('bucket-website-json').value = JSON.stringify(res, null, 2);
     } catch (err) {
-        if (err.message.includes('not found') || err.message.includes('NoSuch')) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('not found') || msg.includes('does not exist') || msg.includes('does not have')) {
             document.getElementById('bucket-website-json').value = '';
         } else {
             showToast('Failed to fetch website config: ' + err.message, 'error');
