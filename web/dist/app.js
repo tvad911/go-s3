@@ -1063,7 +1063,7 @@ async function getS3Endpoint() {
     return globalS3Endpoint;
 }
 
-window.openCreateSAModal = async () => {
+window.openCreateSAModal = async (prefillUsername = '') => {
     document.getElementById('sa-description').value = '';
     const userGrp = document.getElementById('sa-target-user-group');
     const userSelect = document.getElementById('sa-target-user');
@@ -1075,6 +1075,9 @@ window.openCreateSAModal = async () => {
             userGrp.style.display = 'block';
             const users = await api('GET', '/_admin/users');
             userSelect.innerHTML = '<option value="">-- For Myself --</option>' + users.map(u => `<option value="${escapeHTML(u.username)}">${escapeHTML(u.username)}</option>`).join('');
+            if (prefillUsername) {
+                userSelect.value = prefillUsername;
+            }
         } else {
             userGrp.style.display = 'none';
         }
@@ -1206,6 +1209,7 @@ async function fetchUsers() {
                 <td data-label="Username"><strong>${u.username}</strong>${u.isRoot ? ' <span class="text-accent" style="font-size:0.8rem;background:rgba(0,240,255,0.1);padding:2px 6px;border-radius:4px;margin-left:8px;">ROOT</span>' : ''}</td>
                 <td data-label="Status">${u.disabled ? '<span style="color:var(--danger)">Disabled</span>' : '<span style="color:var(--success)">Active</span>'}</td>
                 <td data-label="Actions">
+                    ${!u.isRoot ? `<button class="btn btn-ghost text-primary" style="margin-right:0.5rem;" onclick="openCreateSAModal('${u.username}')">Create Key</button>` : ''}
                     ${!u.isRoot ? `<button class="btn btn-ghost text-primary" style="margin-right:0.5rem;" onclick="openAttachPolicyModal('${u.username}', 'user', '${u.username}')">Attach Policies</button>` : ''}
                     ${!u.isRoot ? `<button class="btn btn-ghost text-danger" onclick="deleteUser('${u.username}')">Delete</button>` : ''}
                 </td>
