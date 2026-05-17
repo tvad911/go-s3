@@ -18,14 +18,75 @@ Policy xác định giới hạn những thao tác nào được phép thực hi
 - Truy cập mục **IAM Policies**.
 - Bạn có thể viết Policy riêng dạng JSON.
 
-**Ví dụ:** Cấp quyền chỉ-đọc (Read-Only) cho một bucket tên `my-bucket`:
+**Giải đáp: IAM Policy áp dụng cho toàn bộ hay từng bucket?**
+Policy có thể áp dụng cho **toàn bộ hệ thống** hoặc **chỉ một bucket cụ thể**, tùy thuộc vào trường `"Resource"` mà bạn khai báo trong file JSON. Nếu dùng `arn:aws:s3:::*`, nó áp dụng toàn bộ. Nếu dùng `arn:aws:s3:::ten-bucket`, nó chỉ áp dụng cho bucket đó.
+
+Dưới đây là các **Template Mẫu (Copy & Paste)** thường dùng nhất:
+
+### Template 1: Toàn quyền (Full Access - Quản trị viên)
+Cấp quyền đọc, ghi, và xóa trên **tất cả** các bucket.
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:ListBucket"],
+      "Action": ["s3:*"],
+      "Resource": ["arn:aws:s3:::*"]
+    }
+  ]
+}
+```
+
+### Template 2: Chỉ đọc (Read-Only) cho MỘT Bucket cụ thể
+Thích hợp cho ứng dụng Frontend hoặc chia sẻ public. Thay `my-bucket` bằng tên bucket của bạn.
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::my-bucket",
+        "arn:aws:s3:::my-bucket/*"
+      ]
+    }
+  ]
+}
+```
+
+### Template 3: Chỉ cho phép Upload (Write-Only) vào MỘT Bucket
+Thích hợp cho tính năng User Upload, backup log, không cho phép đọc hay xóa dữ liệu cũ.
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::my-bucket/*"
+      ]
+    }
+  ]
+}
+```
+
+### Template 4: Quyền Quản lý toàn diện trên MỘT Bucket
+Cho phép ứng dụng backend làm mọi thứ (tạo file, xoá file) nhưng **chỉ trong giới hạn** 1 bucket duy nhất.
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:*"],
       "Resource": [
         "arn:aws:s3:::my-bucket",
         "arn:aws:s3:::my-bucket/*"

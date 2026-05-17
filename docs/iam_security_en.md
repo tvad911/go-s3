@@ -18,14 +18,75 @@ Policies define exactly which actions are permitted on the system. GoS3 uses the
 - Navigate to **IAM Policies**.
 - You can write custom policies in JSON format.
 
-**Example:** Granting Read-Only access to a bucket named `my-bucket`:
+**Q: Does an IAM Policy apply globally or per bucket?**
+Policies can apply **globally to all resources** or be scoped to **a specific bucket**, depending on the `"Resource"` field in your JSON. Using `arn:aws:s3:::*` applies globally. Using `arn:aws:s3:::bucket-name` scopes it to that specific bucket.
+
+Below are the most common **Ready-to-Use Templates (Copy & Paste)**:
+
+### Template 1: Full Access (Administrator)
+Grants read, write, and delete permissions across **all** buckets.
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:ListBucket"],
+      "Action": ["s3:*"],
+      "Resource": ["arn:aws:s3:::*"]
+    }
+  ]
+}
+```
+
+### Template 2: Read-Only for ONE Specific Bucket
+Ideal for Frontend applications or public sharing. Replace `my-bucket` with your actual bucket name.
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::my-bucket",
+        "arn:aws:s3:::my-bucket/*"
+      ]
+    }
+  ]
+}
+```
+
+### Template 3: Upload-Only (Write-Only) to ONE Bucket
+Ideal for User Upload features or log backups. It strictly prevents reading or deleting existing files.
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::my-bucket/*"
+      ]
+    }
+  ]
+}
+```
+
+### Template 4: Full Management of ONE Bucket
+Allows a backend application to do anything (create, list, delete), but **strictly limited** to a single bucket.
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:*"],
       "Resource": [
         "arn:aws:s3:::my-bucket",
         "arn:aws:s3:::my-bucket/*"
