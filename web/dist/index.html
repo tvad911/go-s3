@@ -376,10 +376,10 @@
                                 <button class="btn btn-ghost text-danger" onclick="setBucketPolicyPreset('private')">Make Private</button>
                             </div>
                             
-                            <h4 style="margin-top:0;">Grant Service Account Access</h4>
+                            <h4 style="margin-top:0;">Grant User Access</h4>
                             <div style="background:var(--bg-secondary); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:1rem; margin-bottom:2rem; display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
                                 <select id="policy-sa-select" class="input" style="flex:1; min-width:200px;">
-                                    <option value="">Select Service Account...</option>
+                                    <option value="">Select User...</option>
                                     <!-- Populated by JS -->
                                 </select>
                                 <select id="policy-sa-permission" class="input" style="width:150px;">
@@ -808,6 +808,6 @@ aws --endpoint-url &lt;endpoint&gt; s3 ls</pre>
         </div>
     </div>
 
-    <script src="app.js?v=14"></script>
+    <script src="app.js?v=19"></script>
 </body>
 </html>

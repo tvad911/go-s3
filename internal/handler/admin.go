@@ -85,14 +85,20 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Strip sensitive fields before sending to client
+	filteredUsers := make([]*auth.User, 0)
 	for _, u := range users {
+		// Strip sensitive fields
 		u.SecretKey = ""
 		u.PasswordHash = ""
+		
+		// Exclude root user from IAM users list as requested by user
+		if !u.IsRoot {
+			filteredUsers = append(filteredUsers, u)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+	json.NewEncoder(w).Encode(filteredUsers)
 }
 
 func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {

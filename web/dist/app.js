@@ -1074,11 +1074,10 @@ window.openCreateSAModal = async (prefillUsername = '') => {
     const userSelect = document.getElementById('sa-target-user');
     const hiddenUser = document.getElementById('sa-hidden-target-user');
     
-    // Check if current user is root
     try {
-        const me = await api('GET', '/me');
-        if (me.isRoot) {
-            const users = await api('GET', '/_admin/users');
+        if (currentUser && currentUser.isRoot) {
+            let users = await api('GET', '/_admin/users');
+            users = users || []; // Handle null if no users exist
             userSelect.innerHTML = '<option value="" disabled selected>-- Select Target User --</option>' + users.map(u => `<option value="${escapeHTML(u.username)}">${escapeHTML(u.username)}</option>`).join('');
             
             if (prefillUsername) {
@@ -1093,6 +1092,7 @@ window.openCreateSAModal = async (prefillUsername = '') => {
             userGrp.style.display = 'none';
         }
     } catch (err) {
+        console.error("Error in openCreateSAModal:", err);
         userGrp.style.display = 'none';
     }
 
@@ -1102,10 +1102,18 @@ window.openCreateSAModal = async (prefillUsername = '') => {
 document.getElementById('create-sa-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const description = document.getElementById('sa-description').value;
-    let targetUser = document.getElementById('sa-hidden-target-user').value;
-    if (!targetUser) {
-        targetUser = document.getElementById('sa-target-user').value;
+    const hiddenEl = document.getElementById('sa-hidden-target-user');
+    const selectEl = document.getElementById('sa-target-user');
+    
+    let targetUser = hiddenEl ? hiddenEl.value : '';
+    console.log("Hidden user value:", targetUser);
+    
+    if (!targetUser && selectEl) {
+        targetUser = selectEl.value;
+        console.log("Select user value:", targetUser);
     }
+    
+    console.log("Final targetUser:", targetUser);
     const expiresVal = document.getElementById('sa-expires').value;
     
     let payload = { description };
@@ -1568,26 +1576,26 @@ async function loadServiceAccountsForBucketPolicy() {
     const select = document.getElementById('policy-sa-select');
     if (!select) return;
     try {
-        const sas = await api('GET', '/_admin/service-accounts');
-        select.innerHTML = '<option value="">Select Service Account...</option>';
-        if (sas && sas.length > 0) {
-            sas.forEach(sa => {
+        const usersList = await api('GET', '/_admin/users');
+        select.innerHTML = '<option value="">Select User...</option>';
+        if (usersList && usersList.length > 0) {
+            usersList.forEach(user => {
                 const opt = document.createElement('option');
-                opt.value = sa.accessKeyId;
-                opt.textContent = `${sa.description || 'No Description'} (${sa.accessKeyId})`;
+                opt.value = user.username;
+                opt.textContent = `User: ${user.username}`;
                 select.appendChild(opt);
             });
         }
     } catch (err) {
-        console.error('Failed to load service accounts for policy UI', err);
+        console.error('Failed to load users for policy UI', err);
     }
 }
 
 window.addServiceAccountToPolicy = () => {
-    const accessKey = document.getElementById('policy-sa-select').value;
+    const selectedUsername = document.getElementById('policy-sa-select').value;
     const permission = document.getElementById('policy-sa-permission').value;
-    if (!accessKey) {
-        showToast('Please select a service account', 'error');
+    if (!selectedUsername) {
+        showToast('Please select a user', 'error');
         return;
     }
 
@@ -1608,7 +1616,7 @@ window.addServiceAccountToPolicy = () => {
 
     if (!policyObj.Statement) policyObj.Statement = [];
 
-    const saArn = `arn:aws:iam:::serviceaccount/${accessKey}`;
+    const saArn = `arn:aws:iam:::user/${selectedUsername}`;
     let actions = ["s3:GetObject", "s3:ListBucket"];
     if (permission === 'readwrite') {
         actions = ["s3:*"];
