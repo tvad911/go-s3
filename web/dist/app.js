@@ -1006,7 +1006,10 @@ async function fetchServiceAccounts() {
                 <td data-label="Access Key"><code>${sa.accessKeyId}</code></td>
                 <td data-label="Description">${sa.description || '—'}</td>
                 <td data-label="Created">${new Date(sa.createdAt).toLocaleString()}</td>
-                <td data-label="Actions"><button class="btn btn-ghost text-danger" onclick="deleteServiceAccount('${sa.id}')">Delete</button></td>
+                <td data-label="Actions">
+                    <button class="btn btn-ghost text-primary" style="margin-right:0.5rem;" onclick="openIAMPolicyModal('${sa.accessKeyId}')">Edit Policy</button>
+                    <button class="btn btn-ghost text-danger" onclick="deleteServiceAccount('${sa.id}')">Delete</button>
+                </td>
             </tr>`).join('');
     } catch (err) { showToast(err.message, 'error'); tbody.innerHTML = ''; }
 }
@@ -1062,6 +1065,50 @@ window.deleteServiceAccount = async (id) => {
 window.copyToClipboard = (elementId) => {
     const text = document.getElementById(elementId)?.textContent;
     if (text) { navigator.clipboard.writeText(text); showToast('Copied!', 'success'); }
+};
+
+let currentIAMUser = '';
+
+window.openIAMPolicyModal = async (accessKey) => {
+    currentIAMUser = accessKey;
+    document.getElementById('iam-policy-user').textContent = accessKey;
+    const textarea = document.getElementById('iam-policy-json');
+    document.getElementById('iam-policy-error').style.display = 'none';
+    textarea.value = '';
+    
+    try {
+        const res = await api('GET', `/_admin/policies/${accessKey}`);
+        textarea.value = JSON.stringify(res, null, 2);
+    } catch (err) {
+        if (!err.message.includes('not found') && !err.message.includes('NoSuch')) {
+            showToast('Failed to load policy: ' + err.message, 'error');
+        }
+    }
+    openModal('edit-iam-policy-modal');
+};
+
+window.saveIAMPolicy = async () => {
+    const textarea = document.getElementById('iam-policy-json');
+    const policyStr = textarea.value.trim();
+    
+    if (policyStr && !validateJSONConfig(textarea, 'iam-policy-error')) {
+        showToast('Please fix JSON errors before saving', 'error');
+        return;
+    }
+
+    try {
+        if (!policyStr) {
+            await api('DELETE', `/_admin/policies/${currentIAMUser}`);
+            showToast('IAM Policy deleted', 'success');
+        } else {
+            const policyObj = JSON.parse(policyStr);
+            await api('PUT', `/_admin/policies/${currentIAMUser}`, policyObj);
+            showToast('IAM Policy saved successfully', 'success');
+        }
+        closeModal('edit-iam-policy-modal');
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
 };
 
 // ==================== Users ====================
@@ -1384,7 +1431,7 @@ async function fetchBucketPolicy() {
         const res = await api('GET', `/_admin/buckets/${currentBucket}/policy`);
         document.getElementById('bucket-policy-json').value = JSON.stringify(res, null, 2);
     } catch (err) {
-        if (err.message.includes('not found')) {
+        if (err.message.includes('not found') || err.message.includes('NoSuch')) {
             document.getElementById('bucket-policy-json').value = '';
         } else {
             showToast('Failed to fetch policy: ' + err.message, 'error');
@@ -1530,7 +1577,7 @@ async function fetchBucketCORS() {
         const res = await api('GET', `/_admin/buckets/${currentBucket}/cors`);
         document.getElementById('bucket-cors-json').value = JSON.stringify(res, null, 2);
     } catch (err) {
-        if (err.message.includes('not found') || err.message.includes('NoSuchCORSConfiguration') || err.message.includes('does not exist')) {
+        if (err.message.includes('not found') || err.message.includes('NoSuch')) {
             document.getElementById('bucket-cors-json').value = '';
         } else {
             showToast('Failed to fetch CORS: ' + err.message, 'error');
@@ -1587,7 +1634,7 @@ async function fetchBucketLifecycle() {
         const res = await api('GET', `/_admin/buckets/${currentBucket}/lifecycle`);
         document.getElementById('bucket-lifecycle-json').value = JSON.stringify(res, null, 2);
     } catch (err) {
-        if (err.message.includes('not found')) {
+        if (err.message.includes('not found') || err.message.includes('NoSuch')) {
             document.getElementById('bucket-lifecycle-json').value = '';
         } else {
             showToast('Failed to fetch lifecycle: ' + err.message, 'error');
@@ -1648,7 +1695,7 @@ async function fetchBucketWebsite() {
         const res = await api('GET', `/_admin/buckets/${currentBucket}/website`);
         document.getElementById('bucket-website-json').value = JSON.stringify(res, null, 2);
     } catch (err) {
-        if (err.message.includes('not found')) {
+        if (err.message.includes('not found') || err.message.includes('NoSuch')) {
             document.getElementById('bucket-website-json').value = '';
         } else {
             showToast('Failed to fetch website config: ' + err.message, 'error');

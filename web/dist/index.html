@@ -768,6 +768,37 @@ aws --endpoint-url &lt;endpoint&gt; s3 ls</pre>
     </div>
 
     <div id="toast-container"></div>
-    <script src="app.js?v=14"></script>
+
+    <!-- Edit IAM Policy Modal -->
+    <div class="modal-overlay" id="edit-iam-policy-modal">
+        <div class="glass-card modal" style="max-width: 600px; width: 90%;">
+            <div class="modal-header">
+                <h3>Edit IAM Policy</h3>
+                <button class="btn-close" onclick="closeModal('edit-iam-policy-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-secondary" style="margin-bottom: 1rem; font-size: 0.9rem;">
+                    Editing policy for User/Service Account: <strong id="iam-policy-user" style="color:var(--accent-primary)"></strong><br>
+                    Note: IAM Policies do NOT require a <code>"Principal"</code> field.
+                </p>
+                <div class="input-group">
+                    <textarea id="iam-policy-json" rows="12" class="code-editor" placeholder="{
+  &quot;Version&quot;: &quot;2012-10-17&quot;,
+  &quot;Statement&quot;: []
+}"></textarea>
+                    <div id="iam-policy-error" class="text-danger" style="font-size:0.85rem; margin-top:0.5rem; display:none;"></div>
+                </div>
+                <div class="modal-actions" style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                    <button class="btn btn-secondary" onclick="document.getElementById('iam-policy-json').value=''">Clear</button>
+                    <div style="flex:1"></div>
+                    <button class="btn btn-ghost" onclick="closeModal('edit-iam-policy-modal')">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveIAMPolicy()">Save Policy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Web Console JS -->
+    <script src="app.js"></script>
 </body>
 </html>
