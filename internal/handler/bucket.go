@@ -92,7 +92,10 @@ func (h *S3Handler) GetBucketLocation(w http.ResponseWriter, r *http.Request) {
 	// AWS S3 standard: "us-east-1" is sometimes returned as empty.
 	// But it is safer to return the string "us-east-1" for compatibility with strict clients.
 	if loc.Value == "" {
-		loc.Value = "us-east-1"
+		loc.Value = h.Config.Auth.Region
+		if loc.Value == "" {
+			loc.Value = "us-east-1"
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/xml")
