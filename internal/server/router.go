@@ -47,11 +47,10 @@ func SetupRouter(cfg *config.Config, backend storage.Backend, metaStore metadata
 
 			r.Get("/me", authHandler.Me)
 
-			// Service Account management
+			// Service Account management (Access Keys — inherit permissions from parent User)
 			r.Post("/service-accounts", saHandler.CreateServiceAccount)
 			r.Get("/service-accounts", saHandler.ListServiceAccounts)
 			r.Delete("/service-accounts/{id}", saHandler.DeleteServiceAccount)
-			r.Put("/service-accounts/{id}/policies", saHandler.PutServiceAccountPolicies)
 		})
 	})
 

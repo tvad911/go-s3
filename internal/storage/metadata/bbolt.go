@@ -1134,7 +1134,8 @@ func (s *bboltStore) ListServiceAccountsByUser(ctx context.Context, parentUser s
 			if err := json.Unmarshal(v, &sa); err != nil {
 				return err
 			}
-			if sa.ParentUser == parentUser {
+			// If parentUser is empty, return all (Root admin view)
+			if parentUser == "" || sa.ParentUser == parentUser {
 				// Clear secret key from list responses
 				sa.SecretKey = ""
 				accounts = append(accounts, &sa)
@@ -1193,37 +1194,6 @@ func (s *bboltStore) DisableServiceAccount(ctx context.Context, id string, disab
 			return auth.ErrUserNotFound
 		}
 		found.Disabled = disabled
-		data, err := json.Marshal(found)
-		if err != nil {
-			return err
-		}
-		return b.Put(foundKey, data)
-	})
-}
-
-func (s *bboltStore) UpdateServiceAccountPolicies(ctx context.Context, id string, policies []string) error {
-	return s.db.Update(func(tx *bbolt.Tx) error {
-		b := tx.Bucket(bucketServiceAccounts)
-		var found *auth.ServiceAccount
-		var foundKey []byte
-		err := b.ForEach(func(k, v []byte) error {
-			var sa auth.ServiceAccount
-			if err := json.Unmarshal(v, &sa); err != nil {
-				return err
-			}
-			if sa.ID == id {
-				found = &sa
-				foundKey = k
-			}
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-		if found == nil {
-			return auth.ErrUserNotFound
-		}
-		found.Policies = policies
 		data, err := json.Marshal(found)
 		if err != nil {
 			return err

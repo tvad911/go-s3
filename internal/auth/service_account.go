@@ -10,13 +10,13 @@ import (
 
 // ServiceAccount represents an API key pair owned by a User.
 // Each user can have multiple ServiceAccounts for different applications.
+// Permissions are inherited entirely from the parent User's attached IAM Policies.
 type ServiceAccount struct {
 	ID          string     `json:"id"`
 	AccessKeyID string     `json:"accessKeyId"`
 	SecretKey   string     `json:"secretKey,omitempty"` // Only populated on creation
 	ParentUser  string     `json:"parentUser"`
 	Description string     `json:"description,omitempty"`
-	Policies    []string   `json:"policies,omitempty"`
 	Disabled    bool       `json:"disabled"`
 	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
 	CreatedAt   time.Time  `json:"createdAt"`
@@ -65,7 +65,4 @@ type ServiceAccountStore interface {
 
 	// DisableServiceAccount toggles the disabled state of a service account.
 	DisableServiceAccount(ctx context.Context, id string, disabled bool) error
-
-	// UpdateServiceAccountPolicies updates the list of policies attached to a service account.
-	UpdateServiceAccountPolicies(ctx context.Context, id string, policies []string) error
 }

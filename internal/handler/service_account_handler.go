@@ -26,7 +26,6 @@ func NewServiceAccountHandler(store metadata.Store) *ServiceAccountHandler {
 type createSARequest struct {
 	TargetUser  string     `json:"targetUser,omitempty"`
 	Description string     `json:"description"`
-	Policies    []string   `json:"policies,omitempty"`
 	ExpiresAt   *time.Time `json:"expiresAt,omitempty"`
 }
 
@@ -87,7 +86,6 @@ func (h *ServiceAccountHandler) CreateServiceAccount(w http.ResponseWriter, r *h
 		SecretKey:   secretKey,
 		ParentUser:  targetUser.Username,
 		Description: req.Description,
-		Policies:    req.Policies,
 		ExpiresAt:   req.ExpiresAt,
 		CreatedAt:   time.Now(),
 	}
@@ -108,7 +106,8 @@ func (h *ServiceAccountHandler) CreateServiceAccount(w http.ResponseWriter, r *h
 	})
 }
 
-// ListServiceAccounts returns all service accounts for the authenticated user.
+// ListServiceAccounts returns all service accounts.
+// Root admin sees all Access Keys across all users.
 func (h *ServiceAccountHandler) ListServiceAccounts(w http.ResponseWriter, r *http.Request) {
 	user := auth.GetUser(r.Context())
 	if user.Username == "anonymous" {
@@ -116,7 +115,13 @@ func (h *ServiceAccountHandler) ListServiceAccounts(w http.ResponseWriter, r *ht
 		return
 	}
 
-	accounts, err := h.store.ListServiceAccountsByUser(r.Context(), user.Username)
+	// Root sees all, non-root sees only their own
+	filterUser := user.Username
+	if user.IsRoot {
+		filterUser = ""
+	}
+
+	accounts, err := h.store.ListServiceAccountsByUser(r.Context(), filterUser)
 	if err != nil {
 		http.Error(w, `{"error":"failed to list service accounts"}`, http.StatusInternalServerError)
 		return
@@ -170,39 +175,4 @@ func (h *ServiceAccountHandler) DeleteServiceAccount(w http.ResponseWriter, r *h
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// PutServiceAccountPolicies updates the policies array for a service account.
-func (h *ServiceAccountHandler) PutServiceAccountPolicies(w http.ResponseWriter, r *http.Request) {
-	user := auth.GetUser(r.Context())
-	if user.Username == "anonymous" {
-		http.Error(w, `{"error":"not authenticated"}`, http.StatusUnauthorized)
-		return
-	}
-
-	saID := chi.URLParam(r, "id")
-	if saID == "" {
-		http.Error(w, `{"error":"service account id is required"}`, http.StatusBadRequest)
-		return
-	}
-
-	// For admin only currently. If non-root, deny.
-	if !user.IsRoot {
-		// Ideally we check if they have admin:UpdateServiceAccount permission
-		http.Error(w, `{"error":"access denied"}`, http.StatusForbidden)
-		return
-	}
-
-	var policies []string
-	if err := json.NewDecoder(io.LimitReader(r.Body, 2<<20)).Decode(&policies); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
-		return
-	}
-
-	if err := h.store.UpdateServiceAccountPolicies(r.Context(), saID, policies); err != nil {
-		http.Error(w, `{"error":"failed to update policies"}`, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 }

@@ -1027,16 +1027,16 @@ window.startStagingUpload = async () => {
 async function fetchServiceAccounts() {
     const tbody = document.getElementById('sa-table-body');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="4"><div class="loading-spinner"></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5"><div class="loading-spinner"></div></td></tr>';
     try {
         const accounts = await api('GET', '/api/v1/service-accounts');
         tbody.innerHTML = accounts.map(sa => `
             <tr>
                 <td data-label="Access Key"><code>${sa.accessKeyId}</code></td>
+                <td data-label="Owner">${escapeHTML(sa.parentUser)}</td>
                 <td data-label="Description">${sa.description || '—'}</td>
                 <td data-label="Created">${new Date(sa.createdAt).toLocaleString()}</td>
                 <td data-label="Actions">
-                    <button class="btn btn-ghost text-primary" style="margin-right:0.5rem;" onclick="openAttachPolicyModal('${sa.id}', 'service-account', '${sa.accessKeyId}')">Attach Policies</button>
                     <button class="btn btn-ghost text-danger" onclick="deleteServiceAccount('${sa.id}')">Delete</button>
                 </td>
             </tr>`).join('');
@@ -1133,11 +1133,9 @@ window.copyToClipboard = (elementId) => {
 let currentIAMUser = '';
 
 let currentAttachTargetID = '';
-let currentAttachTargetType = ''; // 'user' or 'service-account'
 
-window.openAttachPolicyModal = async (id, type, displayName) => {
-    currentAttachTargetID = id;
-    currentAttachTargetType = type;
+window.openAttachPolicyModal = async (username, type, displayName) => {
+    currentAttachTargetID = username;
     document.getElementById('attach-policy-target').textContent = displayName;
     document.getElementById('attach-policy-error').style.display = 'none';
     
@@ -1149,17 +1147,9 @@ window.openAttachPolicyModal = async (id, type, displayName) => {
         // Fetch all policies
         const policies = await api('GET', `/_admin/policies`);
         
-        // Fetch current attached policies
-        let attached = [];
-        if (type === 'user') {
-            const user = await api('GET', `/_admin/users/${id}`);
-            attached = user.policies || [];
-        } else if (type === 'service-account') {
-            // Need to get SA's current policies. Since we don't have a GET /id, we list all and find it
-            const sas = await api('GET', '/api/v1/service-accounts');
-            const sa = sas.find(s => s.id === id);
-            if (sa) attached = sa.policies || [];
-        }
+        // Fetch current attached policies for this user
+        const user = await api('GET', `/_admin/users/${username}`);
+        const attached = user.policies || [];
 
         if (!policies || policies.length === 0) {
             tbody.innerHTML = '<tr><td style="text-align:center; color:var(--text-muted);">No IAM Policies available. Please create one first.</td></tr>';
@@ -1187,11 +1177,7 @@ window.saveAttachedPolicies = async () => {
     const selectedPolicies = Array.from(checkboxes).map(cb => cb.value);
 
     try {
-        if (currentAttachTargetType === 'user') {
-            await api('PUT', `/_admin/users/${currentAttachTargetID}/policies`, selectedPolicies);
-        } else {
-            await api('PUT', `/api/v1/service-accounts/${currentAttachTargetID}/policies`, selectedPolicies);
-        }
+        await api('PUT', `/_admin/users/${currentAttachTargetID}/policies`, selectedPolicies);
         showToast('Policies attached successfully', 'success');
         closeModal('attach-iam-policy-modal');
     } catch (err) {

@@ -136,7 +136,7 @@ func (v *SigV4Verifier) lookupByAccessKey(ctx context.Context, accessKey string)
 			if sa.Disabled || sa.IsExpired() {
 				return nil, "", ErrAuthHeaderMissing
 			}
-			// Resolve the parent user
+			// Resolve the parent user — Access Key inherits all policies from parent
 			parentUser, err := v.UserStore.GetUserByUsername(ctx, sa.ParentUser)
 			if err != nil {
 				return nil, "", err
@@ -145,14 +145,10 @@ func (v *SigV4Verifier) lookupByAccessKey(ctx context.Context, accessKey string)
 				return nil, "", ErrAuthHeaderMissing
 			}
 
-			// Create a copy of the user to avoid mutating the original
+			// Create a copy of the user to avoid mutating the original.
+			// All permissions come from the parent User's attached policies.
 			user := *parentUser
 			user.AccessKeyID = sa.AccessKeyID
-			// Merge SA policies with parent user policies
-			if len(sa.Policies) > 0 {
-				user.Policies = append([]string(nil), parentUser.Policies...)
-				user.Policies = append(user.Policies, sa.Policies...)
-			}
 
 			return &user, sa.SecretKey, nil
 		}
