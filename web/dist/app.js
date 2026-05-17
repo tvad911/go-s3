@@ -232,7 +232,7 @@ window.openBucket = (name) => {
     currentBucket = name;
     currentPrefix = '';
     updateBreadcrumb();
-    topbarActions.innerHTML = `<button class="btn btn-primary" onclick="document.getElementById('file-input').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Upload</button>
+    topbarActions.innerHTML = `<button class="btn btn-primary" onclick="openModal('upload-staging-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Upload</button>
     <button class="btn btn-ghost" onclick="openModal('create-folder-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v11z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg> New Folder</button>`;
     views.forEach(v => v.classList.remove('active'));
     document.getElementById('view-objects').classList.add('active');
@@ -835,39 +835,142 @@ window.copyToClipboardInput = (id) => {
 
 
 // Upload
+// File Manager v2 - Upload Staging Queue
+let uploadStagingQueue = [];
 const uploadZone = document.getElementById('upload-zone');
-const fileInput = document.getElementById('file-input');
-const folderInput = document.getElementById('folder-input');
+const stagingFileInput = document.getElementById('staging-file-input');
+const stagingFolderInput = document.getElementById('staging-folder-input');
+
 if (uploadZone) {
     uploadZone.addEventListener('click', (e) => {
-        if (e.target.tagName !== 'BUTTON') fileInput.click();
+        if (e.target.tagName !== 'BUTTON') {
+            openModal('upload-staging-modal');
+        }
     });
     uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
     uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
     uploadZone.addEventListener('drop', (e) => { 
         e.preventDefault(); 
         uploadZone.classList.remove('dragover'); 
-        if (e.dataTransfer.files.length) handleUploads(e.dataTransfer.files); 
+        if (e.dataTransfer.files.length) {
+            stageFiles(e.dataTransfer.files);
+            openModal('upload-staging-modal');
+        }
     });
 }
-if (fileInput) fileInput.addEventListener('change', () => { if (fileInput.files.length) handleUploads(fileInput.files); });
-if (folderInput) folderInput.addEventListener('change', () => { if (folderInput.files.length) handleUploads(folderInput.files); });
 
-async function handleUploads(files) {
+if (stagingFileInput) {
+    stagingFileInput.addEventListener('change', () => { 
+        if (stagingFileInput.files.length) stageFiles(stagingFileInput.files); 
+        stagingFileInput.value = ''; // Reset
+    });
+}
+if (stagingFolderInput) {
+    stagingFolderInput.addEventListener('change', () => { 
+        if (stagingFolderInput.files.length) stageFiles(stagingFolderInput.files); 
+        stagingFolderInput.value = ''; // Reset
+    });
+}
+
+// Intercept old buttons in upload-zone if they exist
+window.triggerStagingInput = (type) => {
+    if (type === 'file') stagingFileInput.click();
+    if (type === 'folder') stagingFolderInput.click();
+    openModal('upload-staging-modal');
+};
+
+function stageFiles(files) {
+    for (let i = 0; i < files.length; i++) {
+        uploadStagingQueue.push(files[i]);
+    }
+    renderStagingQueue();
+}
+
+window.removeStagingItem = (index) => {
+    uploadStagingQueue.splice(index, 1);
+    renderStagingQueue();
+};
+
+window.clearStagingQueue = () => {
+    uploadStagingQueue = [];
+    renderStagingQueue();
+    document.getElementById('staging-status').textContent = '';
+};
+
+function renderStagingQueue() {
+    const tbody = document.getElementById('staging-table-body');
+    const status = document.getElementById('staging-status');
+    if (!tbody) return;
+
+    if (uploadStagingQueue.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding: 2rem;">Queue is empty. Add files or folders to begin.</td></tr>';
+        if (status) status.textContent = '';
+        return;
+    }
+
+    let totalSize = 0;
+    tbody.innerHTML = uploadStagingQueue.map((file, index) => {
+        totalSize += file.size;
+        const relativePath = file.webkitRelativePath || file.name;
+        return `
+            <tr>
+                <td style="word-break: break-all;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:8px;vertical-align:middle;color:var(--text-muted);"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>${escapeHTML(relativePath)}</td>
+                <td>${formatBytes(file.size)}</td>
+                <td style="text-align:right;">
+                    <button class="btn btn-ghost text-danger btn-sm" onclick="removeStagingItem(${index})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    if (status) {
+        status.textContent = `${uploadStagingQueue.length} files (${formatBytes(totalSize)})`;
+    }
+}
+
+window.startStagingUpload = async () => {
     if (!currentBucket) { showToast('Select a bucket first', 'error'); return; }
-    for (const file of files) {
+    if (uploadStagingQueue.length === 0) return;
+
+    const btnStart = document.getElementById('btn-start-staging-upload');
+    const status = document.getElementById('staging-status');
+    const originalText = btnStart.textContent;
+    btnStart.disabled = true;
+    btnStart.textContent = 'Uploading...';
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < uploadStagingQueue.length; i++) {
+        const file = uploadStagingQueue[i];
         try {
             const relativePath = file.webkitRelativePath || file.name;
-            showToast(`Uploading ${relativePath}...`, 'info');
+            status.textContent = `Uploading ${i+1}/${uploadStagingQueue.length}...`;
             const key = `${currentPrefix}${relativePath}`;
             const data = await api('POST', '/_admin/presign', { method: 'PUT', bucket: currentBucket, key, expires: 3600 });
             const res = await fetch(data.url, { method: 'PUT', body: file });
-            if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-            showToast(`${relativePath} uploaded`, 'success');
-        } catch (err) { showToast(err.message, 'error'); }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            successCount++;
+        } catch (err) { 
+            console.error(err);
+            failCount++;
+        }
     }
+
+    if (failCount === 0) {
+        showToast(`Successfully uploaded ${successCount} files`, 'success');
+        clearStagingQueue();
+        closeModal('upload-staging-modal');
+    } else {
+        showToast(`Uploaded ${successCount} files, failed ${failCount}`, 'error');
+        // We could theoretically remove the successful ones from the queue, 
+        // but for simplicity we'll just let the user see the error and clear manually if they want.
+    }
+
+    btnStart.disabled = false;
+    btnStart.textContent = originalText;
     fetchObjects();
-}
+};
 
 
 // ==================== Service Accounts ====================
