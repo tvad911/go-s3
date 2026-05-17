@@ -28,9 +28,9 @@ Root Admin (config.yaml / ENV)
 IAM User là thực thể chính mang danh tính trong hệ thống. Tất cả quyền hạn được gắn ở cấp User.
 
 1. Truy cập mục **IAM Users** ở Menu bên trái.
-2. Bấm **Create User**.
-3. Nhập Tên đăng nhập và Mật khẩu.
-4. Sau khi tạo xong, bấm **Attach Policies** trên dòng User đó để gán quyền.
+2. Bấm **Create User** hoặc nhập thông tin trực tiếp vào form.
+3. Nhập Tên đăng nhập, Mật khẩu và chọn trực tiếp các **IAM Policies** (có thể chọn nhiều) để gán quyền ngay lập tức.
+4. Sau khi tạo xong, bạn có thể chỉnh sửa lại quyền bằng nút **Attach Policies**.
 5. Bấm **Create Key** trên dòng User để tạo Access Key cho User đó.
 
 > **Lưu ý:** IAM Users không thể đăng nhập vào trang quản trị Web Console. Chỉ tài khoản Root mới có quyền này.
@@ -125,9 +125,10 @@ Access Key là cặp khóa dành cho các ứng dụng (App), Backend, SDK, ho�
 **Cách tạo Access Key:**
 
 1. **Từ bảng Users (Nhanh nhất):** Bấm nút **Create Key** trên dòng User mà bạn muốn cấp key.
-2. **Từ tab Access Keys:** Bấm **Create Access Key**, chọn **Target User** (bắt buộc), rồi bấm Generate.
+2. **Từ tab Access Keys:** Bấm **Create Access Key**, chọn **Target User** (bắt buộc). Tại đây bạn có thể chọn thêm **Thời hạn (Expires In)** nếu muốn key tự động hết hạn (7 ngày, 30 ngày, 1 năm,...).
 3. Hệ thống sẽ sinh ngẫu nhiên `AccessKeyID` và `SecretKey`.
 4. **LƯU Ý QUAN TRỌNG:** Copy lại `SecretKey` ngay lập tức, vì hệ thống sẽ không hiển thị lại lần 2 vì lý do bảo mật.
+5. **Vô hiệu hóa (Revoke):** Bạn có thể bấm nút **Disable/Enable** trên giao diện Access Keys để khoá một key mà không cần xóa nó.
 
 **Về quyền hạn của Access Key:**
 Access Key **tự động kế thừa toàn bộ** quyền (Policies) từ IAM User cha. Không cần (và không thể) gán Policy riêng cho Access Key.

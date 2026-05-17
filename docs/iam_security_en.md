@@ -28,9 +28,9 @@ Root Admin (config.yaml / ENV)
 IAM Users are the core identity entities in the system. All permissions are attached at the User level.
 
 1. Navigate to **IAM Users** on the left menu.
-2. Click **Create User**.
-3. Enter a Username and Password.
-4. After creation, click **Attach Policies** on the User row to assign permissions.
+2. Fill out the "Create User" form directly.
+3. Enter a Username, Password, and select one or more **IAM Policies** from the dropdown to assign permissions immediately.
+4. After creation, you can manage permissions via the **Attach Policies** button.
 5. Click **Create Key** on the User row to generate an Access Key for that User.
 
 > **Note:** IAM Users cannot log in to the Web Console. Only the Root account has this privilege.
@@ -125,9 +125,10 @@ Access Keys are credential pairs for Applications, Backends, SDKs, or CLI tools 
 **How to create an Access Key:**
 
 1. **From the Users table (Fastest):** Click the **Create Key** button on the User row you want to provision.
-2. **From the Access Keys tab:** Click **Create Access Key**, select a **Target User** (required), then click Generate.
+2. **From the Access Keys tab:** Click **Create Access Key**, select a **Target User** (required). You can also optionally specify an **Expires In** duration (e.g. 7 days, 30 days, 1 year).
 3. The system will randomly generate an `AccessKeyID` and `SecretKey`.
 4. **IMPORTANT:** Copy the `SecretKey` immediately. For security reasons, the system will not display it a second time.
+5. **Revocation:** You can click the **Disable/Enable** button on the Access Keys table to temporarily revoke a key without deleting it.
 
 **About Access Key permissions:**
 Access Keys **automatically inherit all** permissions (Policies) from their parent IAM User. You cannot (and do not need to) assign policies directly to an Access Key.
