@@ -1087,7 +1087,7 @@ Tài liệu này dùng để theo dõi tiến độ và kịch bản test cho to
 
 ## 🟢 Phase 1: Core S3 API & AWS CLI Compatibility
 - [x] Khởi động server thành công
-- [x] Cấu hình AWS CLI với endpoint `http://localhost:9010`
+- [x] Cấu hình AWS CLI với endpoint `http://localhost:9000`
 - [x] Chạy `aws s3 mb s3://test-bucket` (Tạo bucket)
 - [x] Chạy `aws s3 ls` (Liệt kê bucket)
 - [x] Chạy `aws s3 rb s3://test-bucket` (Xóa bucket)

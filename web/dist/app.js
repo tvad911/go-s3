@@ -899,7 +899,7 @@ document.getElementById('create-sa-form')?.addEventListener('submit', async (e) 
         if (infoDiv) {
             document.getElementById('sa-created-access').textContent = result.accessKeyId;
             document.getElementById('sa-created-secret').textContent = result.secretKey;
-            document.getElementById('sa-created-endpoint').textContent = window.location.origin.replace(/:\d+$/, ':9010');
+            document.getElementById('sa-created-endpoint').textContent = window.location.origin.replace(/:\d+$/, ':9000');
             openModal('sa-created-modal');
         }
         fetchServiceAccounts();
@@ -963,7 +963,7 @@ async function fetchServerInfo() {
     grid.innerHTML = '<div class="loading-spinner"></div>';
     try {
         const info = await api('GET', '/_admin/info');
-        const endpoint = window.location.origin.replace(/:\d+$/, ':9010');
+        const endpoint = window.location.origin.replace(/:\d+$/, ':9000');
         const ramPct = info.system?.ram_sys ? Math.round((info.system.ram_alloc / info.system.ram_sys) * 100) : 0;
         const diskPct = info.storage?.disk_total ? Math.round(((info.storage.disk_total - info.storage.disk_free) / info.storage.disk_total) * 100) : 0;
         
@@ -1670,8 +1670,8 @@ window.saveBucketWebhooks = async () => {
 async function loadConnectionInfo() {
     const s3Host = window.location.hostname;
     const proto = window.location.protocol;
-    // By default GoS3 S3 API runs on 9010
-    const s3Port = '9010';
+    // By default GoS3 S3 API runs on 9000
+    const s3Port = '9000';
     
     document.getElementById('conn-endpoint').value = `${proto}//${s3Host}:${s3Port}`;
     
